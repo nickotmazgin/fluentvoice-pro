@@ -172,10 +172,10 @@ def play_audio_file(file_path: str, generation_id: int) -> bool:
     _is_speaking = False
     return True
 
-async def _synthesize_edge(text: str, voice: str, out_file: str, rate: str = "+0%") -> bool:
+async def _synthesize_edge(text: str, voice: str, out_file: str, rate: str = "+0%", pitch: str = "+0Hz") -> bool:
     try:
         import edge_tts
-        comm = edge_tts.Communicate(text, voice, rate=rate)
+        comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
         await comm.save(out_file)
         return True
     except Exception:
@@ -196,6 +196,9 @@ def speak_text(raw_text: str) -> dict:
     rate_mult = cfg.get("rate_mult", 1.0)
     pct = int(round((rate_mult - 1.0) * 100))
     rate_str = f"{pct:+d}%" if pct != 0 else "+0%"
+
+    pitch_hz = int(cfg.get("pitch_hz", 0))
+    pitch_str = f"{pitch_hz:+d}Hz" if pitch_hz != 0 else "+0Hz"
 
     with _engine_lock:
         _current_generation += 1
@@ -219,7 +222,7 @@ def speak_text(raw_text: str) -> dict:
     # Neural Cloud Mode
     out_file = str(CACHE_DIR / f"speech_gen_{my_gen}.mp3")
     try:
-        success = asyncio.run(_synthesize_edge(cleaned, voice, out_file, rate=rate_str))
+        success = asyncio.run(_synthesize_edge(cleaned, voice, out_file, rate=rate_str, pitch=pitch_str))
     except Exception:
         success = False
 

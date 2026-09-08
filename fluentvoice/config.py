@@ -18,6 +18,7 @@ DEFAULT_CONFIG = {
     "clean_markdown": True,
     "show_notifications": True,
     "rate_mult": 1.0,
+    "pitch_hz": 0,
     "volume": 100,
     "rate": "+0%",
 }

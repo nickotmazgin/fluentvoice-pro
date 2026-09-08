@@ -16,6 +16,7 @@ from fluentvoice import config, core
 
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
+GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
 GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
 
 BASE_VOICE_MAP = {
@@ -49,6 +50,34 @@ def build_full_voice_map():
         vm[f"{label} (Offline 0ms)"] = desc
     return vm
 
+def focus_existing_settings_window() -> bool:
+    """Checks if an instance of the Settings window is already open and brings it to front."""
+    try:
+        hwnd = ctypes.windll.user32.FindWindowW(None, "FluentVoice Pro - Settings & Control Center")
+        if hwnd:
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+            if user32.IsIconic(hwnd):
+                user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            else:
+                user32.ShowWindow(hwnd, 5)  # SW_SHOW
+
+            fore_hwnd = user32.GetForegroundWindow()
+            fore_thread = user32.GetWindowThreadProcessId(fore_hwnd, None)
+            cur_thread = kernel32.GetCurrentThreadId()
+            if fore_thread != cur_thread:
+                user32.AttachThreadInput(fore_thread, cur_thread, True)
+                user32.BringWindowToTop(hwnd)
+                user32.SetForegroundWindow(hwnd)
+                user32.AttachThreadInput(fore_thread, cur_thread, False)
+            else:
+                user32.BringWindowToTop(hwnd)
+                user32.SetForegroundWindow(hwnd)
+            return True
+    except Exception:
+        pass
+    return False
+
 class FluentVoiceSettingsWindow(ctk.CTk):
     def __init__(self, initial_tab="Voice & Speech"):
         super().__init__()
@@ -57,8 +86,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("FluentVoice Pro - Settings & Control Center")
-        self.geometry("740x630")
-        self.minsize(680, 570)
+        self.geometry("740x660")
+        self.minsize(680, 580)
 
         self.eval('tk::PlaceWindow . center')
 
@@ -114,7 +143,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         badge_lbl = ctk.CTkLabel(
             header_frame,
-            text="v1.3.0 • Windows 11/10 Suite • By Nick Otmazgin",
+            text="v1.3.1 • Windows 11/10 Suite • By Nick Otmazgin",
             font=ctk.CTkFont(family="Segoe UI", size=13),
             text_color="#8B949E"
         )
@@ -149,18 +178,16 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         # Voice selection card
         voice_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        voice_card.pack(fill="x", padx=10, pady=6)
+        voice_card.pack(fill="x", padx=10, pady=5)
 
         ctk.CTkLabel(
             voice_card,
             text="Active Voice Profile (English, Hebrew, World Languages & Local Offline):",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ctk.CTkFont(size=13, weight="bold"),
             text_color="#E6EDF3"
         ).pack(anchor="w", padx=14, pady=(8, 4))
 
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
-        
-        # Match current label
         curr_label = "Andrew Multilingual (US HD Male)"
         for l, code in self.voice_map.items():
             if code == curr_voice or code.lower() in curr_voice.lower() or curr_voice.lower() in code.lower():
@@ -183,9 +210,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=13, weight="bold"),
             dropdown_font=ctk.CTkFont(size=13)
         )
-        self.voice_menu.pack(fill="x", padx=14, pady=(0, 6))
+        self.voice_menu.pack(fill="x", padx=14, pady=(0, 5))
 
-        # Helper button to install more offline voices via Windows Settings
         btn_offline_help = ctk.CTkButton(
             voice_card,
             text="➕ Add / Download More Offline Voices (Windows Settings)...",
@@ -195,25 +221,26 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             border_color="#2D4566",
             text_color="#58A6FF",
             font=ctk.CTkFont(size=12),
-            height=28,
+            height=26,
             command=self._on_open_windows_speech_settings
         )
         btn_offline_help.pack(anchor="w", padx=14, pady=(0, 8))
 
-        # Speed / Rate slider card
-        rate_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        rate_card.pack(fill="x", padx=10, pady=6)
+        # Modulation card (Speed + Pitch)
+        mod_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
+        mod_card.pack(fill="x", padx=10, pady=5)
 
-        rate_header = ctk.CTkFrame(rate_card, fg_color="transparent")
-        rate_header.pack(fill="x", padx=14, pady=(6, 2))
-        ctk.CTkLabel(rate_header, text="Speech Speed / Pace:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(side="left")
+        # Speed slider row
+        speed_header = ctk.CTkFrame(mod_card, fg_color="transparent")
+        speed_header.pack(fill="x", padx=14, pady=(6, 2))
+        ctk.CTkLabel(speed_header, text="Speech Speed / Pace:", font=ctk.CTkFont(size=13, weight="bold"), text_color="#E6EDF3").pack(side="left")
         
         curr_mult = self.cfg.get("rate_mult", 1.0)
-        self.rate_val_lbl = ctk.CTkLabel(rate_header, text=f"{curr_mult:.1f}x", text_color="#00D2FF", font=ctk.CTkFont(weight="bold"))
+        self.rate_val_lbl = ctk.CTkLabel(speed_header, text=f"{curr_mult:.1f}x", text_color="#00D2FF", font=ctk.CTkFont(weight="bold"))
         self.rate_val_lbl.pack(side="right")
 
         self.rate_slider = ctk.CTkSlider(
-            rate_card,
+            mod_card,
             from_=0.6,
             to=1.6,
             number_of_steps=10,
@@ -223,13 +250,51 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             button_hover_color="#33DCFF"
         )
         self.rate_slider.set(curr_mult)
-        self.rate_slider.pack(fill="x", padx=14, pady=(2, 10))
+        self.rate_slider.pack(fill="x", padx=14, pady=(0, 4))
+
+        # Pitch slider row
+        pitch_header = ctk.CTkFrame(mod_card, fg_color="transparent")
+        pitch_header.pack(fill="x", padx=14, pady=(4, 2))
+        ctk.CTkLabel(pitch_header, text="Voice Pitch / Tone Modulation:", font=ctk.CTkFont(size=13, weight="bold"), text_color="#E6EDF3").pack(side="left")
+
+        curr_pitch = self.cfg.get("pitch_hz", 0)
+        pitch_txt = f"{curr_pitch:+d}Hz (Default)" if curr_pitch == 0 else f"{curr_pitch:+d}Hz"
+        self.pitch_val_lbl = ctk.CTkLabel(pitch_header, text=pitch_txt, text_color="#00D2FF", font=ctk.CTkFont(weight="bold"))
+        self.pitch_val_lbl.pack(side="right")
+
+        self.pitch_slider = ctk.CTkSlider(
+            mod_card,
+            from_=-40,
+            to=40,
+            number_of_steps=16,
+            command=self._on_pitch_slider,
+            progress_color="#00D2FF",
+            button_color="#00D2FF",
+            button_hover_color="#33DCFF"
+        )
+        self.pitch_slider.set(curr_pitch)
+        self.pitch_slider.pack(fill="x", padx=14, pady=(0, 4))
+
+        # Reset defaults button
+        btn_reset = ctk.CTkButton(
+            mod_card,
+            text="↺ Reset Speed & Pitch to Defaults (1.0x, +0Hz)",
+            fg_color="#18263A",
+            hover_color="#223652",
+            border_width=1,
+            border_color="#2D4566",
+            text_color="#8B949E",
+            font=ctk.CTkFont(size=11),
+            height=24,
+            command=self._on_reset_speech_modulation
+        )
+        btn_reset.pack(anchor="w", padx=14, pady=(2, 8))
 
         # Live Test Card
         test_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        test_card.pack(fill="both", expand=True, padx=10, pady=6)
+        test_card.pack(fill="both", expand=True, padx=10, pady=5)
 
-        ctk.CTkLabel(test_card, text="Preview & Test Voice:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(anchor="w", padx=14, pady=(6, 4))
+        ctk.CTkLabel(test_card, text="Preview & Test Voice:", font=ctk.CTkFont(size=13, weight="bold"), text_color="#E6EDF3").pack(anchor="w", padx=14, pady=(6, 4))
 
         self.test_entry = ctk.CTkEntry(
             test_card,
@@ -238,7 +303,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             border_color="#00D2FF"
         )
         self.test_entry.insert(0, "Hello Nick! FluentVoice Pro is active with single-stream collision locking.")
-        self.test_entry.pack(fill="x", padx=14, pady=(0, 8))
+        self.test_entry.pack(fill="x", padx=14, pady=(0, 6))
 
         btn_row = ctk.CTkFrame(test_card, fg_color="transparent")
         btn_row.pack(fill="x", padx=14, pady=(0, 4))
@@ -265,7 +330,6 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         self.btn_stop.pack(side="right", fill="x", expand=True, padx=(6, 0))
 
-        # Live feedback status label
         self.test_status_lbl = ctk.CTkLabel(
             test_card,
             text="Ready • Click Speak Test Text to preview voice",
@@ -330,7 +394,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         guide = (
             "• 1-Click System Tray: Left-click (or double-click) the cyan speaker icon next to the clock to toggle speak/stop.\n"
             "• Right-Click System Tray: Instant context menu for all voices, auto-read toggle, notifications, and settings.\n"
-            "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center.\n"
+            "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center (brings existing window to front).\n"
             "• Windows Explorer: Right-click any folder or desktop background -> 'FluentVoice Pro (Read Aloud)'.\n"
             "• Instant Toggle: Triggering speech while audio is playing immediately halts playback (zero collisions)."
         )
@@ -376,28 +440,41 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ctk.CTkLabel(repos_frame, text=proj_desc, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 8))
 
         btn_box = ctk.CTkFrame(card, fg_color="transparent")
-        btn_box.pack(fill="x", padx=16, pady=(14, 10))
+        btn_box.pack(fill="x", padx=16, pady=(12, 10))
 
         btn_donate = ctk.CTkButton(
             btn_box,
-            text="💖 Donate / Support via PayPal",
+            text="💖 Donate (PayPal)",
             fg_color="#0070BA",
             hover_color="#005EA6",
             font=ctk.CTkFont(size=13, weight="bold"),
             command=lambda: webbrowser.open(PAYPAL_DONATE_URL)
         )
-        btn_donate.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        btn_donate.pack(side="left", fill="x", expand=True, padx=(0, 4))
+
+        btn_feedback = ctk.CTkButton(
+            btn_box,
+            text="🐛 Report Bug / Feedback",
+            fg_color="#18263A",
+            hover_color="#223652",
+            border_width=1,
+            border_color="#2D4566",
+            text_color="#58A6FF",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=lambda: webbrowser.open(GITHUB_ISSUES_URL)
+        )
+        btn_feedback.pack(side="left", fill="x", expand=True, padx=4)
 
         btn_repo = ctk.CTkButton(
             btn_box,
-            text="🌐 GitHub Repository",
+            text="🌐 GitHub Repo",
             fg_color="#21262D",
             hover_color="#30363D",
-            text_color="#58A6FF",
+            text_color="#E6EDF3",
             font=ctk.CTkFont(size=13, weight="bold"),
             command=lambda: webbrowser.open(GITHUB_REPO_URL)
         )
-        btn_repo.pack(side="right", fill="x", expand=True, padx=(6, 0))
+        btn_repo.pack(side="right", fill="x", expand=True, padx=(4, 0))
 
     def _build_footer(self):
         footer = ctk.CTkFrame(self, fg_color="transparent")
@@ -411,6 +488,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         status_lbl.pack(side="left")
 
+        self.autosave_lbl = ctk.CTkLabel(
+            footer,
+            text="✓ All settings auto-saved",
+            text_color="#8B949E",
+            font=ctk.CTkFont(size=12)
+        )
+        self.autosave_lbl.pack(side="left", padx=(16, 0))
+
         btn_close = ctk.CTkButton(
             footer,
             text="Close to Tray",
@@ -421,6 +506,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         btn_close.pack(side="right")
 
+    def _trigger_autosave_indicator(self):
+        self.autosave_lbl.configure(text="✓ Settings Saved", text_color="#00D2FF")
+        self.after(1600, lambda: self.autosave_lbl.configure(text="✓ All settings auto-saved", text_color="#8B949E"))
+
     def _on_voice_changed(self, choice):
         vcode = self.voice_map.get(choice, "en-US-AndrewMultilingualNeural")
         self.cfg["voice"] = vcode
@@ -429,6 +518,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         else:
             self.cfg["engine"] = "neural"
         config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
         core.trigger_notification("FluentVoice Pro", f"🗣️ Voice selected: {choice}")
         self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
@@ -439,21 +529,44 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.rate_val_lbl.configure(text=f"{val:.1f}x")
         self.cfg["rate_mult"] = round(val, 1)
         config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+
+    def _on_pitch_slider(self, val):
+        pitch_int = int(round(val))
+        txt = f"{pitch_int:+d}Hz (Default)" if pitch_int == 0 else f"{pitch_int:+d}Hz"
+        self.pitch_val_lbl.configure(text=txt)
+        self.cfg["pitch_hz"] = pitch_int
+        config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+
+    def _on_reset_speech_modulation(self):
+        self.rate_slider.set(1.0)
+        self.rate_val_lbl.configure(text="1.0x")
+        self.pitch_slider.set(0)
+        self.pitch_val_lbl.configure(text="+0Hz (Default)")
+        self.cfg["rate_mult"] = 1.0
+        self.cfg["pitch_hz"] = 0
+        config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+        self.test_status_lbl.configure(text="Speed & pitch reset to defaults (1.0x, +0Hz)", text_color="#8B949E")
 
     def _on_toggle_autoread(self):
         enabled = self.switch_autoread.get() == 1
         self.cfg["auto_read_copy"] = enabled
         config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
         state_str = "Enabled" if enabled else "Disabled"
         core.trigger_notification("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state_str}")
 
     def _on_toggle_markdown(self):
         self.cfg["clean_markdown"] = self.switch_markdown.get() == 1
         config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
 
     def _on_toggle_notifications(self):
         self.cfg["show_notifications"] = self.switch_notify.get() == 1
         config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
 
     def _on_test_speak(self):
         txt = self.test_entry.get().strip()
@@ -481,6 +594,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.test_status_lbl.configure(text="⏹️ Speech stopped immediately", text_color="#8B949E")
 
 def open_settings_window(tab="Voice & Speech"):
+    if focus_existing_settings_window():
+        return
     app = FluentVoiceSettingsWindow(initial_tab=tab)
     app.mainloop()
 

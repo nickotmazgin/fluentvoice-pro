@@ -14,7 +14,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.3.0** — Windows Toast Notifications, dynamic offline voice discovery, world languages (Spanish, French, German, Italian, Arabic, Japanese), Dependabot security, and Explorer cache refresh. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.3.1** — Single-instance window focusing, Voice Pitch modulation, instant auto-save indicators, bug reporting integration, and multi-resolution icons. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Productivity · Accessibility · Open Source · Dependabot Verified
 

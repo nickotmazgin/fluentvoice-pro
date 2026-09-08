@@ -37,6 +37,7 @@ MUTEX_NAME = "Local\\NickOtmazgin_FluentVoicePro_SingleInstance_Mutex"
 
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
+GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
 
 def enforce_single_instance():
     kernel32 = ctypes.windll.kernel32
@@ -95,6 +96,12 @@ class FluentVoiceTrayApp:
         core.stop_all_playback()
 
     def on_open_settings(self, icon=None, item=None):
+        try:
+            from .gui import focus_existing_settings_window
+            if focus_existing_settings_window():
+                return
+        except Exception:
+            pass
         pythonw = Path(sys.executable).parent / "pythonw.exe"
         if not pythonw.exists():
             pythonw = Path(sys.executable)
@@ -102,6 +109,12 @@ class FluentVoiceTrayApp:
         subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--gui"], cwd=str(base_dir))
 
     def on_open_about(self, icon=None, item=None):
+        try:
+            from .gui import focus_existing_settings_window
+            if focus_existing_settings_window():
+                return
+        except Exception:
+            pass
         pythonw = Path(sys.executable).parent / "pythonw.exe"
         if not pythonw.exists():
             pythonw = Path(sys.executable)
@@ -113,6 +126,9 @@ class FluentVoiceTrayApp:
 
     def on_open_github(self, icon=None, item=None):
         webbrowser.open(GITHUB_REPO_URL)
+
+    def on_open_feedback(self, icon=None, item=None):
+        webbrowser.open(GITHUB_ISSUES_URL)
 
     def set_voice(self, voice_name, display_label=""):
         def _inner(icon, item):
@@ -230,6 +246,7 @@ class FluentVoiceTrayApp:
             item("ℹ️ About & Credits (Nick Otmazgin)...", self.on_open_about),
             item("💖 Donate & Support (PayPal)...", self.on_open_paypal),
             item("🌐 GitHub Repository & Docs...", self.on_open_github),
+            item("🐛 Report an Issue / Feedback...", self.on_open_feedback),
             pystray.Menu.SEPARATOR,
             item("❌ Exit FluentVoice Pro", self.on_exit)
         )

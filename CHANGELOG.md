@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-09-08
+
+### Added
+- **Single-Instance Settings Window Focus (Duplicate Stacking Prevention)**:
+  - Fixed duplicate window bug: clicking the desktop icon or tray menu when Settings is already open now restores and brings the existing window to the foreground instantly with zero duplicate windows.
+- **Voice Pitch & Tone Modulation Slider (`-40Hz` to `+40Hz`)**:
+  - Fine-tune vocal pitch between deeper and higher tones in real-time.
+  - Added a 1-click **↺ Reset Speed & Pitch to Defaults** button (Speed: 1.0x, Pitch: +0Hz).
+- **Instant Auto-Save Visual Indicator**:
+  - Live feedback in the Settings footer: shows `✓ Settings Saved` on any change, confirming immediate persistence to `config.json`.
+- **Integrated Bug Reporting & Feedback Channels**:
+  - Added direct **🐛 Report Bug / Feedback** button in the Settings window and **🐛 Report an Issue / Feedback...** in the tray menu.
+  - Added GitHub Issue templates (`bug_report.md`, `feature_request.md`, `config.yml`).
+- **Multi-Resolution Icon Layers (16px to 256px)**:
+  - Re-encoded `icon.ico` and `tray_icon.ico` with full 8-layer embedded resolutions (16, 20, 24, 32, 48, 64, 128, 256) for crisp rendering across all Windows DPI scaling factors.
+
+---
+
 ## [1.3.0] - 2026-09-08
 
 ### Added
