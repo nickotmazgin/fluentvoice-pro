@@ -35,6 +35,18 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 
+# Credentials & Security
+*.env
+*.env.*
+*.key
+*.pem
+*.pfx
+*.cert
+*.crt
+*.token
+credentials.json
+client_secret*.json
+
 # Audio & Cache Files
 *.mp3
 *.wav

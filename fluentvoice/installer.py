@@ -25,40 +25,50 @@ def install_all():
     shell = win32com.client.Dispatch("WScript.Shell")
     desktop = Path.home() / "Desktop"
 
-    # Clean old obsolete shortcuts
+    # Clean old obsolete shortcuts from Desktop
     old_desktop_shortcuts = [
         desktop / "Read Aloud.lnk",
-        desktop / "Natural Voice Reader.lnk"
+        desktop / "Natural Voice Reader.lnk",
+        desktop / "FluentVoice Settings.lnk"
     ]
     for old_s in old_desktop_shortcuts:
         if old_s.exists():
             try:
                 old_s.unlink()
-                print(f"[CLEAN] Removed outdated shortcut: {old_s.name}")
+                print(f"[CLEAN] Removed outdated desktop shortcut: {old_s.name}")
             except Exception:
                 pass
 
-    # 1. Main Desktop Shortcut: "FluentVoice Pro.lnk" (1-Click Read / Stop)
+    # 1. Single Official Desktop Shortcut: "FluentVoice Pro.lnk" (Opens Settings & Control Center)
     desktop_lnk = desktop / "FluentVoice Pro.lnk"
     sc = shell.CreateShortcut(str(desktop_lnk))
     sc.TargetPath = str(pythonw)
-    sc.Arguments = '-m fluentvoice.cli --toggle'
+    sc.Arguments = '-m fluentvoice.cli --gui'
     sc.WorkingDirectory = str(base_dir)
     sc.IconLocation = f"{ico_path},0"
-    sc.Description = "FluentVoice Pro (1-Click Speak / Stop)"
+    sc.Description = "FluentVoice Pro - Settings & Voice Control Center"
     sc.Save()
-    print(f"[OK] Desktop Shortcut: {desktop_lnk}")
+    print(f"[OK] Single Unified Desktop Shortcut: {desktop_lnk}")
 
-    # 2. Settings Desktop Shortcut: "FluentVoice Settings.lnk" (Open Control Center)
-    settings_lnk = desktop / "FluentVoice Settings.lnk"
-    sc_set = shell.CreateShortcut(str(settings_lnk))
-    sc_set.TargetPath = str(pythonw)
-    sc_set.Arguments = '-m fluentvoice.cli --gui'
-    sc_set.WorkingDirectory = str(base_dir)
-    sc_set.IconLocation = f"{ico_path},0"
-    sc_set.Description = "FluentVoice Pro Control Center & Settings"
-    sc_set.Save()
-    print(f"[OK] Settings Shortcut: {settings_lnk}")
+    # 2. Taskbar Quick-Toggle Shortcut: "FluentVoice Pro.lnk" (1-Click Read / Stop)
+    tb = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"))
+    if tb.exists():
+        # Clean any old Read Aloud
+        old_tb = tb / "Read Aloud.lnk"
+        if old_tb.exists():
+            try:
+                old_tb.unlink()
+            except Exception:
+                pass
+        tb_lnk = tb / "FluentVoice Pro.lnk"
+        sc_tb = shell.CreateShortcut(str(tb_lnk))
+        sc_tb.TargetPath = str(pythonw)
+        sc_tb.Arguments = '-m fluentvoice.cli --toggle'
+        sc_tb.WorkingDirectory = str(base_dir)
+        sc_tb.IconLocation = f"{ico_path},0"
+        sc_tb.Description = "FluentVoice Pro (1-Click Speak / Stop)"
+        sc_tb.Save()
+        print(f"[OK] Taskbar Quick-Toggle Shortcut: {tb_lnk}")
 
     # 3. Startup Silent Launcher Shortcut
     startup = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"))
@@ -78,7 +88,11 @@ def install_all():
                 pass
 
     vbs_path = base_dir / "start_fluentvoice_silent.vbs"
-    vbs_content = f'Set WshShell = CreateObject("WScript.Shell")\r\nWshShell.Run """{pythonw}"" -m fluentvoice.tray", 0, False\r\n'
+    vbs_content = (
+        f'Set WshShell = CreateObject("WScript.Shell")\r\n'
+        f'WshShell.CurrentDirectory = "{base_dir}"\r\n'
+        f'WshShell.Run """{pythonw}"" -m fluentvoice.tray", 0, False\r\n'
+    )
     with open(vbs_path, "w", encoding="utf-8") as f:
         f.write(vbs_content)
 

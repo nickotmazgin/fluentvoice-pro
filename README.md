@@ -14,7 +14,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.1.0** — Control Center GUI, crisp high-contrast tray icons, dedicated desktop shortcuts, and speed controls. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.2.0** — Immersive dark menus, single unified desktop launcher, Hebrew & British HD voices, dark title bar, and instant tray GUI launch. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Productivity · Accessibility · Open Source
 
@@ -23,12 +23,12 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 ## Visual Preview
 
 <div align="center">
-  <img src="assets/settings_preview.png" alt="FluentVoice Pro Settings & Control Center" width="680" />
-  <p><em>FluentVoice Pro v1.1.0 — Voice & Speech Control Center on Windows 11</em></p>
+  <img src="https://raw.githubusercontent.com/nickotmazgin/fluentvoice-pro/main/assets/settings_preview.png" alt="FluentVoice Pro Settings & Control Center" width="680" />
+  <p><em>FluentVoice Pro v1.2.0 — Voice & Speech Control Center on Windows 11</em></p>
 </div>
 
 <div align="center">
-  <img src="assets/about_preview.png" alt="About & Developer Credits" width="680" />
+  <img src="https://raw.githubusercontent.com/nickotmazgin/fluentvoice-pro/main/assets/about_preview.png" alt="About & Developer Credits" width="680" />
   <p><em>FluentVoice Pro — Maintainer Profile, Open-Source Portfolio & Support</em></p>
 </div>
 
@@ -40,22 +40,20 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 - **Not a browser extension:** It is not restricted to browser tabs. It works everywhere across Windows: Cursor, VS Code, Slack, PDF readers, Notepad, Office, File Explorer, and terminals.
 - **Not a bulky screen hog:** It runs quietly as an ultra-lean (<35 MB RAM) background daemon in your notification area next to the clock.
-- **Full Graphical Control Center:** When you want to tweak settings, adjust voice speed, or test voices, double-click the **FluentVoice Settings** desktop icon or right-click the tray to open the modern dark-themed Fluent Control Center.
+- **Full Graphical Control Center:** When you want to tweak settings, adjust voice speed, or test voices, double-click the **FluentVoice Pro** desktop icon or right-click the tray to open the modern dark-themed Fluent Control Center.
 
 ---
 
 ## Highlights & Features
 
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
-- 🎛️ **Modern Fluent UI Control Center:** Built with CustomTkinter in dark mode. Tweak voices, adjust speech speed/pace sliders, test phrases in real time, and configure automation.
-- 🗣️ **Ultra HD Neural Voices:** Native support for high-definition Microsoft Neural voices (`Andrew`, `Ava`, `Brian`, `Emma`) with lifelike inflections and natural pauses.
+- 🎛️ **Modern Fluent UI Control Center:** Built with CustomTkinter in dark mode with native dark title bars. Tweak voices, adjust speech speed/pace sliders, test phrases in real time, and configure automation.
+- 🗣️ **Ultra HD Multilingual Voices (English & Hebrew):** Studio-grade Microsoft Neural voices (`Andrew`, `Ava`, `Brian`, `Emma`, `Jenny`, `Guy`, `Ryan`, `Sonia`, `Avri`, `Hila`) with lifelike inflections and natural pauses.
 - ⚡ **Zero-Latency Offline Fallback:** Automatic failover to local Windows OneCore/SAPI5 voices (`Zira`, `Hazel`) when offline or when instant 0ms response is preferred.
 - 📋 **Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an 0.8s stability buffer.
 - 🧹 **AI & Markdown Formatting Filter:** Automatically cleans code blocks (```...```), inline backticks, markdown links, headers, and asterisks so AI agent replies are read out naturally.
-- 🎨 **Redesigned Ultra-Crisp Tray Icon:** Transparent-background high-contrast neon cyan speaker glyph that never wrinkles or clamps in the Windows 11 taskbar or overflow flyout.
-- 🖥️ **Dual Desktop Shortcuts:**
-  - **`FluentVoice Pro`**: 1-Click Speak / Stop toggle.
-  - **`FluentVoice Settings`**: Instant access to the Control Center.
+- 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus (no khaki/beige hover marks).
+- 🖥️ **Single Unified Desktop Shortcut:** Clean `FluentVoice Pro` desktop launcher opens the Control Center and manages background state seamlessly.
 - 🚀 **Silent Headless Boot:** Auto-starts silently on Windows login through a background VBS launcher—zero flashing terminal windows.
 
 ---

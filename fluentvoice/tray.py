@@ -8,6 +8,7 @@ import time
 import json
 import threading
 import ctypes
+import subprocess
 import webbrowser
 from pathlib import Path
 from PIL import Image
@@ -24,6 +25,23 @@ MUTEX_NAME = "Local\\NickOtmazgin_FluentVoicePro_SingleInstance_Mutex"
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 
+def enable_win32_dark_mode():
+    """Forces Windows 11 / Windows 10 1809+ dark theme on Win32 menus and popups.
+    Eliminates khaki/beige/light-grey highlight bars in context menus.
+    """
+    try:
+        uxtheme = ctypes.windll.uxtheme
+        # Ordinal 135: SetPreferredAppMode (2 = ForceDark)
+        set_preferred_app_mode = uxtheme[135]
+        set_preferred_app_mode.argtypes = [ctypes.c_int]
+        set_preferred_app_mode.restype = ctypes.c_int
+        set_preferred_app_mode(2)
+        # Ordinal 136: FlushMenuThemes
+        flush_menu_themes = uxtheme[136]
+        flush_menu_themes()
+    except Exception:
+        pass
+
 def enforce_single_instance():
     kernel32 = ctypes.windll.kernel32
     mutex_handle = kernel32.CreateMutexW(None, True, MUTEX_NAME)
@@ -35,15 +53,12 @@ def enforce_single_instance():
     return mutex_handle
 
 def get_tray_icon_path() -> Path:
-    # Look for dedicated high-contrast crisp tray icon first
     pkg_assets = Path(__file__).parent.parent / "assets" / "tray_icon.png"
     if pkg_assets.exists():
         return pkg_assets
-    # Fallback to general icon
     app_icon = Path(__file__).parent.parent / "assets" / "icon.png"
     if app_icon.exists():
         return app_icon
-    # Fallback to antigravity speaker icon
     alt = Path.home() / ".antigravity" / "tts_speaker.png"
     if alt.exists():
         return alt
@@ -54,6 +69,7 @@ def get_tray_icon_path() -> Path:
 
 class FluentVoiceTrayApp:
     def __init__(self):
+        enable_win32_dark_mode()
         self.mutex_handle = enforce_single_instance()
         self.cfg = load_config()
         self.auto_read_enabled = self.cfg.get("auto_read_copy", False)
@@ -71,16 +87,18 @@ class FluentVoiceTrayApp:
         core.stop_all_playback()
 
     def on_open_settings(self, icon=None, item=None):
-        def _launch():
-            from .gui import open_settings_window
-            open_settings_window(tab="Voice & Speech")
-        threading.Thread(target=_launch, daemon=True).start()
+        pythonw = Path(sys.executable).parent / "pythonw.exe"
+        if not pythonw.exists():
+            pythonw = Path(sys.executable)
+        base_dir = Path(__file__).parent.parent.resolve()
+        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--gui"], cwd=str(base_dir))
 
     def on_open_about(self, icon=None, item=None):
-        def _launch():
-            from .gui import open_settings_window
-            open_settings_window(tab="About & Developer")
-        threading.Thread(target=_launch, daemon=True).start()
+        pythonw = Path(sys.executable).parent / "pythonw.exe"
+        if not pythonw.exists():
+            pythonw = Path(sys.executable)
+        base_dir = Path(__file__).parent.parent.resolve()
+        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--about"], cwd=str(base_dir))
 
     def on_open_paypal(self, icon=None, item=None):
         webbrowser.open(PAYPAL_DONATE_URL)
@@ -145,13 +163,21 @@ class FluentVoiceTrayApp:
             pystray.Menu.SEPARATOR,
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
             pystray.Menu.SEPARATOR,
-            item("🗣 Neural Voices (Ultra HD)", pystray.Menu(
+            item("🗣 Neural Voices (English HD)", pystray.Menu(
                 item("Andrew Multilingual (Natural Male)", self.set_voice("en-US-AndrewMultilingualNeural"), checked=self.is_voice_checked("en-US-AndrewMultilingualNeural")),
                 item("Ava Multilingual (Natural Female)", self.set_voice("en-US-AvaMultilingualNeural"), checked=self.is_voice_checked("en-US-AvaMultilingualNeural")),
                 item("Brian Multilingual (Natural Casual)", self.set_voice("en-US-BrianMultilingualNeural"), checked=self.is_voice_checked("en-US-BrianMultilingualNeural")),
                 item("Emma Multilingual (Natural Expressive)", self.set_voice("en-US-EmmaMultilingualNeural"), checked=self.is_voice_checked("en-US-EmmaMultilingualNeural")),
+                item("Jenny (Studio Professional Female)", self.set_voice("en-US-JennyNeural"), checked=self.is_voice_checked("en-US-JennyNeural")),
+                item("Guy (Studio Professional Male)", self.set_voice("en-US-GuyNeural"), checked=self.is_voice_checked("en-US-GuyNeural")),
+                item("Ryan (British Natural Male)", self.set_voice("en-GB-RyanNeural"), checked=self.is_voice_checked("en-GB-RyanNeural")),
+                item("Sonia (British Natural Female)", self.set_voice("en-GB-SoniaNeural"), checked=self.is_voice_checked("en-GB-SoniaNeural")),
             )),
-            item("💻 Local Windows Voices (Offline)", pystray.Menu(
+            item("🇮🇱 Neural Voices (Hebrew HD)", pystray.Menu(
+                item("Avri (Hebrew Natural Male)", self.set_voice("he-IL-AvriNeural"), checked=self.is_voice_checked("he-IL-AvriNeural")),
+                item("Hila (Hebrew Natural Female)", self.set_voice("he-IL-HilaNeural"), checked=self.is_voice_checked("he-IL-HilaNeural")),
+            )),
+            item("💻 Local Windows Voices (Offline 0ms)", pystray.Menu(
                 item("Windows Zira (English US)", self.set_voice("sapi-zira"), checked=self.is_voice_checked("sapi-zira")),
                 item("Windows Hazel (English UK)", self.set_voice("sapi-hazel"), checked=self.is_voice_checked("sapi-hazel")),
             )),

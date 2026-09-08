@@ -4,6 +4,7 @@ Author: Nick Otmazgin
 
 import sys
 import os
+import ctypes
 import webbrowser
 import threading
 from pathlib import Path
@@ -22,6 +23,12 @@ VOICE_MAP = {
     "Ava Multilingual (HD Female)": "en-US-AvaMultilingualNeural",
     "Brian Multilingual (HD Casual)": "en-US-BrianMultilingualNeural",
     "Emma Multilingual (HD Expressive)": "en-US-EmmaMultilingualNeural",
+    "Jenny (HD Studio Female)": "en-US-JennyNeural",
+    "Guy (HD Studio Male)": "en-US-GuyNeural",
+    "Ryan (HD British Male)": "en-GB-RyanNeural",
+    "Sonia (HD British Female)": "en-GB-SoniaNeural",
+    "Avri (HD Hebrew Male)": "he-IL-AvriNeural",
+    "Hila (HD Hebrew Female)": "he-IL-HilaNeural",
     "Windows Zira (Offline English US)": "sapi-zira",
     "Windows Hazel (Offline English UK)": "sapi-hazel"
 }
@@ -37,8 +44,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("FluentVoice Pro - Settings & Control Center")
-        self.geometry("700x580")
-        self.minsize(640, 520)
+        self.geometry("720x600")
+        self.minsize(660, 540)
 
         # Center on screen
         self.eval('tk::PlaceWindow . center')
@@ -54,11 +61,42 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             except Exception:
                 pass
 
+        # Apply Windows 11 Immersive Dark Titlebar (Slate #101622)
+        self._apply_dark_titlebar()
+
         self.cfg = config.load_config()
 
         self._build_header()
         self._build_tabs(initial_tab)
         self._build_footer()
+
+    def _apply_dark_titlebar(self):
+        """Forces Windows 11 dark slate caption and removes jarring bright green accent."""
+        try:
+            self.update_idletasks()
+            hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
+            if not hwnd:
+                hwnd = self.winfo_id()
+            
+            # DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            dark_mode = ctypes.c_int(1)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, 20, ctypes.byref(dark_mode), ctypes.sizeof(dark_mode)
+            )
+
+            # DWMWA_CAPTION_COLOR = 35 -> BGR for #101622 (0x00221610)
+            caption_color = ctypes.c_uint(0x00221610)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, 35, ctypes.byref(caption_color), ctypes.sizeof(caption_color)
+            )
+
+            # DWMWA_TEXT_COLOR = 36 -> White (0x00FFFFFF)
+            text_color = ctypes.c_uint(0x00FFFFFF)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, 36, ctypes.byref(text_color), ctypes.sizeof(text_color)
+            )
+        except Exception:
+            pass
 
     def _build_header(self):
         header_frame = ctk.CTkFrame(self, fg_color="#101622", corner_radius=12, border_width=1, border_color="#00D2FF")
@@ -74,14 +112,19 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         badge_lbl = ctk.CTkLabel(
             header_frame,
-            text="v1.1.0 • Windows 11 Suite • By Nick Otmazgin",
+            text="v1.2.0 • Windows 11 Suite • By Nick Otmazgin",
             font=ctk.CTkFont(family="Segoe UI", size=13),
             text_color="#8B949E"
         )
         badge_lbl.pack(side="right", padx=16, pady=10)
 
     def _build_tabs(self, initial_tab):
-        self.tabview = ctk.CTkTabview(self, fg_color="#141B28", segmented_button_selected_color="#00D2FF", segmented_button_selected_hover_color="#00B4DC")
+        self.tabview = ctk.CTkTabview(
+            self,
+            fg_color="#141B28",
+            segmented_button_selected_color="#00D2FF",
+            segmented_button_selected_hover_color="#00B4DC"
+        )
         self.tabview.pack(fill="both", expand=True, padx=16, pady=8)
 
         self.tab_speech = self.tabview.add("Voice & Speech")
@@ -102,7 +145,12 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         voice_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
         voice_card.pack(fill="x", padx=10, pady=8)
 
-        ctk.CTkLabel(voice_card, text="Active Voice Profile:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(anchor="w", padx=14, pady=(10, 4))
+        ctk.CTkLabel(
+            voice_card,
+            text="Active Voice Profile (English, Hebrew & Local Offline):",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color="#E6EDF3"
+        ).pack(anchor="w", padx=14, pady=(10, 4))
 
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
         curr_label = REVERSE_VOICE_MAP.get(curr_voice, "Andrew Multilingual (HD Male)")
@@ -128,11 +176,21 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         rate_header = ctk.CTkFrame(rate_card, fg_color="transparent")
         rate_header.pack(fill="x", padx=14, pady=(8, 2))
         ctk.CTkLabel(rate_header, text="Speech Speed / Pace:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(side="left")
-        self.rate_val_lbl = ctk.CTkLabel(rate_header, text="Normal (1.0x)", text_color="#00D2FF")
+        
+        curr_mult = self.cfg.get("rate_mult", 1.0)
+        self.rate_val_lbl = ctk.CTkLabel(rate_header, text=f"{curr_mult:.1f}x", text_color="#00D2FF", font=ctk.CTkFont(weight="bold"))
         self.rate_val_lbl.pack(side="right")
 
-        self.rate_slider = ctk.CTkSlider(rate_card, from_=0.6, to=1.6, number_of_steps=10, command=self._on_rate_slider, progress_color="#00D2FF", button_color="#00D2FF")
-        self.rate_slider.set(1.0)
+        self.rate_slider = ctk.CTkSlider(
+            rate_card,
+            from_=0.6,
+            to=1.6,
+            number_of_steps=10,
+            command=self._on_rate_slider,
+            progress_color="#00D2FF",
+            button_color="#00D2FF"
+        )
+        self.rate_slider.set(curr_mult)
         self.rate_slider.pack(fill="x", padx=14, pady=(4, 12))
 
         # Live Test Card
@@ -218,7 +276,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         guide = (
             "• 1-Click System Tray: Left-click the cyan speaker icon next to the clock.\n"
             "• Desktop Shortcut: Double-click 'FluentVoice Pro' on your desktop.\n"
-            "• Windows Explorer: Right-click any folder or desktop background -> '🔊 FluentVoice Pro'.\n"
+            "• Windows Explorer: Right-click any folder or desktop background -> 'FluentVoice Pro (Read Aloud)'.\n"
             "• Instant Toggle: Clicking while audio is playing immediately halts playback."
         )
         ctk.CTkLabel(info_box, text=guide, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 10))
@@ -292,7 +350,12 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(fill="x", padx=16, pady=(4, 14))
 
-        status_lbl = ctk.CTkLabel(footer, text="Single-Stream Engine Active • Zero Collisions", text_color="#3FB950", font=ctk.CTkFont(size=12, weight="bold"))
+        status_lbl = ctk.CTkLabel(
+            footer,
+            text="Single-Stream Engine Active • Zero Collisions",
+            text_color="#3FB950",
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
         status_lbl.pack(side="left")
 
         btn_close = ctk.CTkButton(

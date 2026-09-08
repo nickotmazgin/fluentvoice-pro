@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-08
+
+### Added
+- **Native Windows 11 Dark Mode Menus (`uxtheme[135]` ForceDark)**:
+  - Enabled immersive dark mode across all Win32 context menus and popups.
+  - Replaced the low-contrast khaki/beige hover highlight with clean dark slate backgrounds and crisp high-contrast selection.
+- **Subprocess Settings & About Dispatcher**:
+  - Tray menu options now spawn the Settings GUI and Developer Profile via an isolated `subprocess.Popen` call.
+  - Eliminates Tkinter thread lockups and guarantees the Control Center opens instantly on top.
+- **Single Unified Desktop Icon**:
+  - Consolidated desktop shortcuts into a single official **`FluentVoice Pro`** shortcut.
+  - Double-clicking opens the full Voice & Speech Control Center.
+- **Expanded Multilingual Voice Library (English, Hebrew & Offline)**:
+  - Added studio-grade English neural voices (`Jenny`, `Guy`, `Ryan`, `Sonia`).
+  - Added native Hebrew neural voices (`Avri`, `Hila`) for fluent Hebrew speech synthesis.
+  - Preserved instant 0ms offline local Windows voices (`Zira`, `Hazel`) for network fail-safe operation.
+- **Windows 11 Immersive Dark Title Bar**:
+  - Injected `DWMWA_USE_IMMERSIVE_DARK_MODE` and caption color (`#101622`) to eliminate the bright green system title bar accent.
+- **Real-Time Speech Speed Synchronization**:
+  - GUI speed slider dynamically calculates `rate="+X%"` / `rate="-X%"` and binds directly into the Edge TTS engine.
+
+---
+
 ## [1.1.0] - 2026-09-08
 
 ### Added
