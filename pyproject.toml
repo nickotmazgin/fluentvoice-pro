@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fluentvoice-pro"
+version = "1.0.0"
+authors = [
+  { name="Nick Otmazgin", email="nickotmazgin.dev@gmail.com" },
+]
+description = "Modern single-stream Text-to-Speech & Natural Voice Reader for Windows 11/10"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Adaptive Technologies",
+]
+dependencies = [
+    "edge-tts>=7.0.0",
+    "pystray>=0.19.5",
+    "Pillow>=10.0.0",
+    "pywin32>=306",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/nickotmazgin/fluentvoice-pro"
+"Bug Tracker" = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
+"Discussions" = "https://github.com/nickotmazgin/fluentvoice-pro/discussions"
+
+[project.scripts]
+fluentvoice = "fluentvoice.cli:main"

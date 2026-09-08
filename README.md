@@ -1,0 +1,149 @@
+# FluentVoice Pro
+
+[![Release](https://img.shields.io/github/v/release/nickotmazgin/fluentvoice-pro?display_name=tag)](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/nickotmazgin/fluentvoice-pro/validate.yml?branch=main&label=CI)](https://github.com/nickotmazgin/fluentvoice-pro/actions)
+[![Downloads](https://img.shields.io/github/downloads/nickotmazgin/fluentvoice-pro/total?label=downloads&color=success)](https://github.com/nickotmazgin/fluentvoice-pro/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform: Windows 11 / 10](https://img.shields.io/badge/Windows-11%20%7C%2010-0078D4?logo=windows&logoColor=white)](#compatibility)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](#compatibility)
+[![Audio: Zero Collision](https://img.shields.io/badge/Audio-Single--Stream%20Guaranteed-00D2FF)](#architecture)
+
+[![Issues](https://img.shields.io/github/issues/nickotmazgin/fluentvoice-pro)](https://github.com/nickotmazgin/fluentvoice-pro/issues)
+[![Discussions](https://img.shields.io/github/discussions/nickotmazgin/fluentvoice-pro?label=discussions&color=8B5CF6)](https://github.com/nickotmazgin/fluentvoice-pro/discussions)
+
+**FluentVoice Pro** is a modern, lightweight Text-to-Speech (TTS) and Natural Voice Reader utility for **Windows 11 and Windows 10**.
+
+Built with a Fluent-styled system tray daemon, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
+
+> **Latest: v1.0.0** — Official initial release. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+
+> **Keywords:** Windows 11 TTS · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · Edge TTS · System Tray · AI Voice · Clipboard Reader · Productivity · Accessibility · Open Source
+
+---
+
+## Highlights
+
+- 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
+- 🗣️ **Ultra HD Neural Voices:** Native support for high-definition Microsoft Neural voices (Andrew, Ava, Brian, Emma) with lifelike inflections and pacing.
+- ⚡ **Zero-Latency Offline Fallback:** Automatic failover to local Windows OneCore/SAPI5 voices (Zira, Hazel) when offline or when instant 0ms response is preferred.
+- 📋 **Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after a stability buffer.
+- 🧹 **AI & Markdown Formatting Filter:** Automatically cleans code blocks (```...```), inline backticks, markdown links, headers, and asterisks so AI co-pilot replies are read out naturally like human speech.
+- 🪟 **Windows 11 Fluent Tray Experience:** Minimalist notification area icon next to the clock with toggle actions, voice switcher, and desktop floating widget support.
+- 🚀 **Silent Headless Boot:** Auto-starts silently on Windows login through a background VBS launcher—zero flashing terminal windows.
+
+---
+
+## Compatibility
+
+| Windows OS | Architecture | Status |
+| :--- | :---: | :---: |
+| **Windows 11 (24H2 / 23H2 / 22H2 / 21H2)** | x64 / ARM64 | **Validated & Recommended** |
+| **Windows 10 (22H2 / 21H2)** | x64 | **Supported** |
+| **Python Runtime** | 3.10 – 3.14+ | **Supported** |
+
+---
+
+## Installation
+
+### Method 1: One-Click PowerShell Installer (Recommended)
+
+Open PowerShell and run:
+
+```powershell
+git clone https://github.com/nickotmazgin/fluentvoice-pro.git
+cd fluentvoice-pro
+.\install.ps1
+```
+
+### Method 2: Manual Setup
+
+```powershell
+pip install -r requirements.txt
+python -m fluentvoice.installer
+```
+
+---
+
+## Quick Start
+
+1. **Copy text anywhere** (Cursor, browser, IDE, PDF, or document).
+2. **Left-Click** the **FluentVoice Pro** tray icon next to the clock (or click the Desktop / Taskbar **Read Aloud** shortcut).
+3. **Listen**: FluentVoice Pro cleans the formatting and reads the text aloud.
+4. **Click again to Stop**: Clicking while speech is playing immediately halts playback (instant toggle).
+5. **Right-Click Tray Menu**: Switch between 4 Ultra HD Neural voices, enable instant offline Windows voices, or toggle **Auto-Read on Copy**.
+
+---
+
+## Architecture & Concurrency Model
+
+```text
+[ Trigger: Click / Shortcut / Auto-Copy ]
+                   │
+                   ▼
+       [ Atomic Generation Token (Gen ID++) ] ────► Invalidate prior downloads
+                   │
+                   ▼
+        [ Instant Hard Audio Purge ] ──────────► Stop MCI alias & SAPI
+                   │
+         ┌─────────┴─────────┐
+         ▼                   ▼
+  [ Neural Engine ]   [ Local SAPI/OneCore ]
+  (Edge HD WebSocket)  (Instant 0ms Offline)
+         │                   │
+         └─────────┬─────────┘
+                   ▼
+    [ Generation Valid Check ] ────────► If Gen != Active: DISCARD
+                   │
+                   ▼
+  [ Named MCI Device Playback ] ──────► "FluentVoiceDevice" (Single Stream)
+```
+
+---
+
+## Links
+
+- **Releases:** https://github.com/nickotmazgin/fluentvoice-pro/releases
+- **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
+- **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
+
+## Other Open-Source Projects by Nick Otmazgin
+
+- [ClipFlow Pro](https://github.com/nickotmazgin/clipflow-pro) — Clipboard history manager for GNOME Shell 45–50 with privacy filtering and history window
+- [Comfort Control (EaseHub)](https://github.com/nickotmazgin/comfort-control-easehub) — GNOME Shell panel menu for power, screenshots, updates & utilities
+- [Numeric Clock](https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock) — DD/MM/YYYY 24-hour top-bar clock with seconds
+
+---
+
+## Credits & Acknowledgements
+
+FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazgin](https://github.com/nickotmazgin)** — project administrator and author.
+
+[![AI assisted — Cursor Agent](https://img.shields.io/badge/AI%20assisted-Cursor%20Agent-1A1A1A)](https://cursor.com)
+[![AI assisted — Google Antigravity](https://img.shields.io/badge/AI%20assisted-Google%20Antigravity-4285F4)](https://github.com/google/antigravity)
+
+Built with pair-programming assistance from AI co-pilots operated under the maintainer's direction, verification, and code review:
+
+- **Cursor Agent** — Audio engine architecture, concurrency design, UI automation, and packaging
+- **Google Antigravity** — System integration, Windows desktop testing, and performance profiling
+
+Every change is reviewed, tested on physical Windows machines, and approved by the maintainer.
+
+---
+
+## Legal & Trademarks Disclaimer
+
+> Microsoft, Windows, Windows 11, and Microsoft Edge are registered trademarks of Microsoft Corporation. FluentVoice Pro is an independent open-source project and is **not** affiliated with, sponsored, or endorsed by Microsoft Corporation. All voice synthesis APIs and endpoints are utilized strictly for personal, accessibility, and educational interoperability under fair use principles.
+
+---
+
+## Support & Donations
+
+If you find FluentVoice Pro useful, consider supporting continued development and maintenance:
+
+[![PayPal](https://img.shields.io/badge/Donate-PayPal-0070BA?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW)
+
+---
+
+## License
+
+Released under the **[MIT License](LICENSE)**. Copyright © 2026 Nick Otmazgin.
