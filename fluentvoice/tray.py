@@ -116,35 +116,53 @@ class FluentVoiceTrayApp:
 
     def set_voice(self, voice_name, display_label=""):
         def _inner(icon, item):
+            self.cfg = load_config()
             self.cfg["voice"] = voice_name
             if "sapi" in voice_name.lower() or "desktop" in voice_name.lower():
                 self.cfg["engine"] = "offline"
             else:
                 self.cfg["engine"] = "neural"
-            self.save_settings()
+            save_config(self.cfg)
             label = display_label or voice_name
             self.notify_user("FluentVoice Pro", f"🗣️ Voice selected: {label}")
         return _inner
 
     def is_voice_checked(self, voice_name):
         def _inner(item):
-            curr = self.cfg.get("voice", "")
+            curr = load_config().get("voice", "")
             return curr == voice_name or voice_name in curr or curr in voice_name
         return _inner
 
     def toggle_auto_read(self, icon=None, item=None):
-        self.auto_read_enabled = not self.auto_read_enabled
+        self.cfg = load_config()
+        self.auto_read_enabled = not self.cfg.get("auto_read_copy", False)
         self.save_settings()
         state = "Enabled" if self.auto_read_enabled else "Disabled"
         self.notify_user("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state}")
 
     def is_auto_read_checked(self, item):
-        return self.auto_read_enabled
+        return load_config().get("auto_read_copy", False)
+
+    def toggle_notifications(self, icon=None, item=None):
+        self.cfg = load_config()
+        curr = self.cfg.get("show_notifications", True)
+        self.cfg["show_notifications"] = not curr
+        save_config(self.cfg)
+        state = "Enabled" if not curr else "Disabled"
+        if self.tray_icon:
+            try:
+                self.tray_icon.notify(f"Windows Notifications: {state}", "FluentVoice Pro")
+            except Exception:
+                pass
+
+    def is_notifications_checked(self, item):
+        return load_config().get("show_notifications", True)
 
     def clipboard_monitor_loop(self):
         while True:
             try:
-                if self.auto_read_enabled:
+                fresh_cfg = load_config()
+                if fresh_cfg.get("auto_read_copy", False):
                     current = core.get_clipboard_text()
                     current_h = hash(current)
                     if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
@@ -182,6 +200,7 @@ class FluentVoiceTrayApp:
             item("⏹ Stop Speech Immediately", self.on_stop),
             pystray.Menu.SEPARATOR,
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
+            item("🔔 Windows Notifications", self.toggle_notifications, checked=self.is_notifications_checked),
             pystray.Menu.SEPARATOR,
             item("🗣 Neural Voices (English HD)", pystray.Menu(
                 item("Andrew Multilingual (US HD Male)", self.set_voice("en-US-AndrewMultilingualNeural", "Andrew Multilingual (US)"), checked=self.is_voice_checked("en-US-AndrewMultilingualNeural")),

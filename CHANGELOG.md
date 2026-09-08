@@ -13,12 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Native Windows Toast & Popup Notification System**:
   - Live toast / balloon alerts for key actions: Auto-Read on Copy (Enabled/Disabled), voice switching with voice name, active speech playback with text snippet preview, and instant playback stop.
   - Full user toggle switch in **Settings -> Automation & System**: easily turn Windows notifications on or off.
+  - **1-Click System Tray Toggle**: Added `🔔 Windows Notifications` directly into the tray context menu for instant access.
+- **Intelligent Speech Synthesis Error Handling & Network Notices**:
+  - Automatically notifies the user if cloud neural speech is unreachable, gracefully falling back to local Windows offline voices.
+  - Informs the user with an actionable alert if no local offline voices are installed on the system.
+  - Added live synthesis status indicators (`Ready`, `Synthesizing...`, `Playback Active`, `Fallback Active`, `Error`) directly in the Settings GUI preview sandbox.
 - **Dynamic Local Offline Voice Detection**:
   - Automatically queries and enumerates all installed Windows SAPI5 / OneCore speech voices directly from the OS.
   - Automatically adapts if the user installs new voice packs without requiring code edits or app updates.
   - Added direct quick-access button: **"Add / Download More Offline Voices (Windows Settings)"** which opens `ms-settings:speech` directly.
 - **Expanded World Languages HD Neural Catalog**:
   - Added top international languages: Spanish (`Alvaro`, `Dalia`), French (`Henri`), German (`Conrad`), Italian (`Diego`), Arabic (`Hamed`), and Japanese (`Keita`), alongside US/UK English and Hebrew.
+- **Refined Windows 11 Fluent UI Styling & Mica Hover Effects**:
+  - Polished `CTkTabview` segmented buttons with custom deep-slate background and bright cyan active highlights.
+  - Updated developer profile bio to feature Windows 11 & Win32 systems engineering alongside Linux Kernel & GNOME development.
 - **Single Desktop Shortcut Enforcement & Shell Cache Flush**:
   - Purged all redundant shortcuts (`Read Aloud.lnk`, `FluentVoice Settings.lnk`).
   - Added automated Windows Shell change notification (`SHChangeNotify`) to instantly flush Explorer's desktop icon cache.

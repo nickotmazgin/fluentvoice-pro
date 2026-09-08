@@ -11,6 +11,7 @@ import asyncio
 import threading
 import ctypes
 from pathlib import Path
+
 try:
     from .config import CACHE_DIR, load_config, save_config
 except (ImportError, ValueError):
@@ -102,13 +103,17 @@ def get_installed_sapi_voices() -> list:
         voices = [("Windows Zira (English US)", "Zira"), ("Windows Hazel (English UK)", "Hazel")]
     return voices
 
-def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1.0):
-    """Zero-latency offline speech using Windows OneCore / SAPI5."""
+def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1.0) -> bool:
+    """Zero-latency offline speech using Windows OneCore / SAPI5. Returns True on success."""
     global _is_speaking
     _is_speaking = True
     try:
         import win32com.client
         sp = win32com.client.Dispatch("SAPI.SpVoice")
+        if sp.GetVoices().Count == 0:
+            _is_speaking = False
+            return False
+
         # Match preferred voice
         for i in range(sp.GetVoices().Count):
             v = sp.GetVoices().Item(i)
@@ -123,8 +128,10 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
         sapi_rate = max(-10, min(10, sapi_rate))
         sp.Rate = sapi_rate
         sp.Speak(text, 1)  # 1 for async execution
+        return True
     except Exception as e:
         print(f"[Offline SAPI] Error: {e}")
+        return False
     finally:
         _is_speaking = False
 
@@ -174,8 +181,8 @@ async def _synthesize_edge(text: str, voice: str, out_file: str, rate: str = "+0
     except Exception:
         return False
 
-def speak_text(raw_text: str):
-    """Main thread-safe speech dispatcher."""
+def speak_text(raw_text: str) -> dict:
+    """Main thread-safe speech dispatcher. Returns status dictionary."""
     global _current_generation, _is_speaking
 
     cleaned = clean_text_for_speech(raw_text)
@@ -199,9 +206,15 @@ def speak_text(raw_text: str):
     trigger_notification("FluentVoice Pro", f"🔊 Speaking: \"{snippet}\"")
 
     # Offline SAPI Mode
-    if engine == "offline" or "sapi" in voice.lower():
-        speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult)
-        return
+    if engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower():
+        ok = speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult)
+        if not ok:
+            trigger_notification(
+                "FluentVoice Pro - Voice Alert",
+                "⚠️ No local Windows offline voices found. Open Settings -> 'Add More Offline Voices' to install one."
+            )
+            return {"status": "error", "mode": "offline", "message": "No local Windows voices found."}
+        return {"status": "success", "mode": "offline", "message": "Played via Windows offline SAPI"}
 
     # Neural Cloud Mode
     out_file = str(CACHE_DIR / f"speech_gen_{my_gen}.mp3")
@@ -217,7 +230,7 @@ def speak_text(raw_text: str):
                 os.remove(out_file)
         except Exception:
             pass
-        return
+        return {"status": "aborted", "mode": "superseded"}
 
     if success and os.path.exists(out_file):
         play_audio_file(out_file, my_gen)
@@ -225,9 +238,21 @@ def speak_text(raw_text: str):
             os.remove(out_file)
         except Exception:
             pass
+        return {"status": "success", "mode": "neural"}
     else:
         # Fallback to local SAPI
-        speak_offline_sapi(cleaned, voice_pref="Zira", rate_mult=rate_mult)
+        trigger_notification(
+            "FluentVoice Pro - Network Notice",
+            "🌐 Cloud voice unreachable. Automatically switching to offline Windows speech."
+        )
+        ok = speak_offline_sapi(cleaned, voice_pref="Zira", rate_mult=rate_mult)
+        if not ok:
+            trigger_notification(
+                "FluentVoice Pro - Speech Alert",
+                "⚠️ Speech synthesis failed. Check your internet connection or install local Windows voices."
+            )
+            return {"status": "error", "mode": "failed", "message": "Cloud unreachable and no offline voice."}
+        return {"status": "fallback", "mode": "offline", "message": "Cloud failed, fell back to offline."}
 
 def toggle_speak_or_stop():
     """1-Click Toggle: If speaking, stops immediately. Otherwise, reads clipboard."""

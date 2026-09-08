@@ -57,8 +57,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("FluentVoice Pro - Settings & Control Center")
-        self.geometry("740x620")
-        self.minsize(680, 560)
+        self.geometry("740x630")
+        self.minsize(680, 570)
 
         self.eval('tk::PlaceWindow . center')
 
@@ -123,9 +123,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _build_tabs(self, initial_tab):
         self.tabview = ctk.CTkTabview(
             self,
-            fg_color="#141B28",
+            fg_color="#121824",
+            segmented_button_fg_color="#0D131D",
             segmented_button_selected_color="#00D2FF",
-            segmented_button_selected_hover_color="#00B4DC"
+            segmented_button_selected_hover_color="#33DCFF",
+            segmented_button_unselected_color="#182234",
+            segmented_button_unselected_hover_color="#202D45",
+            text_color="#0B0F19"
         )
         self.tabview.pack(fill="both", expand=True, padx=16, pady=8)
 
@@ -171,6 +175,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_voice_changed,
             fg_color="#00D2FF",
             button_color="#00B4DC",
+            button_hover_color="#33DCFF",
+            dropdown_fg_color="#101622",
+            dropdown_hover_color="#1E2A3E",
+            dropdown_text_color="#F0F6FC",
             text_color="#0B0F19",
             font=ctk.CTkFont(size=13, weight="bold"),
             dropdown_font=ctk.CTkFont(size=13)
@@ -181,8 +189,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         btn_offline_help = ctk.CTkButton(
             voice_card,
             text="➕ Add / Download More Offline Voices (Windows Settings)...",
-            fg_color="#21262D",
-            hover_color="#30363D",
+            fg_color="#18263A",
+            hover_color="#223652",
+            border_width=1,
+            border_color="#2D4566",
             text_color="#58A6FF",
             font=ctk.CTkFont(size=12),
             height=28,
@@ -209,7 +219,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             number_of_steps=10,
             command=self._on_rate_slider,
             progress_color="#00D2FF",
-            button_color="#00D2FF"
+            button_color="#00D2FF",
+            button_hover_color="#33DCFF"
         )
         self.rate_slider.set(curr_mult)
         self.rate_slider.pack(fill="x", padx=14, pady=(2, 10))
@@ -230,7 +241,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.test_entry.pack(fill="x", padx=14, pady=(0, 8))
 
         btn_row = ctk.CTkFrame(test_card, fg_color="transparent")
-        btn_row.pack(fill="x", padx=14, pady=(0, 8))
+        btn_row.pack(fill="x", padx=14, pady=(0, 4))
 
         self.btn_test = ctk.CTkButton(
             btn_row,
@@ -250,9 +261,18 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#DA3633",
             text_color="#FFFFFF",
             font=ctk.CTkFont(size=13, weight="bold"),
-            command=core.stop_all_playback
+            command=self._on_test_stop
         )
         self.btn_stop.pack(side="right", fill="x", expand=True, padx=(6, 0))
+
+        # Live feedback status label
+        self.test_status_lbl = ctk.CTkLabel(
+            test_card,
+            text="Ready • Click Speak Test Text to preview voice",
+            font=ctk.CTkFont(size=12),
+            text_color="#8B949E"
+        )
+        self.test_status_lbl.pack(anchor="w", padx=14, pady=(2, 6))
 
     def _populate_options_tab(self):
         tab = self.tab_options
@@ -308,10 +328,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(anchor="w", padx=12, pady=(8, 4))
 
         guide = (
-            "• 1-Click System Tray: Left-click the cyan speaker icon next to the clock.\n"
+            "• 1-Click System Tray: Left-click (or double-click) the cyan speaker icon next to the clock to toggle speak/stop.\n"
+            "• Right-Click System Tray: Instant context menu for all voices, auto-read toggle, notifications, and settings.\n"
             "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center.\n"
             "• Windows Explorer: Right-click any folder or desktop background -> 'FluentVoice Pro (Read Aloud)'.\n"
-            "• Instant Toggle: Clicking while audio is playing immediately halts playback."
+            "• Instant Toggle: Triggering speech while audio is playing immediately halts playback (zero collisions)."
         )
         ctk.CTkLabel(info_box, text=guide, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 8))
 
@@ -330,7 +351,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         ctk.CTkLabel(
             card,
-            text="Systems Administrator • Linux Kernel & GNOME Developer • Israel\nDeveloper Email: nickotmazgin.dev@gmail.com",
+            text="Systems Administrator • Linux Kernel & GNOME Developer • Windows 11 & Win32 Systems Developer • Israel\nDeveloper Email: nickotmazgin.dev@gmail.com",
             font=ctk.CTkFont(size=12),
             text_color="#8B949E",
             justify="left"
@@ -341,12 +362,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         ctk.CTkLabel(
             repos_frame,
-            text="Other Open-Source Projects by Nick Otmazgin:",
+            text="Featured Open-Source Projects by Nick Otmazgin:",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color="#E6EDF3"
         ).pack(anchor="w", padx=12, pady=(8, 2))
 
         proj_desc = (
+            "• FluentVoice Pro — Modern single-stream TTS & Natural Voice Reader for Windows 11/10\n"
             "• ClipFlow Pro — Advanced privacy-safe clipboard manager for GNOME Shell 45–50\n"
             "• Comfort Control (EaseHub) — GNOME Shell panel utilities and system management\n"
             "• Numeric Clock — 24-hour precision DD/MM/YYYY top-bar date & clock"
@@ -408,6 +430,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.cfg["engine"] = "neural"
         config.save_config(self.cfg)
         core.trigger_notification("FluentVoice Pro", f"🗣️ Voice selected: {choice}")
+        self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
     def _on_open_windows_speech_settings(self):
         os.system("start ms-settings:speech")
@@ -436,7 +459,26 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         txt = self.test_entry.get().strip()
         if not txt:
             txt = "Testing voice synthesis with FluentVoice Pro."
-        threading.Thread(target=lambda: core.speak_text(txt), daemon=True).start()
+        
+        self.test_status_lbl.configure(text="🔊 Synthesizing speech...", text_color="#00D2FF")
+        
+        def run_test():
+            res = core.speak_text(txt)
+            if isinstance(res, dict):
+                if res.get("status") == "success":
+                    self.test_status_lbl.configure(text="✔️ Speech playback active (Zero Collisions)", text_color="#3FB950")
+                elif res.get("status") == "fallback":
+                    self.test_status_lbl.configure(text="ℹ️ Cloud unavailable -> Fallback to Windows offline voice", text_color="#E3B341")
+                elif res.get("status") == "error":
+                    self.test_status_lbl.configure(text="⚠️ Synthesis failed: " + res.get("message", "Error"), text_color="#F85149")
+            else:
+                self.test_status_lbl.configure(text="✔️ Speech synthesis completed", text_color="#3FB950")
+
+        threading.Thread(target=run_test, daemon=True).start()
+
+    def _on_test_stop(self):
+        core.stop_all_playback()
+        self.test_status_lbl.configure(text="⏹️ Speech stopped immediately", text_color="#8B949E")
 
 def open_settings_window(tab="Voice & Speech"):
     app = FluentVoiceSettingsWindow(initial_tab=tab)
