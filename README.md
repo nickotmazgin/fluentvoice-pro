@@ -14,9 +14,9 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.2.0** — Immersive dark menus, single unified desktop launcher, Hebrew & British HD voices, dark title bar, and instant tray GUI launch. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.3.0** — Windows Toast Notifications, dynamic offline voice discovery, world languages (Spanish, French, German, Italian, Arabic, Japanese), Dependabot security, and Explorer cache refresh. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
-> **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Productivity · Accessibility · Open Source
+> **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Productivity · Accessibility · Open Source · Dependabot Verified
 
 ---
 
@@ -48,12 +48,13 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
 - 🎛️ **Modern Fluent UI Control Center:** Built with CustomTkinter in dark mode with native dark title bars. Tweak voices, adjust speech speed/pace sliders, test phrases in real time, and configure automation.
-- 🗣️ **Ultra HD Multilingual Voices (English & Hebrew):** Studio-grade Microsoft Neural voices (`Andrew`, `Ava`, `Brian`, `Emma`, `Jenny`, `Guy`, `Ryan`, `Sonia`, `Avri`, `Hila`) with lifelike inflections and natural pauses.
-- ⚡ **Zero-Latency Offline Fallback:** Automatic failover to local Windows OneCore/SAPI5 voices (`Zira`, `Hazel`) when offline or when instant 0ms response is preferred.
+- 🔔 **Windows Toast & Popup Notifications:** Sleek native Windows notification popups for voice changes, auto-read toggle events, and active speech playback—fully configurable in settings.
+- 🗣️ **Ultra HD Multilingual Voices (English, Hebrew & World Languages):** Studio-grade Microsoft Neural voices (`Andrew`, `Ava`, `Jenny`, `Guy`, `Ryan`, `Sonia`, `Avri`, `Hila`, `Alvaro`, `Henri`, `Conrad`, `Diego`, `Hamed`, `Keita`) with lifelike inflections.
+- ⚡ **Dynamic Offline Voice Discovery:** Automatically enumerates every SAPI5/OneCore voice installed on your system. Plus, a 1-click button to install more offline language packs via Windows Settings.
 - 📋 **Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an 0.8s stability buffer.
 - 🧹 **AI & Markdown Formatting Filter:** Automatically cleans code blocks (```...```), inline backticks, markdown links, headers, and asterisks so AI agent replies are read out naturally.
 - 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus (no khaki/beige hover marks).
-- 🖥️ **Single Unified Desktop Shortcut:** Clean `FluentVoice Pro` desktop launcher opens the Control Center and manages background state seamlessly.
+- 🖥️ **Single Unified Desktop Shortcut:** Clean `FluentVoice Pro` desktop launcher opens the Control Center and manages background state seamlessly with Explorer icon cache sync.
 - 🚀 **Silent Headless Boot:** Auto-starts silently on Windows login through a background VBS launcher—zero flashing terminal windows.
 
 ---

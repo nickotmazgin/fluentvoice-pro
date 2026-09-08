@@ -15,6 +15,9 @@ DEFAULT_CONFIG = {
     "engine": "neural",  # 'neural' or 'offline'
     "voice": "en-US-AndrewMultilingualNeural",
     "auto_read_copy": False,
+    "clean_markdown": True,
+    "show_notifications": True,
+    "rate_mult": 1.0,
     "volume": 100,
     "rate": "+0%",
 }

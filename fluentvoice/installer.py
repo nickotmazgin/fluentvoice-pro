@@ -125,6 +125,14 @@ def install_all():
     add_context_menu(r"Software\Classes\Directory\Background\Shell\FluentVoicePro", "FluentVoice Pro (Read Aloud)", "--toggle")
     add_context_menu(r"Software\Classes\DesktopBackground\Shell\FluentVoiceSettings", "FluentVoice Pro Settings", "--gui")
 
+    # 5. Force Windows Explorer to instantly refresh Desktop and Icon Cache
+    try:
+        import ctypes
+        ctypes.windll.shell32.SHChangeNotify(0x7FFFFFFF, 0x1000, None, None)
+        ctypes.windll.shell32.SHChangeNotify(0x08000000, 0x0000, None, None)
+    except Exception:
+        pass
+
     print("\n[SUCCESS] FluentVoice Pro installation & desktop shortcuts configured cleanly.")
 
 if __name__ == "__main__":

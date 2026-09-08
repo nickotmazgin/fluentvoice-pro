@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-09-08
+
+### Added
+- **Native Windows Toast & Popup Notification System**:
+  - Live toast / balloon alerts for key actions: Auto-Read on Copy (Enabled/Disabled), voice switching with voice name, active speech playback with text snippet preview, and instant playback stop.
+  - Full user toggle switch in **Settings -> Automation & System**: easily turn Windows notifications on or off.
+- **Dynamic Local Offline Voice Detection**:
+  - Automatically queries and enumerates all installed Windows SAPI5 / OneCore speech voices directly from the OS.
+  - Automatically adapts if the user installs new voice packs without requiring code edits or app updates.
+  - Added direct quick-access button: **"Add / Download More Offline Voices (Windows Settings)"** which opens `ms-settings:speech` directly.
+- **Expanded World Languages HD Neural Catalog**:
+  - Added top international languages: Spanish (`Alvaro`, `Dalia`), French (`Henri`), German (`Conrad`), Italian (`Diego`), Arabic (`Hamed`), and Japanese (`Keita`), alongside US/UK English and Hebrew.
+- **Single Desktop Shortcut Enforcement & Shell Cache Flush**:
+  - Purged all redundant shortcuts (`Read Aloud.lnk`, `FluentVoice Settings.lnk`).
+  - Added automated Windows Shell change notification (`SHChangeNotify`) to instantly flush Explorer's desktop icon cache.
+- **Automated Security & Dependabot Integration**:
+  - Added `.github/dependabot.yml` for automated weekly pip dependency monitoring and security alerts.
+  - Enabled GitHub Dependabot vulnerability alerts on the repository.
+
+---
+
 ## [1.2.0] - 2026-09-08
 
 ### Added

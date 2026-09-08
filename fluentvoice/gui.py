@@ -18,39 +18,50 @@ PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LS
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
 
-VOICE_MAP = {
-    "Andrew Multilingual (HD Male)": "en-US-AndrewMultilingualNeural",
-    "Ava Multilingual (HD Female)": "en-US-AvaMultilingualNeural",
-    "Brian Multilingual (HD Casual)": "en-US-BrianMultilingualNeural",
-    "Emma Multilingual (HD Expressive)": "en-US-EmmaMultilingualNeural",
-    "Jenny (HD Studio Female)": "en-US-JennyNeural",
-    "Guy (HD Studio Male)": "en-US-GuyNeural",
-    "Ryan (HD British Male)": "en-GB-RyanNeural",
-    "Sonia (HD British Female)": "en-GB-SoniaNeural",
-    "Avri (HD Hebrew Male)": "he-IL-AvriNeural",
-    "Hila (HD Hebrew Female)": "he-IL-HilaNeural",
-    "Windows Zira (Offline English US)": "sapi-zira",
-    "Windows Hazel (Offline English UK)": "sapi-hazel"
+BASE_VOICE_MAP = {
+    # English (US) HD Neural
+    "Andrew Multilingual (US HD Male)": "en-US-AndrewMultilingualNeural",
+    "Ava Multilingual (US HD Female)": "en-US-AvaMultilingualNeural",
+    "Brian Multilingual (US HD Casual)": "en-US-BrianMultilingualNeural",
+    "Emma Multilingual (US HD Expressive)": "en-US-EmmaMultilingualNeural",
+    "Jenny (US HD Studio Female)": "en-US-JennyNeural",
+    "Guy (US HD Studio Male)": "en-US-GuyNeural",
+    # English (UK) HD Neural
+    "Ryan (UK HD British Male)": "en-GB-RyanNeural",
+    "Sonia (UK HD British Female)": "en-GB-SoniaNeural",
+    # Hebrew HD Neural
+    "Avri (Hebrew HD Male)": "he-IL-AvriNeural",
+    "Hila (Hebrew HD Female)": "he-IL-HilaNeural",
+    # World Languages HD Neural
+    "Alvaro (Spanish HD Spain)": "es-ES-AlvaroNeural",
+    "Dalia (Spanish HD Mexico)": "es-MX-DaliaNeural",
+    "Henri (French HD France)": "fr-FR-HenriNeural",
+    "Conrad (German HD Germany)": "de-DE-ConradNeural",
+    "Diego (Italian HD Italy)": "it-IT-DiegoNeural",
+    "Hamed (Arabic HD Saudi Arabia)": "ar-SA-HamedNeural",
+    "Keita (Japanese HD Japan)": "ja-JP-KeitaNeural",
 }
 
-REVERSE_VOICE_MAP = {v: k for k, v in VOICE_MAP.items()}
+def build_full_voice_map():
+    vm = BASE_VOICE_MAP.copy()
+    installed = core.get_installed_sapi_voices()
+    for label, desc in installed:
+        vm[f"{label} (Offline 0ms)"] = desc
+    return vm
 
 class FluentVoiceSettingsWindow(ctk.CTk):
     def __init__(self, initial_tab="Voice & Speech"):
         super().__init__()
 
-        # Appearance configuration
         ctk.set_appearance_mode("Dark")
         ctk.set_default_color_theme("blue")
 
         self.title("FluentVoice Pro - Settings & Control Center")
-        self.geometry("720x600")
-        self.minsize(660, 540)
+        self.geometry("740x620")
+        self.minsize(680, 560)
 
-        # Center on screen
         self.eval('tk::PlaceWindow . center')
 
-        # Load icon
         assets_dir = Path(__file__).parent.parent / "assets"
         ico_path = assets_dir / "icon.ico"
         if not ico_path.exists():
@@ -61,40 +72,31 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             except Exception:
                 pass
 
-        # Apply Windows 11 Immersive Dark Titlebar (Slate #101622)
         self._apply_dark_titlebar()
 
         self.cfg = config.load_config()
+        self.voice_map = build_full_voice_map()
 
         self._build_header()
         self._build_tabs(initial_tab)
         self._build_footer()
 
     def _apply_dark_titlebar(self):
-        """Forces Windows 11 dark slate caption and removes jarring bright green accent."""
+        """Forces Windows 11 dark slate caption and removes bright green accent."""
         try:
             self.update_idletasks()
             hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
             if not hwnd:
                 hwnd = self.winfo_id()
             
-            # DWMWA_USE_IMMERSIVE_DARK_MODE = 20
             dark_mode = ctypes.c_int(1)
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(
-                hwnd, 20, ctypes.byref(dark_mode), ctypes.sizeof(dark_mode)
-            )
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(dark_mode), ctypes.sizeof(dark_mode))
 
-            # DWMWA_CAPTION_COLOR = 35 -> BGR for #101622 (0x00221610)
             caption_color = ctypes.c_uint(0x00221610)
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(
-                hwnd, 35, ctypes.byref(caption_color), ctypes.sizeof(caption_color)
-            )
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(caption_color), ctypes.sizeof(caption_color))
 
-            # DWMWA_TEXT_COLOR = 36 -> White (0x00FFFFFF)
             text_color = ctypes.c_uint(0x00FFFFFF)
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(
-                hwnd, 36, ctypes.byref(text_color), ctypes.sizeof(text_color)
-            )
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 36, ctypes.byref(text_color), ctypes.sizeof(text_color))
         except Exception:
             pass
 
@@ -112,7 +114,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         badge_lbl = ctk.CTkLabel(
             header_frame,
-            text="v1.2.0 • Windows 11 Suite • By Nick Otmazgin",
+            text="v1.3.0 • Windows 11/10 Suite • By Nick Otmazgin",
             font=ctk.CTkFont(family="Segoe UI", size=13),
             text_color="#8B949E"
         )
@@ -143,22 +145,28 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         # Voice selection card
         voice_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        voice_card.pack(fill="x", padx=10, pady=8)
+        voice_card.pack(fill="x", padx=10, pady=6)
 
         ctk.CTkLabel(
             voice_card,
-            text="Active Voice Profile (English, Hebrew & Local Offline):",
+            text="Active Voice Profile (English, Hebrew, World Languages & Local Offline):",
             font=ctk.CTkFont(size=14, weight="bold"),
             text_color="#E6EDF3"
-        ).pack(anchor="w", padx=14, pady=(10, 4))
+        ).pack(anchor="w", padx=14, pady=(8, 4))
 
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
-        curr_label = REVERSE_VOICE_MAP.get(curr_voice, "Andrew Multilingual (HD Male)")
+        
+        # Match current label
+        curr_label = "Andrew Multilingual (US HD Male)"
+        for l, code in self.voice_map.items():
+            if code == curr_voice or code.lower() in curr_voice.lower() or curr_voice.lower() in code.lower():
+                curr_label = l
+                break
 
         self.voice_var = ctk.StringVar(value=curr_label)
         self.voice_menu = ctk.CTkOptionMenu(
             voice_card,
-            values=list(VOICE_MAP.keys()),
+            values=list(self.voice_map.keys()),
             variable=self.voice_var,
             command=self._on_voice_changed,
             fg_color="#00D2FF",
@@ -167,14 +175,27 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=13, weight="bold"),
             dropdown_font=ctk.CTkFont(size=13)
         )
-        self.voice_menu.pack(fill="x", padx=14, pady=(0, 12))
+        self.voice_menu.pack(fill="x", padx=14, pady=(0, 6))
 
-        # Speed / Rate slider
+        # Helper button to install more offline voices via Windows Settings
+        btn_offline_help = ctk.CTkButton(
+            voice_card,
+            text="➕ Add / Download More Offline Voices (Windows Settings)...",
+            fg_color="#21262D",
+            hover_color="#30363D",
+            text_color="#58A6FF",
+            font=ctk.CTkFont(size=12),
+            height=28,
+            command=self._on_open_windows_speech_settings
+        )
+        btn_offline_help.pack(anchor="w", padx=14, pady=(0, 8))
+
+        # Speed / Rate slider card
         rate_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        rate_card.pack(fill="x", padx=10, pady=8)
+        rate_card.pack(fill="x", padx=10, pady=6)
 
         rate_header = ctk.CTkFrame(rate_card, fg_color="transparent")
-        rate_header.pack(fill="x", padx=14, pady=(8, 2))
+        rate_header.pack(fill="x", padx=14, pady=(6, 2))
         ctk.CTkLabel(rate_header, text="Speech Speed / Pace:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(side="left")
         
         curr_mult = self.cfg.get("rate_mult", 1.0)
@@ -191,13 +212,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             button_color="#00D2FF"
         )
         self.rate_slider.set(curr_mult)
-        self.rate_slider.pack(fill="x", padx=14, pady=(4, 12))
+        self.rate_slider.pack(fill="x", padx=14, pady=(2, 10))
 
         # Live Test Card
         test_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        test_card.pack(fill="both", expand=True, padx=10, pady=8)
+        test_card.pack(fill="both", expand=True, padx=10, pady=6)
 
-        ctk.CTkLabel(test_card, text="Preview & Test Voice:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(anchor="w", padx=14, pady=(8, 4))
+        ctk.CTkLabel(test_card, text="Preview & Test Voice:", font=ctk.CTkFont(size=14, weight="bold"), text_color="#E6EDF3").pack(anchor="w", padx=14, pady=(6, 4))
 
         self.test_entry = ctk.CTkEntry(
             test_card,
@@ -206,10 +227,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             border_color="#00D2FF"
         )
         self.test_entry.insert(0, "Hello Nick! FluentVoice Pro is active with single-stream collision locking.")
-        self.test_entry.pack(fill="x", padx=14, pady=(0, 10))
+        self.test_entry.pack(fill="x", padx=14, pady=(0, 8))
 
         btn_row = ctk.CTkFrame(test_card, fg_color="transparent")
-        btn_row.pack(fill="x", padx=14, pady=(0, 10))
+        btn_row.pack(fill="x", padx=14, pady=(0, 8))
 
         self.btn_test = ctk.CTkButton(
             btn_row,
@@ -242,14 +263,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         # Switch 1: Auto-Read on copy
         self.switch_autoread = ctk.CTkSwitch(
             card,
-            text="Auto-Read on Copy (Reads clipboard text automatically after 0.8s buffer)",
+            text="Auto-Read on Copy (Reads clipboard text automatically after 0.8s stability buffer)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_autoread
         )
         if self.cfg.get("auto_read_copy", False):
             self.switch_autoread.select()
-        self.switch_autoread.pack(anchor="w", padx=16, pady=16)
+        self.switch_autoread.pack(anchor="w", padx=16, pady=12)
 
         # Switch 2: AI & Markdown formatting cleaner
         self.switch_markdown = ctk.CTkSwitch(
@@ -259,27 +280,40 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             progress_color="#00D2FF",
             command=self._on_toggle_markdown
         )
-        self.switch_markdown.select()
-        self.switch_markdown.pack(anchor="w", padx=16, pady=16)
+        if self.cfg.get("clean_markdown", True):
+            self.switch_markdown.select()
+        self.switch_markdown.pack(anchor="w", padx=16, pady=12)
+
+        # Switch 3: Windows Notifications & Toasts
+        self.switch_notify = ctk.CTkSwitch(
+            card,
+            text="Show Windows Notifications & Toasts (Alerts for voice changes, auto-read toggle, and speech events)",
+            font=ctk.CTkFont(size=13),
+            progress_color="#00D2FF",
+            command=self._on_toggle_notifications
+        )
+        if self.cfg.get("show_notifications", True):
+            self.switch_notify.select()
+        self.switch_notify.pack(anchor="w", padx=16, pady=12)
 
         # Information box
         info_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
-        info_box.pack(fill="x", padx=16, pady=(12, 16))
+        info_box.pack(fill="x", padx=16, pady=(10, 12))
 
         ctk.CTkLabel(
             info_box,
             text="⚡ How to Trigger FluentVoice Pro Anywhere in Windows:",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color="#00D2FF"
-        ).pack(anchor="w", padx=12, pady=(10, 4))
+        ).pack(anchor="w", padx=12, pady=(8, 4))
 
         guide = (
             "• 1-Click System Tray: Left-click the cyan speaker icon next to the clock.\n"
-            "• Desktop Shortcut: Double-click 'FluentVoice Pro' on your desktop.\n"
+            "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center.\n"
             "• Windows Explorer: Right-click any folder or desktop background -> 'FluentVoice Pro (Read Aloud)'.\n"
             "• Instant Toggle: Clicking while audio is playing immediately halts playback."
         )
-        ctk.CTkLabel(info_box, text=guide, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 10))
+        ctk.CTkLabel(info_box, text=guide, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 8))
 
     def _populate_about_tab(self):
         tab = self.tab_about
@@ -287,7 +321,6 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
         card.pack(fill="both", expand=True, padx=10, pady=8)
 
-        # Maintainer Profile Section
         ctk.CTkLabel(
             card,
             text="Project Lead & Author: Nick Otmazgin",
@@ -303,7 +336,6 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             justify="left"
         ).pack(anchor="w", padx=16, pady=(0, 10))
 
-        # Other Projects
         repos_frame = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
         repos_frame.pack(fill="x", padx=16, pady=6)
 
@@ -321,7 +353,6 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         ctk.CTkLabel(repos_frame, text=proj_desc, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 8))
 
-        # Action Buttons (PayPal Donation & GitHub)
         btn_box = ctk.CTkFrame(card, fg_color="transparent")
         btn_box.pack(fill="x", padx=16, pady=(14, 10))
 
@@ -369,13 +400,17 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         btn_close.pack(side="right")
 
     def _on_voice_changed(self, choice):
-        vcode = VOICE_MAP.get(choice, "en-US-AndrewMultilingualNeural")
+        vcode = self.voice_map.get(choice, "en-US-AndrewMultilingualNeural")
         self.cfg["voice"] = vcode
-        if "sapi" in vcode.lower():
+        if "sapi" in vcode.lower() or "desktop" in vcode.lower():
             self.cfg["engine"] = "offline"
         else:
             self.cfg["engine"] = "neural"
         config.save_config(self.cfg)
+        core.trigger_notification("FluentVoice Pro", f"🗣️ Voice selected: {choice}")
+
+    def _on_open_windows_speech_settings(self):
+        os.system("start ms-settings:speech")
 
     def _on_rate_slider(self, val):
         self.rate_val_lbl.configure(text=f"{val:.1f}x")
@@ -383,11 +418,18 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         config.save_config(self.cfg)
 
     def _on_toggle_autoread(self):
-        self.cfg["auto_read_copy"] = self.switch_autoread.get() == 1
+        enabled = self.switch_autoread.get() == 1
+        self.cfg["auto_read_copy"] = enabled
         config.save_config(self.cfg)
+        state_str = "Enabled" if enabled else "Disabled"
+        core.trigger_notification("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state_str}")
 
     def _on_toggle_markdown(self):
         self.cfg["clean_markdown"] = self.switch_markdown.get() == 1
+        config.save_config(self.cfg)
+
+    def _on_toggle_notifications(self):
+        self.cfg["show_notifications"] = self.switch_notify.get() == 1
         config.save_config(self.cfg)
 
     def _on_test_speak(self):
@@ -397,7 +439,6 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         threading.Thread(target=lambda: core.speak_text(txt), daemon=True).start()
 
 def open_settings_window(tab="Voice & Speech"):
-    """Launches the settings window (handles single window instance)."""
     app = FluentVoiceSettingsWindow(initial_tab=tab)
     app.mainloop()
 

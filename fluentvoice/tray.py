@@ -18,29 +18,25 @@ from pystray import MenuItem as item
 from .config import load_config, save_config
 from . import core
 
+# Force Windows 11 Dark Mode on Win32 popup menus
+def enable_win32_dark_mode():
+    try:
+        uxtheme = ctypes.windll.uxtheme
+        set_preferred_app_mode = uxtheme[135]
+        set_preferred_app_mode.argtypes = [ctypes.c_int]
+        set_preferred_app_mode.restype = ctypes.c_int
+        set_preferred_app_mode(2)  # 2 = ForceDark
+        flush_menu_themes = uxtheme[136]
+        flush_menu_themes()
+    except Exception:
+        pass
+
 # Windows Single-Instance Mutex
 ERROR_ALREADY_EXISTS = 183
 MUTEX_NAME = "Local\\NickOtmazgin_FluentVoicePro_SingleInstance_Mutex"
 
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
-
-def enable_win32_dark_mode():
-    """Forces Windows 11 / Windows 10 1809+ dark theme on Win32 menus and popups.
-    Eliminates khaki/beige/light-grey highlight bars in context menus.
-    """
-    try:
-        uxtheme = ctypes.windll.uxtheme
-        # Ordinal 135: SetPreferredAppMode (2 = ForceDark)
-        set_preferred_app_mode = uxtheme[135]
-        set_preferred_app_mode.argtypes = [ctypes.c_int]
-        set_preferred_app_mode.restype = ctypes.c_int
-        set_preferred_app_mode(2)
-        # Ordinal 136: FlushMenuThemes
-        flush_menu_themes = uxtheme[136]
-        flush_menu_themes()
-    except Exception:
-        pass
 
 def enforce_single_instance():
     kernel32 = ctypes.windll.kernel32
@@ -76,6 +72,18 @@ class FluentVoiceTrayApp:
         self.last_clipboard_hash = hash(core.get_clipboard_text())
         self.tray_icon = None
 
+        # Bind notification handler from core
+        core.set_notify_callback(self.notify_user)
+
+    def notify_user(self, title: str, message: str):
+        """Displays native Windows balloon/toast notification if enabled."""
+        fresh_cfg = load_config()
+        if fresh_cfg.get("show_notifications", True) and self.tray_icon:
+            try:
+                self.tray_icon.notify(message, title)
+            except Exception:
+                pass
+
     def save_settings(self):
         self.cfg["auto_read_copy"] = self.auto_read_enabled
         save_config(self.cfg)
@@ -106,24 +114,29 @@ class FluentVoiceTrayApp:
     def on_open_github(self, icon=None, item=None):
         webbrowser.open(GITHUB_REPO_URL)
 
-    def set_voice(self, voice_name):
+    def set_voice(self, voice_name, display_label=""):
         def _inner(icon, item):
             self.cfg["voice"] = voice_name
-            if "sapi" in voice_name.lower():
+            if "sapi" in voice_name.lower() or "desktop" in voice_name.lower():
                 self.cfg["engine"] = "offline"
             else:
                 self.cfg["engine"] = "neural"
             self.save_settings()
+            label = display_label or voice_name
+            self.notify_user("FluentVoice Pro", f"🗣️ Voice selected: {label}")
         return _inner
 
     def is_voice_checked(self, voice_name):
         def _inner(item):
-            return self.cfg.get("voice") == voice_name
+            curr = self.cfg.get("voice", "")
+            return curr == voice_name or voice_name in curr or curr in voice_name
         return _inner
 
     def toggle_auto_read(self, icon=None, item=None):
         self.auto_read_enabled = not self.auto_read_enabled
         self.save_settings()
+        state = "Enabled" if self.auto_read_enabled else "Disabled"
+        self.notify_user("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state}")
 
     def is_auto_read_checked(self, item):
         return self.auto_read_enabled
@@ -156,6 +169,13 @@ class FluentVoiceTrayApp:
         icon_path = get_tray_icon_path()
         img = Image.open(icon_path)
 
+        # Build dynamic offline SAPI menu items
+        offline_items = []
+        for label, desc in core.get_installed_sapi_voices():
+            offline_items.append(
+                item(label, self.set_voice(desc, label), checked=self.is_voice_checked(desc))
+            )
+
         menu = pystray.Menu(
             item("🔊 FluentVoice (Toggle Speak / Stop)", self.on_toggle_speech, default=True),
             item("⚙️ Settings & Control Center...", self.on_open_settings),
@@ -164,23 +184,29 @@ class FluentVoiceTrayApp:
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
             pystray.Menu.SEPARATOR,
             item("🗣 Neural Voices (English HD)", pystray.Menu(
-                item("Andrew Multilingual (Natural Male)", self.set_voice("en-US-AndrewMultilingualNeural"), checked=self.is_voice_checked("en-US-AndrewMultilingualNeural")),
-                item("Ava Multilingual (Natural Female)", self.set_voice("en-US-AvaMultilingualNeural"), checked=self.is_voice_checked("en-US-AvaMultilingualNeural")),
-                item("Brian Multilingual (Natural Casual)", self.set_voice("en-US-BrianMultilingualNeural"), checked=self.is_voice_checked("en-US-BrianMultilingualNeural")),
-                item("Emma Multilingual (Natural Expressive)", self.set_voice("en-US-EmmaMultilingualNeural"), checked=self.is_voice_checked("en-US-EmmaMultilingualNeural")),
-                item("Jenny (Studio Professional Female)", self.set_voice("en-US-JennyNeural"), checked=self.is_voice_checked("en-US-JennyNeural")),
-                item("Guy (Studio Professional Male)", self.set_voice("en-US-GuyNeural"), checked=self.is_voice_checked("en-US-GuyNeural")),
-                item("Ryan (British Natural Male)", self.set_voice("en-GB-RyanNeural"), checked=self.is_voice_checked("en-GB-RyanNeural")),
-                item("Sonia (British Natural Female)", self.set_voice("en-GB-SoniaNeural"), checked=self.is_voice_checked("en-GB-SoniaNeural")),
+                item("Andrew Multilingual (US HD Male)", self.set_voice("en-US-AndrewMultilingualNeural", "Andrew Multilingual (US)"), checked=self.is_voice_checked("en-US-AndrewMultilingualNeural")),
+                item("Ava Multilingual (US HD Female)", self.set_voice("en-US-AvaMultilingualNeural", "Ava Multilingual (US)"), checked=self.is_voice_checked("en-US-AvaMultilingualNeural")),
+                item("Brian Multilingual (US HD Casual)", self.set_voice("en-US-BrianMultilingualNeural", "Brian Multilingual (US)"), checked=self.is_voice_checked("en-US-BrianMultilingualNeural")),
+                item("Emma Multilingual (US HD Expressive)", self.set_voice("en-US-EmmaMultilingualNeural", "Emma Multilingual (US)"), checked=self.is_voice_checked("en-US-EmmaMultilingualNeural")),
+                item("Jenny (US Studio Professional Female)", self.set_voice("en-US-JennyNeural", "Jenny (US Studio)"), checked=self.is_voice_checked("en-US-JennyNeural")),
+                item("Guy (US Studio Professional Male)", self.set_voice("en-US-GuyNeural", "Guy (US Studio)"), checked=self.is_voice_checked("en-US-GuyNeural")),
+                item("Ryan (UK British Natural Male)", self.set_voice("en-GB-RyanNeural", "Ryan (UK)"), checked=self.is_voice_checked("en-GB-RyanNeural")),
+                item("Sonia (UK British Natural Female)", self.set_voice("en-GB-SoniaNeural", "Sonia (UK)"), checked=self.is_voice_checked("en-GB-SoniaNeural")),
             )),
             item("🇮🇱 Neural Voices (Hebrew HD)", pystray.Menu(
-                item("Avri (Hebrew Natural Male)", self.set_voice("he-IL-AvriNeural"), checked=self.is_voice_checked("he-IL-AvriNeural")),
-                item("Hila (Hebrew Natural Female)", self.set_voice("he-IL-HilaNeural"), checked=self.is_voice_checked("he-IL-HilaNeural")),
+                item("Avri (Hebrew Natural Male)", self.set_voice("he-IL-AvriNeural", "Avri (Hebrew)"), checked=self.is_voice_checked("he-IL-AvriNeural")),
+                item("Hila (Hebrew Natural Female)", self.set_voice("he-IL-HilaNeural", "Hila (Hebrew)"), checked=self.is_voice_checked("he-IL-HilaNeural")),
             )),
-            item("💻 Local Windows Voices (Offline 0ms)", pystray.Menu(
-                item("Windows Zira (English US)", self.set_voice("sapi-zira"), checked=self.is_voice_checked("sapi-zira")),
-                item("Windows Hazel (English UK)", self.set_voice("sapi-hazel"), checked=self.is_voice_checked("sapi-hazel")),
+            item("🌍 Neural Voices (World HD)", pystray.Menu(
+                item("Alvaro (Spanish Spain)", self.set_voice("es-ES-AlvaroNeural", "Alvaro (Spanish)"), checked=self.is_voice_checked("es-ES-AlvaroNeural")),
+                item("Dalia (Spanish Mexico)", self.set_voice("es-MX-DaliaNeural", "Dalia (Spanish Mexico)"), checked=self.is_voice_checked("es-MX-DaliaNeural")),
+                item("Henri (French France)", self.set_voice("fr-FR-HenriNeural", "Henri (French)"), checked=self.is_voice_checked("fr-FR-HenriNeural")),
+                item("Conrad (German Germany)", self.set_voice("de-DE-ConradNeural", "Conrad (German)"), checked=self.is_voice_checked("de-DE-ConradNeural")),
+                item("Diego (Italian Italy)", self.set_voice("it-IT-DiegoNeural", "Diego (Italian)"), checked=self.is_voice_checked("it-IT-DiegoNeural")),
+                item("Hamed (Arabic Saudi Arabia)", self.set_voice("ar-SA-HamedNeural", "Hamed (Arabic)"), checked=self.is_voice_checked("ar-SA-HamedNeural")),
+                item("Keita (Japanese Japan)", self.set_voice("ja-JP-KeitaNeural", "Keita (Japanese)"), checked=self.is_voice_checked("ja-JP-KeitaNeural")),
             )),
+            item("💻 Local Windows Voices (Offline 0ms)", pystray.Menu(*offline_items)),
             pystray.Menu.SEPARATOR,
             item("ℹ️ About & Credits (Nick Otmazgin)...", self.on_open_about),
             item("💖 Donate & Support (PayPal)...", self.on_open_paypal),
