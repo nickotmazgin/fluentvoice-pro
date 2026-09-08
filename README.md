@@ -10,24 +10,52 @@
 [![Issues](https://img.shields.io/github/issues/nickotmazgin/fluentvoice-pro)](https://github.com/nickotmazgin/fluentvoice-pro/issues)
 [![Discussions](https://img.shields.io/github/discussions/nickotmazgin/fluentvoice-pro?label=discussions&color=8B5CF6)](https://github.com/nickotmazgin/fluentvoice-pro/discussions)
 
-**FluentVoice Pro** is a modern, lightweight Text-to-Speech (TTS) and Natural Voice Reader utility for **Windows 11 and Windows 10**.
+**FluentVoice Pro** is a modern, lightweight Native Desktop Application and System Tray Suite for **Windows 11 and Windows 10** that reads aloud any text across your entire operating system.
 
-Built with a Fluent-styled system tray daemon, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
+Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.0.0** — Official initial release. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.1.0** — Control Center GUI, crisp high-contrast tray icons, dedicated desktop shortcuts, and speed controls. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
-> **Keywords:** Windows 11 TTS · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · Edge TTS · System Tray · AI Voice · Clipboard Reader · Productivity · Accessibility · Open Source
+> **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Productivity · Accessibility · Open Source
 
 ---
 
-## Highlights
+## Visual Preview
+
+<div align="center">
+  <img src="assets/settings_preview.png" alt="FluentVoice Pro Settings & Control Center" width="680" />
+  <p><em>FluentVoice Pro v1.1.0 — Voice & Speech Control Center on Windows 11</em></p>
+</div>
+
+<div align="center">
+  <img src="assets/about_preview.png" alt="About & Developer Credits" width="680" />
+  <p><em>FluentVoice Pro — Maintainer Profile, Open-Source Portfolio & Support</em></p>
+</div>
+
+---
+
+## What Kind of Software Is FluentVoice Pro?
+
+FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System Tray Suite**.
+
+- **Not a browser extension:** It is not restricted to browser tabs. It works everywhere across Windows: Cursor, VS Code, Slack, PDF readers, Notepad, Office, File Explorer, and terminals.
+- **Not a bulky screen hog:** It runs quietly as an ultra-lean (<35 MB RAM) background daemon in your notification area next to the clock.
+- **Full Graphical Control Center:** When you want to tweak settings, adjust voice speed, or test voices, double-click the **FluentVoice Settings** desktop icon or right-click the tray to open the modern dark-themed Fluent Control Center.
+
+---
+
+## Highlights & Features
 
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
-- 🗣️ **Ultra HD Neural Voices:** Native support for high-definition Microsoft Neural voices (Andrew, Ava, Brian, Emma) with lifelike inflections and pacing.
-- ⚡ **Zero-Latency Offline Fallback:** Automatic failover to local Windows OneCore/SAPI5 voices (Zira, Hazel) when offline or when instant 0ms response is preferred.
-- 📋 **Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after a stability buffer.
-- 🧹 **AI & Markdown Formatting Filter:** Automatically cleans code blocks (```...```), inline backticks, markdown links, headers, and asterisks so AI co-pilot replies are read out naturally like human speech.
-- 🪟 **Windows 11 Fluent Tray Experience:** Minimalist notification area icon next to the clock with toggle actions, voice switcher, and desktop floating widget support.
+- 🎛️ **Modern Fluent UI Control Center:** Built with CustomTkinter in dark mode. Tweak voices, adjust speech speed/pace sliders, test phrases in real time, and configure automation.
+- 🗣️ **Ultra HD Neural Voices:** Native support for high-definition Microsoft Neural voices (`Andrew`, `Ava`, `Brian`, `Emma`) with lifelike inflections and natural pauses.
+- ⚡ **Zero-Latency Offline Fallback:** Automatic failover to local Windows OneCore/SAPI5 voices (`Zira`, `Hazel`) when offline or when instant 0ms response is preferred.
+- 📋 **Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an 0.8s stability buffer.
+- 🧹 **AI & Markdown Formatting Filter:** Automatically cleans code blocks (```...```), inline backticks, markdown links, headers, and asterisks so AI agent replies are read out naturally.
+- 🎨 **Redesigned Ultra-Crisp Tray Icon:** Transparent-background high-contrast neon cyan speaker glyph that never wrinkles or clamps in the Windows 11 taskbar or overflow flyout.
+- 🖥️ **Dual Desktop Shortcuts:**
+  - **`FluentVoice Pro`**: 1-Click Speak / Stop toggle.
+  - **`FluentVoice Settings`**: Instant access to the Control Center.
 - 🚀 **Silent Headless Boot:** Auto-starts silently on Windows login through a background VBS launcher—zero flashing terminal windows.
 
 ---
@@ -44,32 +72,41 @@ Built with a Fluent-styled system tray daemon, global single-stream playback loc
 
 ## Installation
 
-### Method 1: One-Click PowerShell Installer (Recommended)
+### Method 1: Automated Installer (Recommended)
 
-Open PowerShell and run:
+1. Download **`fluentvoice-pro-v1.1.0-windows.zip`** from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+2. Extract the ZIP folder.
+3. Right-click **`install.ps1`** and choose **Run with PowerShell** (or run `.\install.ps1`).
+
+### Method 2: From Source / Git
 
 ```powershell
 git clone https://github.com/nickotmazgin/fluentvoice-pro.git
 cd fluentvoice-pro
-.\install.ps1
-```
-
-### Method 2: Manual Setup
-
-```powershell
 pip install -r requirements.txt
 python -m fluentvoice.installer
 ```
 
 ---
 
-## Quick Start
+## Quick Start & Triggers
 
-1. **Copy text anywhere** (Cursor, browser, IDE, PDF, or document).
-2. **Left-Click** the **FluentVoice Pro** tray icon next to the clock (or click the Desktop / Taskbar **Read Aloud** shortcut).
-3. **Listen**: FluentVoice Pro cleans the formatting and reads the text aloud.
-4. **Click again to Stop**: Clicking while speech is playing immediately halts playback (instant toggle).
-5. **Right-Click Tray Menu**: Switch between 4 Ultra HD Neural voices, enable instant offline Windows voices, or toggle **Auto-Read on Copy**.
+1. **System Tray Icon (Next to Clock):**
+   - **Left-Click**: Instant Toggle (Read clipboard / Stop speech immediately).
+   - **Right-Click**: Open Settings, switch voices, toggle Auto-Read, or access developer links.
+2. **Desktop Shortcuts:**
+   - Double-click **`FluentVoice Pro`** to speak or stop.
+   - Double-click **`FluentVoice Settings`** to open the Control Center.
+3. **Windows Explorer Context Menu:**
+   - Right-click any folder or desktop background $\rightarrow$ **`FluentVoice Pro (Read Aloud)`**.
+4. **Command Line (CLI):**
+   ```powershell
+   fluentvoice "Hello world"      # Speak specific text
+   fluentvoice --clip             # Speak current clipboard
+   fluentvoice --stop             # Stop speech immediately
+   fluentvoice --gui              # Open Settings & Control Center
+   fluentvoice --about            # Open About & Credits window
+   ```
 
 ---
 
@@ -107,15 +144,18 @@ python -m fluentvoice.installer
 
 ## Other Open-Source Projects by Nick Otmazgin
 
-- [ClipFlow Pro](https://github.com/nickotmazgin/clipflow-pro) — Clipboard history manager for GNOME Shell 45–50 with privacy filtering and history window
-- [Comfort Control (EaseHub)](https://github.com/nickotmazgin/comfort-control-easehub) — GNOME Shell panel menu for power, screenshots, updates & utilities
-- [Numeric Clock](https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock) — DD/MM/YYYY 24-hour top-bar clock with seconds
+- [ClipFlow Pro](https://github.com/nickotmazgin/clipflow-pro) — Advanced privacy-safe clipboard history manager for GNOME Shell 45–50 with pin, star, and export features.
+- [Comfort Control (EaseHub)](https://github.com/nickotmazgin/comfort-control-easehub) — GNOME Shell panel menu for power, screenshots, updates & utilities.
+- [Numeric Clock](https://github.com/nickotmazgin/Linux-Numeric-Date-And-Clock) — DD/MM/YYYY 24-hour top-bar clock with seconds.
 
 ---
 
 ## Credits & Acknowledgements
 
-FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazgin](https://github.com/nickotmazgin)** — project administrator and author.
+FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazgin](https://github.com/nickotmazgin)** — project administrator and solo maintainer.
+
+- **Developer Email:** `nickotmazgin.dev@gmail.com`
+- **Location:** Israel
 
 [![AI assisted — Cursor Agent](https://img.shields.io/badge/AI%20assisted-Cursor%20Agent-1A1A1A)](https://cursor.com)
 [![AI assisted — Google Antigravity](https://img.shields.io/badge/AI%20assisted-Google%20Antigravity-4285F4)](https://github.com/google/antigravity)
@@ -124,8 +164,6 @@ Built with pair-programming assistance from AI co-pilots operated under the main
 
 - **Cursor Agent** — Audio engine architecture, concurrency design, UI automation, and packaging
 - **Google Antigravity** — System integration, Windows desktop testing, and performance profiling
-
-Every change is reviewed, tested on physical Windows machines, and approved by the maintainer.
 
 ---
 

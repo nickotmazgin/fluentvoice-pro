@@ -24,6 +24,7 @@ wheels/
 *.egg
 
 # Windows & OS Artifacts
+start_fluentvoice_silent.vbs
 Thumbs.db
 ehthumbs.db
 Desktop.ini

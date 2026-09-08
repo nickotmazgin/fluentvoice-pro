@@ -8,6 +8,7 @@ import time
 import json
 import threading
 import ctypes
+import webbrowser
 from pathlib import Path
 from PIL import Image
 import pystray
@@ -20,6 +21,9 @@ from . import core
 ERROR_ALREADY_EXISTS = 183
 MUTEX_NAME = "Local\\NickOtmazgin_FluentVoicePro_SingleInstance_Mutex"
 
+PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
+GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
+
 def enforce_single_instance():
     kernel32 = ctypes.windll.kernel32
     mutex_handle = kernel32.CreateMutexW(None, True, MUTEX_NAME)
@@ -30,18 +34,21 @@ def enforce_single_instance():
         sys.exit(0)
     return mutex_handle
 
-def get_icon_path() -> Path:
-    # First look relative to package
-    pkg_assets = Path(__file__).parent.parent / "assets" / "icon.png"
+def get_tray_icon_path() -> Path:
+    # Look for dedicated high-contrast crisp tray icon first
+    pkg_assets = Path(__file__).parent.parent / "assets" / "tray_icon.png"
     if pkg_assets.exists():
         return pkg_assets
+    # Fallback to general icon
+    app_icon = Path(__file__).parent.parent / "assets" / "icon.png"
+    if app_icon.exists():
+        return app_icon
     # Fallback to antigravity speaker icon
     alt = Path.home() / ".antigravity" / "tts_speaker.png"
     if alt.exists():
         return alt
-    # Default blank fallback
-    img = Image.new("RGBA", (64, 64), (0, 210, 255, 255))
-    fallback_path = Path.home() / ".fluentvoice" / "icon.png"
+    fallback_path = Path.home() / ".fluentvoice" / "tray_icon.png"
+    img = Image.new("RGBA", (32, 32), (0, 220, 255, 255))
     img.save(fallback_path)
     return fallback_path
 
@@ -62,6 +69,24 @@ class FluentVoiceTrayApp:
 
     def on_stop(self, icon=None, item=None):
         core.stop_all_playback()
+
+    def on_open_settings(self, icon=None, item=None):
+        def _launch():
+            from .gui import open_settings_window
+            open_settings_window(tab="Voice & Speech")
+        threading.Thread(target=_launch, daemon=True).start()
+
+    def on_open_about(self, icon=None, item=None):
+        def _launch():
+            from .gui import open_settings_window
+            open_settings_window(tab="About & Developer")
+        threading.Thread(target=_launch, daemon=True).start()
+
+    def on_open_paypal(self, icon=None, item=None):
+        webbrowser.open(PAYPAL_DONATE_URL)
+
+    def on_open_github(self, icon=None, item=None):
+        webbrowser.open(GITHUB_REPO_URL)
 
     def set_voice(self, voice_name):
         def _inner(icon, item):
@@ -110,11 +135,12 @@ class FluentVoiceTrayApp:
         os._exit(0)
 
     def run(self):
-        icon_path = get_icon_path()
+        icon_path = get_tray_icon_path()
         img = Image.open(icon_path)
 
         menu = pystray.Menu(
             item("🔊 FluentVoice (Toggle Speak / Stop)", self.on_toggle_speech, default=True),
+            item("⚙️ Settings & Control Center...", self.on_open_settings),
             item("⏹ Stop Speech Immediately", self.on_stop),
             pystray.Menu.SEPARATOR,
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
@@ -125,10 +151,14 @@ class FluentVoiceTrayApp:
                 item("Brian Multilingual (Natural Casual)", self.set_voice("en-US-BrianMultilingualNeural"), checked=self.is_voice_checked("en-US-BrianMultilingualNeural")),
                 item("Emma Multilingual (Natural Expressive)", self.set_voice("en-US-EmmaMultilingualNeural"), checked=self.is_voice_checked("en-US-EmmaMultilingualNeural")),
             )),
-            item("💻 Local Windows Voices (Instant Offline)", pystray.Menu(
+            item("💻 Local Windows Voices (Offline)", pystray.Menu(
                 item("Windows Zira (English US)", self.set_voice("sapi-zira"), checked=self.is_voice_checked("sapi-zira")),
                 item("Windows Hazel (English UK)", self.set_voice("sapi-hazel"), checked=self.is_voice_checked("sapi-hazel")),
             )),
+            pystray.Menu.SEPARATOR,
+            item("ℹ️ About & Credits (Nick Otmazgin)...", self.on_open_about),
+            item("💖 Donate & Support (PayPal)...", self.on_open_paypal),
+            item("🌐 GitHub Repository & Docs...", self.on_open_github),
             pystray.Menu.SEPARATOR,
             item("❌ Exit FluentVoice Pro", self.on_exit)
         )
