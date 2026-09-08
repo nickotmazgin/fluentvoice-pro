@@ -1,13 +1,12 @@
-"""FluentVoice Pro - Modern Windows 11 Fluent System Tray Suite
+"""FluentVoice Pro - Modern Windows 11 System Tray Daemon & Clipboard Watcher
 Author: Nick Otmazgin
 """
 
 import sys
 import os
 import time
-import json
-import threading
 import ctypes
+import threading
 import subprocess
 import webbrowser
 from pathlib import Path
@@ -15,71 +14,56 @@ from PIL import Image
 import pystray
 from pystray import MenuItem as item
 
-from .config import load_config, save_config
-from . import core
+# Ensure package imports work
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from fluentvoice import config, core
+from fluentvoice.config import load_config, save_config
 
-# Force Windows 11 Dark Mode on Win32 popup menus
-def enable_win32_dark_mode():
-    try:
-        uxtheme = ctypes.windll.uxtheme
-        set_preferred_app_mode = uxtheme[135]
-        set_preferred_app_mode.argtypes = [ctypes.c_int]
-        set_preferred_app_mode.restype = ctypes.c_int
-        set_preferred_app_mode(2)  # 2 = ForceDark
-        flush_menu_themes = uxtheme[136]
-        flush_menu_themes()
-    except Exception:
-        pass
-
-# Windows Single-Instance Mutex
-ERROR_ALREADY_EXISTS = 183
-MUTEX_NAME = "Local\\NickOtmazgin_FluentVoicePro_SingleInstance_Mutex"
-
+MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
 
-def enforce_single_instance():
+def check_single_instance():
     kernel32 = ctypes.windll.kernel32
-    mutex_handle = kernel32.CreateMutexW(None, True, MUTEX_NAME)
-    if kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
-        print("[FluentVoice Pro] Another instance is already running. Exiting cleanly.")
-        if mutex_handle:
-            kernel32.CloseHandle(mutex_handle)
-        sys.exit(0)
-    return mutex_handle
+    handle = kernel32.CreateMutexW(None, False, MUTEX_NAME)
+    if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        return None
+    return handle
 
-def get_tray_icon_path() -> Path:
-    pkg_assets = Path(__file__).parent.parent / "assets" / "tray_icon.png"
-    if pkg_assets.exists():
-        return pkg_assets
-    app_icon = Path(__file__).parent.parent / "assets" / "icon.png"
-    if app_icon.exists():
-        return app_icon
-    alt = Path.home() / ".antigravity" / "tts_speaker.png"
-    if alt.exists():
-        return alt
-    fallback_path = Path.home() / ".fluentvoice" / "tray_icon.png"
-    img = Image.new("RGBA", (32, 32), (0, 220, 255, 255))
-    img.save(fallback_path)
-    return fallback_path
+def get_tray_icon_path():
+    p = Path(__file__).parent.parent / "assets" / "tray_icon.ico"
+    if p.exists():
+        return str(p)
+    return str(Path.home() / ".antigravity" / "tray_icon.ico")
+
+def apply_win32_dark_menus():
+    try:
+        uxtheme = ctypes.windll.uxtheme
+        uxtheme.SetPreferredAppMode(2)  # ForceDark
+    except Exception:
+        pass
 
 class FluentVoiceTrayApp:
     def __init__(self):
-        enable_win32_dark_mode()
-        self.mutex_handle = enforce_single_instance()
+        self.mutex_handle = check_single_instance()
+        if not self.mutex_handle:
+            sys.exit(0)
+
+        apply_win32_dark_menus()
+
         self.cfg = load_config()
         self.auto_read_enabled = self.cfg.get("auto_read_copy", False)
-        self.last_clipboard_hash = hash(core.get_clipboard_text())
+        self.last_clipboard_hash = None
         self.tray_icon = None
 
-        # Bind notification handler from core
+        # Register notification bridge to core engine
         core.set_notify_callback(self.notify_user)
 
     def notify_user(self, title: str, message: str):
-        """Displays native Windows balloon/toast notification if enabled."""
-        fresh_cfg = load_config()
-        if fresh_cfg.get("show_notifications", True) and self.tray_icon:
+        if not self.cfg.get("show_notifications", True):
+            return
+        if self.tray_icon:
             try:
                 self.tray_icon.notify(message, title)
             except Exception:
@@ -94,6 +78,19 @@ class FluentVoiceTrayApp:
 
     def on_stop(self, icon=None, item=None):
         core.stop_all_playback()
+
+    def on_open_reader(self, icon=None, item=None):
+        try:
+            from .gui import focus_existing_settings_window
+            if focus_existing_settings_window():
+                return
+        except Exception:
+            pass
+        pythonw = Path(sys.executable).parent / "pythonw.exe"
+        if not pythonw.exists():
+            pythonw = Path(sys.executable)
+        base_dir = Path(__file__).parent.parent.resolve()
+        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--reader"], cwd=str(base_dir))
 
     def on_open_settings(self, icon=None, item=None):
         try:
@@ -130,9 +127,8 @@ class FluentVoiceTrayApp:
     def on_open_feedback(self, icon=None, item=None):
         webbrowser.open(GITHUB_ISSUES_URL)
 
-    def set_voice(self, voice_name, display_label=""):
+    def set_voice(self, voice_name, display_label=None):
         def _inner(icon, item):
-            self.cfg = load_config()
             self.cfg["voice"] = voice_name
             if "sapi" in voice_name.lower() or "desktop" in voice_name.lower():
                 self.cfg["engine"] = "offline"
@@ -183,13 +179,14 @@ class FluentVoiceTrayApp:
                     current_h = hash(current)
                     if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
                         self.last_clipboard_hash = current_h
-                        time.sleep(0.4)
+                        debounce = float(fresh_cfg.get("debounce_sec", 0.6))
+                        time.sleep(debounce)
                         fresh = core.get_clipboard_text()
                         if fresh == current:
                             threading.Thread(target=lambda: core.speak_text(fresh), daemon=True).start()
             except Exception:
                 pass
-            time.sleep(0.6)
+            time.sleep(0.5)
 
     def on_exit(self, icon, item):
         core.stop_all_playback()
@@ -212,7 +209,8 @@ class FluentVoiceTrayApp:
 
         menu = pystray.Menu(
             item("🔊 FluentVoice (Toggle Speak / Stop)", self.on_toggle_speech, default=True),
-            item("⚙️ Settings & Control Center...", self.on_open_settings),
+            item("📋 Direct Text Reader...", self.on_open_reader),
+            item("⚙️ Settings && Control Center...", self.on_open_settings),
             item("⏹ Stop Speech Immediately", self.on_stop),
             pystray.Menu.SEPARATOR,
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
@@ -243,9 +241,9 @@ class FluentVoiceTrayApp:
             )),
             item("💻 Local Windows Voices (Offline 0ms)", pystray.Menu(*offline_items)),
             pystray.Menu.SEPARATOR,
-            item("ℹ️ About & Credits (Nick Otmazgin)...", self.on_open_about),
-            item("💖 Donate & Support (PayPal)...", self.on_open_paypal),
-            item("🌐 GitHub Repository & Docs...", self.on_open_github),
+            item("ℹ️ About && Credits (Nick Otmazgin)...", self.on_open_about),
+            item("💖 Donate && Support (PayPal)...", self.on_open_paypal),
+            item("🌐 GitHub Repository && Docs...", self.on_open_github),
             item("🐛 Report an Issue / Feedback...", self.on_open_feedback),
             pystray.Menu.SEPARATOR,
             item("❌ Exit FluentVoice Pro", self.on_exit)

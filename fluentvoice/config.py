@@ -17,6 +17,8 @@ DEFAULT_CONFIG = {
     "auto_read_copy": False,
     "clean_markdown": True,
     "show_notifications": True,
+    "auto_route_language": True,
+    "debounce_sec": 0.6,
     "rate_mult": 1.0,
     "pitch_hz": 0,
     "volume": 100,

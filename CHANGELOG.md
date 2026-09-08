@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-09-08
+
+### Added
+- **Dedicated Direct Text Reader & Scratchpad Window**:
+  - Full-featured multi-line text scratchpad integrated directly into the Control Center with a dedicated **Direct Text Reader** tab.
+  - Quick action toolbar: **📋 Paste Clipboard**, **🗑️ Clear**, **▶️ Read Aloud**, and **⏹️ Stop**.
+  - Real-time text analytics: displays live word count, character count, and automatically detects text language (Hebrew 🇮🇱, Arabic 🇸🇦, Japanese/CJK 🇯🇵, English/Latin 🌐).
+  - 1-Click System Tray shortcut: **📋 Direct Text Reader...** opens directly to the scratchpad.
+  - CLI flag `--reader` / `-r` for direct shell and script access.
+- **Immediate Synthesis Queue & Preparation Feedback**:
+  - Solved user waiting ambiguity during neural audio synthesis (~2–6s remote generation):
+  - Sends immediate notification `⏳ Synthesizing speech: "<snippet>"` the instant speech is requested so users know processing has started.
+  - Transitions to `🔊 Speaking: "<snippet>"` as soon as playback commences.
+  - Real-time status in GUI: shows `⏳ Synthesizing voice... Connecting to neural engine...` followed by `✔️ Speech playback active (Zero Collisions)`.
+- **Smart Language Detection & Voice Auto-Routing**:
+  - Automatic character script analysis detects when copied or pasted text is Hebrew, Arabic, Japanese/CJK, or English/Latin.
+  - When enabled, automatically routes Hebrew text to `Avri (Hebrew HD)` (`he-IL-AvriNeural`) or other native models without requiring manual voice switching.
+  - Displays language routing notifications (e.g. `🇮🇱 Hebrew detected: Auto-routed to Avri (Hebrew HD)`).
+  - Can be toggled on/off in **Settings -> Automation & System** (`Smart Language Auto-Routing`).
+  - Provides language mismatch warning toasts when auto-routing is disabled.
+- **Advanced Text & Character Sanitizer (PDF, OCR, Hebrew Niqqud, Unicodes, Code)**:
+  - Unicode NFKC normalization: cleans composite glyphs, full-width characters, and ligatures.
+  - Strips invisible zero-width characters (`\u200B-\u200D`, `\uFEFF`, soft hyphens `\u00AD`) and bidirectional markers (`\u200E`, `\u200F`, `\u202A-\u202E`).
+  - Strips non-printable control characters that could crash SAPI COM objects or cause silent audio gaps.
+  - Heuristic repair for broken PDF and OCR hyphenated line breaks (`inter-\nnational` -> `international`).
+  - Merges soft line wraps from PDFs into smooth conversational sentences.
+  - Replaces raw web links (`https://...`) with spoken domain names (`link to domain.com`).
+  - Translates bullet points and unicode symbols into natural conversational pauses.
+  - Safely handles Hebrew Niqqud (vowels) without corrupting text stream.
+- **Configurable Auto-Read Stability Buffer Slider**:
+  - Added user control over clipboard debounce delay (0.3s to 1.5s, default 0.6s) in **Settings -> Automation & System**.
+
+### Fixed
+- **Win32 Menu Mnemonic Escaping (Double-Space Glitch)**:
+  - Fixed Win32 menu accelerator ampersand stripping: replaced single `&` with escaped `&&` in `pystray` menu definitions, restoring crisp literal ampersands and eliminating double-space gaps (`⚙️ Settings && Control Center...`, `ℹ️ About && Credits...`, `💖 Donate && Support...`, `🌐 GitHub Repository && Docs...`).
+- **Universal Welcoming Preview Greeting**:
+  - Replaced personalized `"Hello Nick"` placeholder with universal friendly greeting: `"Welcome to FluentVoice Pro! High-definition natural speech synthesis is active."`
+- **Repository Asset Cleanup**:
+  - Removed outdated screenshot images from the repository and cleaned `README.md` image references.
+
+---
+
 ## [1.3.1] - 2026-09-08
 
 ### Added
