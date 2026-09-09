@@ -74,12 +74,12 @@ jobs:
           Get-Content release-notes.md | Select-Object -First 40
 
       - name: Attest source ZIP
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ steps.meta.outputs.source_zip }}
 
       - name: Attest portable ZIP
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ steps.meta.outputs.portable_zip }}
 
