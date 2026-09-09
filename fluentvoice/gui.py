@@ -636,7 +636,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _populate_options_tab(self):
         tab = self.tab_options
 
-        card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
+        scroll = ctk.CTkScrollableFrame(tab, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=0, pady=0)
+
+        card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)
         card.pack(fill="both", expand=True, padx=10, pady=8)
 
         # Switch 1: Auto-Read on copy
