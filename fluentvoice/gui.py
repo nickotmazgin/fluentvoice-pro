@@ -90,8 +90,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         super().__init__()
 
         self.title("FluentVoice Pro - Settings & Control Center")
-        self.geometry("760x700")
-        self.minsize(700, 630)
+        self.geometry("780x740")
+        self.minsize(720, 640)
 
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -395,9 +395,17 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _populate_speech_tab(self):
         tab = self.tab_speech
 
+        scroll = ctk.CTkScrollableFrame(
+            tab,
+            fg_color="transparent",
+            scrollbar_button_color="#30363D",
+            scrollbar_button_hover_color="#00D2FF",
+        )
+        scroll.pack(fill="both", expand=True, padx=0, pady=0)
+
         # Voice selection card
-        voice_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        voice_card.pack(fill="x", padx=10, pady=5)
+        voice_card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)
+        voice_card.pack(fill="x", padx=10, pady=(8, 5))
 
         header_row = ctk.CTkFrame(voice_card, fg_color="transparent")
         header_row.pack(fill="x", padx=14, pady=(8, 4))
@@ -462,8 +470,15 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.offline_status_lbl.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Modulation card
-        mod_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
+        mod_card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)
         mod_card.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            mod_card,
+            text="Speech Modulation",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#00D2FF"
+        ).pack(anchor="w", padx=14, pady=(10, 2))
 
         # Rate slider
         rate_box = ctk.CTkFrame(mod_card, fg_color="transparent")
@@ -581,8 +596,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         btn_reset.pack(anchor="w", padx=14, pady=(2, 10))
 
         # Test card
-        test_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
-        test_card.pack(fill="x", padx=10, pady=5)
+        test_card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)
+        test_card.pack(fill="x", padx=10, pady=(5, 10))
 
         ctk.CTkLabel(
             test_card,
@@ -631,40 +646,52 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=12),
             text_color="#8B949E"
         )
-        self.test_status_lbl.pack(anchor="w", padx=14, pady=(2, 6))
+        self.test_status_lbl.pack(anchor="w", padx=14, pady=(2, 10))
+
+    def _section_card(self, parent, title: str):
+        """Consistent dark section card with cyan title for Settings tabs."""
+        card = ctk.CTkFrame(parent, fg_color="#182234", corner_radius=10)
+        card.pack(fill="x", padx=10, pady=(4, 6))
+        ctk.CTkLabel(
+            card,
+            text=title,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#00D2FF"
+        ).pack(anchor="w", padx=14, pady=(10, 4))
+        return card
 
     def _populate_options_tab(self):
         tab = self.tab_options
 
-        scroll = ctk.CTkScrollableFrame(tab, fg_color="transparent")
+        scroll = ctk.CTkScrollableFrame(
+            tab,
+            fg_color="transparent",
+            scrollbar_button_color="#30363D",
+            scrollbar_button_hover_color="#00D2FF",
+        )
         scroll.pack(fill="both", expand=True, padx=0, pady=0)
 
-        card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)
-        card.pack(fill="both", expand=True, padx=10, pady=8)
-
-        # Switch 1: Auto-Read on copy
+        # --- Clipboard / Auto-Read ---
+        clip = self._section_card(scroll, "Clipboard & Auto-Read")
         self.switch_autoread = ctk.CTkSwitch(
-            card,
-            text="Auto-Read on Copy (Reads clipboard text automatically after stability buffer)",
+            clip,
+            text="Auto-Read on Copy (speak clipboard after stability buffer)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_autoread
         )
         if self.cfg.get("auto_read_copy", False):
             self.switch_autoread.select()
-        self.switch_autoread.pack(anchor="w", padx=16, pady=8)
+        self.switch_autoread.pack(anchor="w", padx=16, pady=(4, 6))
 
-        # Buffer delay slider
-        buffer_frame = ctk.CTkFrame(card, fg_color="transparent")
-        buffer_frame.pack(fill="x", padx=16, pady=(0, 8))
-
+        buffer_frame = ctk.CTkFrame(clip, fg_color="transparent")
+        buffer_frame.pack(fill="x", padx=16, pady=(0, 2))
         ctk.CTkLabel(
             buffer_frame,
-            text="Auto-Read Stability Buffer (Pause after copy before speaking):",
+            text="Stability buffer (pause after copy):",
             font=ctk.CTkFont(size=12),
             text_color="#8B949E"
         ).pack(side="left")
-
         curr_buf = self.cfg.get("debounce_sec", 0.6)
         self.buf_val_lbl = ctk.CTkLabel(
             buffer_frame,
@@ -673,9 +700,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             text_color="#00D2FF"
         )
         self.buf_val_lbl.pack(side="right")
-
         self.buf_slider = ctk.CTkSlider(
-            card,
+            clip,
             from_=0.3,
             to=1.5,
             number_of_steps=12,
@@ -685,61 +711,61 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             button_hover_color="#33DCFF"
         )
         self.buf_slider.set(curr_buf)
-        self.buf_slider.pack(fill="x", padx=16, pady=(0, 10))
+        self.buf_slider.pack(fill="x", padx=16, pady=(0, 12))
 
-        # Switch 2: Smart Auto-Language Routing
+        # --- Language & cleaning ---
+        lang = self._section_card(scroll, "Language & Text Cleaning")
         self.switch_autoroute = ctk.CTkSwitch(
-            card,
-            text="Smart Language Auto-Routing (Automatically switches to native Hebrew, Arabic, etc. upon detection)",
+            lang,
+            text="Smart Language Auto-Routing (Hebrew, Arabic, Spanish, French, ...)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_autoroute
         )
         if self.cfg.get("auto_route_language", True):
             self.switch_autoroute.select()
-        self.switch_autoroute.pack(anchor="w", padx=16, pady=8)
+        self.switch_autoroute.pack(anchor="w", padx=16, pady=(4, 6))
 
-        # Switch 3: AI & Markdown formatting cleaner
         self.switch_markdown = ctk.CTkSwitch(
-            card,
-            text="AI Markdown & PDF Cleaner (Strips code blocks, URLs, and fixes OCR/PDF line breaks)",
+            lang,
+            text="AI Markdown & PDF Cleaner (code blocks, URLs, OCR line breaks)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_markdown
         )
         if self.cfg.get("clean_markdown", True):
             self.switch_markdown.select()
-        self.switch_markdown.pack(anchor="w", padx=16, pady=8)
+        self.switch_markdown.pack(anchor="w", padx=16, pady=(0, 6))
 
-        # Switch 4: Windows Notifications & Toasts
         self.switch_notify = ctk.CTkSwitch(
-            card,
-            text="Show Windows Notifications & Toasts (Alerts for synthesis queue, auto-routing, and playback)",
+            lang,
+            text="Windows Notifications & Toasts",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_notifications
         )
         if self.cfg.get("show_notifications", True):
             self.switch_notify.select()
-        self.switch_notify.pack(anchor="w", padx=16, pady=8)
+        self.switch_notify.pack(anchor="w", padx=16, pady=(0, 12))
 
-        # Global hotkey
+        # --- Hotkey ---
+        hk = self._section_card(scroll, "Global Hotkey")
         self.switch_hotkey = ctk.CTkSwitch(
-            card,
-            text="Global Hotkey — Toggle Speak / Stop (default Ctrl+Shift+Space; Win+Shift+S is reserved by Snipping Tool)",
+            hk,
+            text="Enable hotkey (toggle Speak / Stop from any app)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_hotkey
         )
         if self.cfg.get("hotkey_enabled", True):
             self.switch_hotkey.select()
-        self.switch_hotkey.pack(anchor="w", padx=16, pady=(8, 4))
+        self.switch_hotkey.pack(anchor="w", padx=16, pady=(4, 4))
 
-        hk_row = ctk.CTkFrame(card, fg_color="transparent")
-        hk_row.pack(fill="x", padx=16, pady=(0, 8))
+        hk_row = ctk.CTkFrame(hk, fg_color="transparent")
+        hk_row.pack(fill="x", padx=16, pady=(0, 4))
         ctk.CTkLabel(
             hk_row,
-            text="Hotkey chord:",
+            text="Chord:",
             font=ctk.CTkFont(size=12),
             text_color="#8B949E"
         ).pack(side="left")
@@ -763,16 +789,21 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#30363D",
             command=self._on_hotkey_commit
         ).pack(side="left")
-
-        # Preferred voices for auto-route
-        pref_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
-        pref_box.pack(fill="x", padx=16, pady=(4, 10))
         ctk.CTkLabel(
-            pref_box,
-            text="Preferred voices for Smart Language Auto-Routing:",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#00D2FF"
-        ).pack(anchor="w", padx=12, pady=(8, 6))
+            hk,
+            text="Default: ctrl+shift+space  |  Win+Shift+S is reserved by Snipping Tool",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E"
+        ).pack(anchor="w", padx=16, pady=(0, 12))
+
+        # --- Preferred voices ---
+        pref = self._section_card(scroll, "Preferred Voices (Auto-Route)")
+        ctk.CTkLabel(
+            pref,
+            text="When a language is detected, use this voice instead of the active profile:",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E"
+        ).pack(anchor="w", padx=16, pady=(0, 6))
 
         self._pref_combos = {}
         pref_choices = {
@@ -802,8 +833,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         }
         prefs = self.cfg.get("preferred_voices") or {}
         for lang_key, options in pref_choices.items():
-            row = ctk.CTkFrame(pref_box, fg_color="transparent")
-            row.pack(fill="x", padx=12, pady=2)
+            row = ctk.CTkFrame(pref, fg_color="transparent")
+            row.pack(fill="x", padx=16, pady=2)
             ctk.CTkLabel(
                 row,
                 text=f"{labels[lang_key]}:",
@@ -818,46 +849,44 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             combo = ctk.CTkComboBox(
                 row,
                 values=display_names,
-                width=260,
+                width=280,
                 height=28,
                 font=ctk.CTkFont(size=12),
                 dropdown_font=ctk.CTkFont(size=12),
+                fg_color="#0D131D",
+                border_color="#30363D",
+                button_color="#00D2FF",
+                button_hover_color="#33DCFF",
+                dropdown_fg_color="#121824",
+                dropdown_hover_color="#00D2FF",
                 command=lambda choice, k=lang_key, m=code_by_name: self._on_pref_voice(k, m.get(choice, ""))
             )
             current_code = prefs.get(lang_key, options[0][1])
             combo.set(name_by_code.get(current_code, options[0][0]))
             combo.pack(side="left", padx=(4, 0))
             self._pref_combos[lang_key] = combo
-
         ctk.CTkLabel(
-            pref_box,
-            text="Tip: pick Avri vs Hila (or Spanish Alvaro vs Dalia) — auto-route will use your preference.",
+            pref,
+            text="Tip: Avri vs Hila, Alvaro vs Dalia — auto-route uses your pick.",
             font=ctk.CTkFont(size=11),
             text_color="#8B949E"
-        ).pack(anchor="w", padx=12, pady=(4, 8))
+        ).pack(anchor="w", padx=16, pady=(6, 12))
 
-        # Tray daemon status / restart
-        tray_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
-        tray_box.pack(fill="x", padx=16, pady=(0, 10))
-        ctk.CTkLabel(
-            tray_box,
-            text="System Tray Daemon:",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#00D2FF"
-        ).pack(anchor="w", padx=12, pady=(8, 4))
+        # --- Tray daemon ---
+        tray = self._section_card(scroll, "System Tray Daemon")
         self.tray_status_lbl = ctk.CTkLabel(
-            tray_box,
+            tray,
             text="Checking tray…",
             font=ctk.CTkFont(size=12),
             text_color="#8B949E"
         )
-        self.tray_status_lbl.pack(anchor="w", padx=12, pady=(0, 4))
-        tray_btns = ctk.CTkFrame(tray_box, fg_color="transparent")
-        tray_btns.pack(fill="x", padx=12, pady=(0, 10))
+        self.tray_status_lbl.pack(anchor="w", padx=16, pady=(2, 6))
+        tray_btns = ctk.CTkFrame(tray, fg_color="transparent")
+        tray_btns.pack(fill="x", padx=16, pady=(0, 12))
         ctk.CTkButton(
             tray_btns,
             text="Ensure Tray Running",
-            width=150,
+            width=160,
             height=30,
             fg_color="#00D2FF",
             hover_color="#33DCFF",
@@ -876,28 +905,23 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(side="left")
         self.after(200, self._refresh_tray_status)
 
-        # Information box
-        info_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
-        info_box.pack(fill="x", padx=16, pady=(8, 10))
-
-        ctk.CTkLabel(
-            info_box,
-            text="⚡ How to Trigger FluentVoice Pro Anywhere in Windows:",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#00D2FF"
-        ).pack(anchor="w", padx=12, pady=(8, 4))
-
+        # --- Tips ---
+        tips = self._section_card(scroll, "How to Trigger FluentVoice")
         guide = (
-            "• Direct Text Reader: Paste or type any long article or document directly in the Direct Text Reader tab.\n"
-            "• 1-Click System Tray: Left-click (or double-click) the cyan speaker icon next to the clock to toggle speak/stop.\n"
-            "• Global Hotkey: Ctrl+Shift+Space (configurable above) toggles speak/stop from any app.\n"
-            "• Right-Click System Tray: Instant context menu for all voices, auto-read toggle, notifications, and settings.\n"
-            "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center and revive the tray if needed.\n"
-            "• Close to Tray: Hides Settings and ensures the tray icon is running (use Exit only to fully quit).\n"
-            "• Windows Explorer: Right-click any folder or desktop background -> 'FluentVoice Pro (Read Aloud)'.\n"
-            "• Instant Toggle: Triggering speech while audio is playing immediately halts playback (zero collisions)."
+            "• Direct Text Reader — paste/type long text, then Read Aloud.\n"
+            "• Tray icon — left-click toggles speak/stop; right-click for voices and settings.\n"
+            "• Global hotkey — Ctrl+Shift+Space (configurable above).\n"
+            "• Desktop shortcut — opens Control Center and revives tray if needed.\n"
+            "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
+            "• Explorer — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
         )
-        ctk.CTkLabel(info_box, text=guide, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=12, pady=(0, 8))
+        ctk.CTkLabel(
+            tips,
+            text=guide,
+            font=ctk.CTkFont(size=12),
+            text_color="#C9D1D9",
+            justify="left"
+        ).pack(anchor="w", padx=16, pady=(0, 14))
 
     def _populate_about_tab(self):
         tab = self.tab_about
