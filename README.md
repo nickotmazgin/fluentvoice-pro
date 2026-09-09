@@ -16,6 +16,22 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 > **Latest: v1.4.3** — Close-to-Tray resurrects the daemon, global hotkey, volume slider, Spanish/French auto-route, preferred voices, smoke checklist. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
+![FluentVoice Pro v1.4.3 — overview collage](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)
+
+<p align="center">
+  <img src="screenshots/v1.4.3/01-settings-reader.png" width="48%" alt="Direct Text Reader" />
+  <img src="screenshots/v1.4.3/02-settings-voice.png" width="48%" alt="Voice & Speech" />
+</p>
+<p align="center">
+  <img src="screenshots/v1.4.3/03-settings-automation.png" width="48%" alt="Automation & System" />
+  <img src="screenshots/v1.4.3/04-settings-about.png" width="48%" alt="About & Developer" />
+</p>
+<p align="center">
+  <img src="screenshots/v1.4.3/06b-tray-menu-crop.png" width="32%" alt="Tray menu (dark + hover)" />
+  <img src="screenshots/v1.4.3/05c-tray-icon-closeup.png" width="32%" alt="Tray icon" />
+  <img src="screenshots/v1.4.3/00-desktop-icon-asset.png" width="32%" alt="Desktop icon" />
+</p>
+
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
 ---

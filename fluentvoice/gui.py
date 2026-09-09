@@ -175,9 +175,35 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._populate_options_tab()
         self._populate_about_tab()
 
+        # CustomTkinter lays out hidden tabs at ~0 size; briefly visit each so
+        # scrollable frames and cards get real geometry (fixes blank maximized tabs).
         valid_tabs = ["Direct Text Reader", "Voice & Speech", "Automation & System", "About & Developer"]
+        for name in valid_tabs:
+            self.tabview.set(name)
+            self.update_idletasks()
         if initial_tab in valid_tabs:
             self.tabview.set(initial_tab)
+        else:
+            self.tabview.set("Voice & Speech")
+        self.update_idletasks()
+        self.bind("<Configure>", self._on_window_configure)
+
+    def _on_window_configure(self, event=None):
+        """Keep scrollable Settings tabs refreshing after maximize / resize."""
+        if event is not None and event.widget is not self:
+            return
+        try:
+            self.update_idletasks()
+            for attr in ("tab_speech", "tab_options", "tab_about"):
+                tab = getattr(self, attr, None)
+                if tab is None:
+                    continue
+                for child in tab.winfo_children():
+                    canvas = getattr(child, "_parent_canvas", None)
+                    if canvas is not None:
+                        canvas.configure(scrollregion=canvas.bbox("all"))
+        except Exception:
+            pass
 
     def _populate_reader_tab(self):
         tab = self.tab_reader

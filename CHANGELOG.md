@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.3] - 2026-09-09
 
+### Docs
+- **HD screenshots + collage** under `screenshots/v1.4.3/` (Settings tabs, maximized views, dark tray menu hover, tray/desktop icons) for README and socials.
+- Fixed blank Automation/About content when Settings is maximized (CTk hidden-tab layout warm-up).
+
 ### Fixed
 - **Close to Tray after Exit**: Desktop/Settings no longer leaves you without a tray icon. Opening Settings (or clicking **Close to Tray**) now **ensures the tray daemon is running**.
 - **Tray dark menus (session flake)**: Re-applies ForceDark + FlushMenuThemes periodically and sets immersive dark mode on process windows for stronger hover contrast.
