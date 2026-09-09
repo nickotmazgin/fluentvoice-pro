@@ -61,3 +61,10 @@ temp/
 *.swo
 *~
 .cursor/
+
+# Packaging / capture noise
+*.spec
+.tmp_*
+screenshots/**/_diag*
+screenshots/**/_cursor*
+screenshots/**/*.tmp.png

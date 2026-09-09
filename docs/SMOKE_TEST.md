@@ -29,3 +29,5 @@ Use after install or before cutting a release.
    - Spanish/French sample auto-routes when Smart Language Auto-Routing is on.
    - Preferred Hebrew voice Avri vs Hila applies on Hebrew text.
    - Global hotkey (default `Ctrl+Shift+Space`) toggles speak/stop.
+   - Settings tabs (Voice / Automation) show content on first open (not blank).
+   - Release assets: try source ZIP install **or** portable EXE ZIP; see `docs/WINDOWS_TRUST.md` if SmartScreen prompts.

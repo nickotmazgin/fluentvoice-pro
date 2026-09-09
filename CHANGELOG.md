@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.3] - 2026-09-09
 
 ### Docs
-- **HD screenshots + collage** under `screenshots/v1.4.3/` (Settings tabs, maximized views, dark tray menu hover, tray/desktop icons) for README and socials.
-- Fixed blank Automation/About content when Settings is maximized (CTk hidden-tab layout warm-up).
+- **HD screenshots + collage** under `screenshots/v1.4.3/` (Settings tabs, Automation bottom, dark tray menu, tray/desktop icons) with a peer-style README Screenshots gallery.
+- **Windows trust guide** (`docs/WINDOWS_TRUST.md`) — SmartScreen Unblock, App Control, firewall (outbound HTTPS only), attestation vs Authenticode.
+- **Release packaging**: attested source ZIP + portable PyInstaller ZIP (`scripts/create-release-zips.ps1`, Actions `release-publish.yml`).
 
 ### Fixed
+- **Blank Settings tabs**: CustomTkinter `CTkTabview.set()` races a delayed `grid_forget`; Settings now re-grids the active tab after map (Voice/Automation content no longer empty on first open).
 - **Close to Tray after Exit**: Desktop/Settings no longer leaves you without a tray icon. Opening Settings (or clicking **Close to Tray**) now **ensures the tray daemon is running**.
 - **Tray dark menus (session flake)**: Re-applies ForceDark + FlushMenuThemes periodically and sets immersive dark mode on process windows for stronger hover contrast.
 
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unit tests** for text cleaner + language detect (`tests/`).
 - **PyInstaller script** (`scripts/build_exe.ps1`) for a single packaged app folder.
 - **Smoke-test checklist** (`docs/SMOKE_TEST.md`) for release verification.
+- **CI validate workflow** + **release attestations** (Sigstore / green GitHub Release stamps).
 
 ---
 

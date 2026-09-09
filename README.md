@@ -1,6 +1,7 @@
 # FluentVoice Pro
 
 [![Release](https://img.shields.io/github/v/release/nickotmazgin/fluentvoice-pro?display_name=tag)](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/nickotmazgin/fluentvoice-pro/validate.yml?branch=main&label=CI)](https://github.com/nickotmazgin/fluentvoice-pro/actions)
 [![Downloads](https://img.shields.io/github/downloads/nickotmazgin/fluentvoice-pro/total?label=downloads&color=success)](https://github.com/nickotmazgin/fluentvoice-pro/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows 11 / 10](https://img.shields.io/badge/Windows-11%20%7C%2010-0078D4?logo=windows&logoColor=white)](#compatibility)
@@ -14,25 +15,64 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.3** — Close-to-Tray resurrects the daemon, global hotkey, volume slider, Spanish/French auto-route, preferred voices, smoke checklist. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
-
-![FluentVoice Pro v1.4.3 — overview collage](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)
-
-<p align="center">
-  <img src="screenshots/v1.4.3/01-settings-reader.png" width="48%" alt="Direct Text Reader" />
-  <img src="screenshots/v1.4.3/02-settings-voice.png" width="48%" alt="Voice & Speech" />
-</p>
-<p align="center">
-  <img src="screenshots/v1.4.3/03-settings-automation.png" width="48%" alt="Automation & System" />
-  <img src="screenshots/v1.4.3/04-settings-about.png" width="48%" alt="About & Developer" />
-</p>
-<p align="center">
-  <img src="screenshots/v1.4.3/06b-tray-menu-crop.png" width="32%" alt="Tray menu (dark + hover)" />
-  <img src="screenshots/v1.4.3/05c-tray-icon-closeup.png" width="32%" alt="Tray icon" />
-  <img src="screenshots/v1.4.3/00-desktop-icon-asset.png" width="32%" alt="Desktop icon" />
-</p>
+> **Latest: v1.4.3** — Close-to-Tray resurrects the daemon, global hotkey, volume slider, Spanish/French auto-route, preferred voices, attested **ZIP + portable EXE** downloads. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
+
+---
+
+## Screenshots
+
+*FluentVoice Pro v1.4.3 — click any image to view it full size.*
+
+[![FluentVoice Pro v1.4.3 collage](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="screenshots/v1.4.3/01-settings-reader.png"><img src="screenshots/v1.4.3/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <b>01</b> — Direct Text Reader
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.3/02-settings-voice.png"><img src="screenshots/v1.4.3/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <b>02</b> — Voice &amp; Speech
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.3/03-settings-automation.png"><img src="screenshots/v1.4.3/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <b>03</b> — Automation &amp; System
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="screenshots/v1.4.3/03c-settings-automation-bottom.png"><img src="screenshots/v1.4.3/03c-settings-automation-bottom.png" width="260" alt="Automation bottom"></a><br>
+      <b>03c</b> — Automation · bottom (tray / tips)
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.3/04-settings-about.png"><img src="screenshots/v1.4.3/04-settings-about.png" width="260" alt="About &amp; Developer"></a><br>
+      <b>04</b> — About &amp; Developer
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.3/06b-tray-menu-crop.png"><img src="screenshots/v1.4.3/06b-tray-menu-crop.png" width="260" alt="Tray menu"></a><br>
+      <b>06b</b> — Tray menu (dark + hover)
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="screenshots/v1.4.3/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.3/05c-tray-icon-closeup.png" width="260" alt="Tray icon"></a><br>
+      <b>05c</b> — Tray icon
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.3/00-desktop-icon-asset.png"><img src="screenshots/v1.4.3/00-desktop-icon-asset.png" width="260" alt="Desktop icon"></a><br>
+      <b>00</b> — Desktop icon
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.3/social-preview-1280x640.jpg"><img src="screenshots/v1.4.3/social-preview-1280x640.jpg" width="260" alt="Social preview"></a><br>
+      <b>OG</b> — Social preview 1280×640
+    </td>
+  </tr>
+</table>
+
+Full combined image (download): [collage-v1.4.3-2026.jpg](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)
 
 ---
 
@@ -78,13 +118,26 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 ## Installation
 
-### Method 1: Automated Installer (Recommended)
+Two attested download options on **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)** (green GitHub verification stamps when published by Actions):
 
-1. Download the latest **`fluentvoice-pro`** release ZIP from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
-2. Extract the ZIP folder.
-3. Right-click **`install.ps1`** and choose **Run with PowerShell** (or run `.\install.ps1`).
+### Option A — Source ZIP + `install.ps1` (Recommended)
 
-### Method 2: From Source / Git
+1. Download **`fluentvoice-pro-<ver>-windows.zip`**.
+2. Extract the folder.
+3. If Windows marks it blocked: right-click → **Properties** → **Unblock** → Apply (or `Unblock-File .\install.ps1`).
+4. Right-click **`install.ps1`** → **Run with PowerShell**.
+
+Requires **Python 3.10+** on PATH.
+
+### Option B — Portable EXE ZIP (no Python)
+
+1. Download **`FluentVoicePro-<ver>-portable-win64.zip`**.
+2. Extract anywhere.
+3. Unblock **`FluentVoicePro.exe`** if needed, then double-click to start the tray daemon.
+
+SmartScreen / App Control / firewall notes: [`docs/WINDOWS_TRUST.md`](docs/WINDOWS_TRUST.md).
+
+### From Source / Git
 
 ```powershell
 git clone https://github.com/nickotmazgin/fluentvoice-pro.git
@@ -148,6 +201,8 @@ python -m fluentvoice.installer
 - **Releases:** https://github.com/nickotmazgin/fluentvoice-pro/releases
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
+- **Windows trust / SmartScreen:** [`docs/WINDOWS_TRUST.md`](docs/WINDOWS_TRUST.md)
+- **Smoke checklist:** [`docs/SMOKE_TEST.md`](docs/SMOKE_TEST.md)
 
 ## Other Open-Source Projects by Nick Otmazgin
 

@@ -175,18 +175,85 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._populate_options_tab()
         self._populate_about_tab()
 
-        # CustomTkinter lays out hidden tabs at ~0 size; briefly visit each so
-        # scrollable frames and cards get real geometry (fixes blank maximized tabs).
-        valid_tabs = ["Direct Text Reader", "Voice & Speech", "Automation & System", "About & Developer"]
-        for name in valid_tabs:
-            self.tabview.set(name)
-            self.update_idletasks()
-        if initial_tab in valid_tabs:
-            self.tabview.set(initial_tab)
-        else:
-            self.tabview.set("Voice & Speech")
-        self.update_idletasks()
+        self._valid_tabs = [
+            "Direct Text Reader",
+            "Voice & Speech",
+            "Automation & System",
+            "About & Developer",
+        ]
+        self._pending_initial_tab = (
+            initial_tab if initial_tab in self._valid_tabs else "Voice & Speech"
+        )
+        # IMPORTANT: do NOT call tabview.set() in a rapid loop. CTkTabview.set()
+        # schedules _grid_forget_all_tabs(exclude=name) after 100ms; overlapping
+        # sets race and leave the final tab unmapped (blank content pane).
+        self.tabview.set(self._pending_initial_tab)
+        self.bind("<Map>", self._on_window_mapped)
         self.bind("<Configure>", self._on_window_configure)
+        # Re-grid after CTk's delayed forget settles
+        self.after(160, self._ensure_active_tab_visible)
+        self.after(320, self._ensure_active_tab_visible)
+
+    def _on_window_mapped(self, event=None):
+        if event is not None and event.widget is not self:
+            return
+        self.after(160, self._ensure_active_tab_visible)
+
+    def _ensure_active_tab_visible(self):
+        """Make sure the selected tab frame is gridded (CTk blank-tab race fix)."""
+        try:
+            wanted = getattr(self, "_pending_initial_tab", None) or self.tabview.get()
+            tv = self.tabview
+            if wanted not in getattr(tv, "_tab_dict", {}):
+                return
+            tv._current_name = wanted
+            try:
+                tv._segmented_button.set(wanted)
+            except Exception:
+                pass
+            # Hide others, show wanted — synchronously (no delayed forget race)
+            for name, frame in tv._tab_dict.items():
+                if name == wanted:
+                    continue
+                try:
+                    frame.grid_forget()
+                except Exception:
+                    pass
+            tv._set_grid_current_tab()
+            self.update_idletasks()
+            self._refresh_scroll_regions()
+        except Exception:
+            pass
+
+    def _resync_active_tab(self):
+        """Public alias used by capture helpers."""
+        self._ensure_active_tab_visible()
+
+    def _refresh_scroll_regions(self):
+        try:
+            for attr in ("tab_speech", "tab_options", "tab_about"):
+                tab = getattr(self, attr, None)
+                if tab is None:
+                    continue
+                stack = list(tab.winfo_children())
+                while stack:
+                    w = stack.pop()
+                    canvas = getattr(w, "_parent_canvas", None)
+                    if canvas is None and w.__class__.__name__ == "Canvas":
+                        canvas = w
+                    if canvas is not None:
+                        try:
+                            bbox = canvas.bbox("all")
+                            if bbox:
+                                canvas.configure(scrollregion=bbox)
+                        except Exception:
+                            pass
+                    try:
+                        stack.extend(w.winfo_children())
+                    except Exception:
+                        pass
+        except Exception:
+            pass
 
     def _on_window_configure(self, event=None):
         """Keep scrollable Settings tabs refreshing after maximize / resize."""
@@ -194,14 +261,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             return
         try:
             self.update_idletasks()
-            for attr in ("tab_speech", "tab_options", "tab_about"):
-                tab = getattr(self, attr, None)
-                if tab is None:
-                    continue
-                for child in tab.winfo_children():
-                    canvas = getattr(child, "_parent_canvas", None)
-                    if canvas is not None:
-                        canvas.configure(scrollregion=canvas.bbox("all"))
+            self._refresh_scroll_regions()
         except Exception:
             pass
 
