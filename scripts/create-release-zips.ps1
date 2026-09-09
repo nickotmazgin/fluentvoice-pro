@@ -38,7 +38,12 @@ $Include = @(
   "README.md",
   "CHANGELOG.md",
   "LICENSE",
-  "CONTRIBUTORS.md"
+  "CONTRIBUTORS.md",
+  "SECURITY.md",
+  "PRIVACY.md",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "SUPPORT.md"
 )
 
 foreach ($item in $Include) {

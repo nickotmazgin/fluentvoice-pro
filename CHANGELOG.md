@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.5] - 2026-09-09
+
+### Fixed
+- **Source ZIP packaging**: include `SECURITY.md`, `PRIVACY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SUPPORT.md` in `scripts/create-release-zips.ps1` (missed in v1.4.4).
+
+---
+
 ## [1.4.4] - 2026-09-09
 
 ### Docs / Packaging
-- **Release ZIP includes** community & trust docs that landed on `main` after the v1.4.3 tag (`SECURITY.md`, `PRIVACY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, SUPPORT, issue/PR templates, Dependabot).
+- **Release ZIP includes** community & trust docs (`SECURITY.md`, `PRIVACY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, SUPPORT — fully wired in **1.4.5** packager).
 - **Contain-fit social preview** (1280×640) so the collage is fully visible in GitHub OG / link cards (no side crop).
 - **Repo hardening**: release immutability, CodeQL default setup, Dependabot malware + grouped updates, branch/tag rulesets, Actions bumps (`checkout`/`setup-python`/`attest-build-provenance`).
 
