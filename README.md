@@ -201,6 +201,9 @@ python -m fluentvoice.installer
 - **Releases:** https://github.com/nickotmazgin/fluentvoice-pro/releases
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
+- **Security:** [`SECURITY.md`](SECURITY.md) · [Report a vulnerability](https://github.com/nickotmazgin/fluentvoice-pro/security/advisories/new)
+- **Privacy:** [`PRIVACY.md`](PRIVACY.md)
+- **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - **Windows trust / SmartScreen:** [`docs/WINDOWS_TRUST.md`](docs/WINDOWS_TRUST.md)
 - **Smoke checklist:** [`docs/SMOKE_TEST.md`](docs/SMOKE_TEST.md)
 
@@ -246,3 +249,9 @@ If you find FluentVoice Pro useful, consider supporting continued development an
 ## License
 
 Released under the **[MIT License](LICENSE)**. Copyright © 2026 Nick Otmazgin.
+
+---
+
+**GitHub topics:** `text-to-speech` · `tts` · `windows-11` · `windows-10` · `system-tray` · `read-aloud` · `edge-tts` · `customtkinter` · `accessibility` · `speech-synthesis` · `clipboard-reader` · `open-source`
+
+**Search for:** Windows 11 text to speech tray app, FluentVoice Pro, Edge TTS reader, clipboard read aloud, offline SAPI voices, Fluent Control Center TTS

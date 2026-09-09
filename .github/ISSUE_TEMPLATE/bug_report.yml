@@ -1,0 +1,70 @@
+name: Bug Report
+description: Report a glitch or unexpected behavior in FluentVoice Pro
+title: "[BUG] "
+labels: ["bug"]
+assignees:
+  - nickotmazgin
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Do **not** paste private clipboard text or secrets.
+        Security issues → use [Security advisories](https://github.com/nickotmazgin/fluentvoice-pro/security/advisories/new).
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: Clear and concise description of what went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - Source ZIP + install.ps1
+        - Portable EXE ZIP
+        - From git / pip editable
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: FluentVoice version
+      placeholder: e.g. 1.4.3
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: e.g. Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: voice
+    attributes:
+      label: Voice / engine
+      placeholder: e.g. Andrew Multilingual / Avri / local SAPI
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, logs (scrub secrets). Optional.

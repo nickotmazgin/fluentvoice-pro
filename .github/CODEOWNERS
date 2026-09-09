@@ -1,0 +1,8 @@
+# CODEOWNERS: auto-request reviews (solo maintainer; CI is the required gate)
+* @nickotmazgin
+
+/fluentvoice/ @nickotmazgin
+/scripts/ @nickotmazgin
+/.github/workflows/ @nickotmazgin
+/docs/ @nickotmazgin
+/screenshots/ @nickotmazgin

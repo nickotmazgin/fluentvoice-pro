@@ -1,0 +1,31 @@
+name: Feature Request
+description: Suggest an enhancement for FluentVoice Pro
+title: "[FEATURE] "
+labels: ["enhancement"]
+assignees:
+  - nickotmazgin
+body:
+  - type: markdown
+    attributes:
+      value: Prefer starting a [Discussion](https://github.com/nickotmazgin/fluentvoice-pro/discussions) for early ideas.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context

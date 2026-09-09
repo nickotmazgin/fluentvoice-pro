@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **HD screenshots + collage** under `screenshots/v1.4.3/` (Settings tabs, Automation bottom, dark tray menu, tray/desktop icons) with a peer-style README Screenshots gallery.
 - **Windows trust guide** (`docs/WINDOWS_TRUST.md`) — SmartScreen Unblock, App Control, firewall (outbound HTTPS only), attestation vs Authenticode.
 - **Release packaging**: attested source ZIP + portable PyInstaller ZIP (`scripts/create-release-zips.ps1`, Actions `release-publish.yml`).
+- **Community / trust parity** with sibling repos: `SECURITY.md`, `PRIVACY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `.github/FUNDING.yml`, issue/PR templates, SUPPORT, CODEOWNERS, Dependabot (pip + Actions).
 
 ### Fixed
 - **Blank Settings tabs**: CustomTkinter `CTkTabview.set()` races a delayed `grid_forget`; Settings now re-grids the active tab after map (Voice/Automation content no longer empty on first open).

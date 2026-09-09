@@ -65,6 +65,8 @@ temp/
 # Packaging / capture noise
 *.spec
 .tmp_*
+.peer_*
 screenshots/**/_diag*
 screenshots/**/_cursor*
 screenshots/**/*.tmp.png
+screenshots/**/00-desktop-full.png

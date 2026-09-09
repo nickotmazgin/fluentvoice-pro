@@ -1,5 +1,11 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: GitHub Discussions & Q&A
+  - name: Discussions (questions, ideas)
     url: https://github.com/nickotmazgin/fluentvoice-pro/discussions
-    about: Ask questions, share feedback, and discuss ideas with the community.
+    about: Use Discussions for Q&A, ideas, and feedback.
+  - name: Security vulnerability
+    url: https://github.com/nickotmazgin/fluentvoice-pro/security/advisories/new
+    about: Report security issues privately (do not file a public issue).
+  - name: Windows trust / SmartScreen help
+    url: https://github.com/nickotmazgin/fluentvoice-pro/blob/main/docs/WINDOWS_TRUST.md
+    about: Unblock, SmartScreen, App Control, and firewall notes.
