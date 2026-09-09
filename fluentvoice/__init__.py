@@ -2,6 +2,6 @@
 Created by Nick Otmazgin
 """
 
-__version__ = "1.4.3"
+__version__ = "1.4.4"
 __author__ = "Nick Otmazgin"
 __license__ = "MIT"

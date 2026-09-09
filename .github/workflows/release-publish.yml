@@ -92,7 +92,7 @@ jobs:
           $ver = "${{ steps.meta.outputs.version }}"
           $src = "${{ steps.meta.outputs.source_zip }}"
           $port = "${{ steps.meta.outputs.portable_zip }}"
-          $title = "FluentVoice Pro $ver — Tray revive, hotkey, volume, attested ZIP + portable"
+          $title = "FluentVoice Pro $ver — Attested source ZIP + portable EXE"
           if (gh release view $tag 2>$null) {
             gh release upload $tag $src $port --clobber
             gh release edit $tag --title $title --notes-file release-notes.md

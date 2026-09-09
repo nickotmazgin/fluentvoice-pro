@@ -14,6 +14,7 @@ import customtkinter as ctk
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from fluentvoice import config, core
+from fluentvoice import __version__ as APP_VERSION
 
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
@@ -146,7 +147,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         badge_lbl = ctk.CTkLabel(
             header_frame,
-            text="v1.4.3 • Windows 11/10 Suite • By Nick Otmazgin",
+            text=f"v{APP_VERSION} • Windows 11/10 Suite • By Nick Otmazgin",
             font=ctk.CTkFont(family="Segoe UI", size=13),
             text_color="#8B949E"
         )
