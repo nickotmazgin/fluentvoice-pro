@@ -60,10 +60,8 @@ def stop_all_playback():
     except Exception:
         pass
 
-def detect_language(text: str) -> str:
-    """Detects predominant language from text using character script distribution.
-    Returns: 'hebrew', 'arabic', 'cjk', 'cyrillic', or 'latin'.
-    """
+def detect_script(text: str) -> str:
+    """Script family from Unicode ranges: hebrew, arabic, cjk, cyrillic, or latin."""
     if not text:
         return "latin"
 
@@ -85,6 +83,82 @@ def detect_language(text: str) -> str:
     if counts[top_lang] == 0:
         return "latin"
     return top_lang
+
+def _heuristic_latin_language(text: str) -> str:
+    """Lightweight Latin-language guess without optional deps."""
+    lower = text.lower()
+    scores = {
+        "spanish": len(re.findall(r"\b(el|la|los|las|que|de|y|en|un|una|es|por|para|con|como|más|también)\b", lower)),
+        "french": len(re.findall(r"\b(le|la|les|des|une|est|que|et|dans|pour|avec|ce|qui|pas|plus)\b", lower)),
+        "german": len(re.findall(r"\b(der|die|das|und|ist|nicht|ein|eine|mit|auf|für|den|dem|auch)\b", lower)),
+        "italian": len(re.findall(r"\b(il|lo|la|gli|le|di|che|e|un|una|per|con|sono|come|più)\b", lower)),
+        "english": len(re.findall(r"\b(the|and|is|to|of|in|for|that|with|on|as|are|this|be|from)\b", lower)),
+    }
+    # Accent boosts
+    if re.search(r"[áéíóúñ¿¡]", lower):
+        scores["spanish"] += 3
+    if re.search(r"[àâçéèêëîïôùûüœæ]", lower):
+        scores["french"] += 3
+    if re.search(r"[äöüß]", lower):
+        scores["german"] += 3
+    if re.search(r"[àèéìòù]", lower):
+        scores["italian"] += 2
+
+    best = max(scores, key=scores.get)
+    if scores[best] == 0:
+        return "english"
+    return best
+
+def detect_language(text: str) -> str:
+    """Detect language for routing.
+    Returns: hebrew, arabic, cjk, cyrillic, english, spanish, french, german, italian.
+    """
+    script = detect_script(text)
+    if script != "latin":
+        return script
+
+    sample = (text or "")[:4000].strip()
+    if not sample:
+        return "english"
+
+    try:
+        from langdetect import detect
+        code = detect(sample)
+        mapping = {
+            "en": "english",
+            "es": "spanish",
+            "fr": "french",
+            "de": "german",
+            "it": "italian",
+            "pt": "spanish",  # closest world voice in our catalog for now
+            "he": "hebrew",
+            "ar": "arabic",
+            "ja": "cjk",
+            "zh-cn": "cjk",
+            "zh-tw": "cjk",
+        }
+        return mapping.get(code, "english")
+    except Exception:
+        return _heuristic_latin_language(sample)
+
+def resolve_route_voice(detected_lang: str, cfg: dict):
+    """Return (voice_id, label) from preferred_voices for a detected language, or (None, '')."""
+    prefs = cfg.get("preferred_voices") or {}
+    key = detected_lang if detected_lang in prefs else (
+        "english" if detected_lang == "latin" else detected_lang
+    )
+    voice = prefs.get(key)
+    labels = {
+        "hebrew": "Hebrew HD",
+        "arabic": "Arabic HD",
+        "cjk": "Japanese/CJK HD",
+        "spanish": "Spanish HD",
+        "french": "French HD",
+        "german": "German HD",
+        "italian": "Italian HD",
+        "english": "English HD",
+    }
+    return voice, labels.get(key, key)
 
 def clean_text_for_speech(text: str) -> str:
     """Advanced text sanitizer:
@@ -113,7 +187,7 @@ def clean_text_for_speech(text: str) -> str:
     text = re.sub(r"(\b\w+)-[\r\n]+\s*(\w+\b)", r"\1\2", text)
 
     # 5. Markdown code blocks ```code``` -> [Code block omitted]
-    text = re.sub(r"```[\w]*\n[\s\S]*?\n```", " [Code block omitted] ", text)
+    text = re.sub(r"```(?:[\w+-]*)?(?:\r?\n)?[\s\S]*?```", " [Code block omitted] ", text)
     text = re.sub(r"`([^`]+)`", r"\1", text)
 
     # 6. Markdown links [title](url) -> title
@@ -170,7 +244,7 @@ def get_installed_sapi_voices() -> list:
         voices = [("Windows Zira (English US)", "Zira"), ("Windows Hazel (English UK)", "Hazel")]
     return voices
 
-def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1.0) -> bool:
+def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1.0, volume: int = 100) -> bool:
     """Zero-latency offline speech using Windows OneCore / SAPI5. Returns True on success."""
     global _is_speaking
     _is_speaking = True
@@ -178,7 +252,6 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
         import win32com.client
         sp = win32com.client.Dispatch("SAPI.SpVoice")
         if sp.GetVoices().Count == 0:
-            _is_speaking = False
             return False
 
         for i in range(sp.GetVoices().Count):
@@ -192,7 +265,10 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
         sapi_rate = int(round((rate_mult - 1.0) * 8))
         sapi_rate = max(-10, min(10, sapi_rate))
         sp.Rate = sapi_rate
-        sp.Speak(text, 1)  # 1 for async execution
+        sp.Volume = max(0, min(100, int(volume)))
+        # Synchronous speak so _is_speaking stays True for tray toggle/stop.
+        # stop_all_playback() can still purge mid-speech via SVSFPurgeBeforeSpeak.
+        sp.Speak(text, 0)
         return True
     except Exception as e:
         print(f"[Offline SAPI] Error: {e}")
@@ -200,7 +276,7 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
     finally:
         _is_speaking = False
 
-def play_audio_file(file_path: str, generation_id: int) -> bool:
+def play_audio_file(file_path: str, generation_id: int, volume: int = 100) -> bool:
     """Plays audio through a single dedicated MCI device with instant generation abort."""
     global _is_speaking
     if generation_id != _current_generation:
@@ -215,6 +291,10 @@ def play_audio_file(file_path: str, generation_id: int) -> bool:
     res_open = winmm.mciSendStringW(f'open "{file_path}" type mpegvideo alias {MCI_DEVICE_ALIAS}', None, 0, None)
     if res_open != 0:
         return False
+
+    # MCI volume is 0–1000
+    mci_vol = max(0, min(1000, int(volume) * 10))
+    winmm.mciSendStringW(f"setaudio {MCI_DEVICE_ALIAS} volume to {mci_vol}", None, 0, None)
 
     _is_speaking = True
     winmm.mciSendStringW(f"play {MCI_DEVICE_ALIAS}", None, 0, None)
@@ -237,24 +317,54 @@ def play_audio_file(file_path: str, generation_id: int) -> bool:
     _is_speaking = False
     return True
 
-async def _synthesize_edge(text: str, voice: str, out_file: str, rate: str = "+0%", pitch: str = "+0Hz") -> bool:
+async def _synthesize_edge(
+    text: str,
+    voice: str,
+    out_file: str,
+    rate: str = "+0%",
+    pitch: str = "+0Hz",
+    volume: int = 100,
+) -> bool:
     try:
         import edge_tts
-        comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
+        vol_pct = max(0, min(100, int(volume)))
+        edge_vol = f"{vol_pct - 100:+d}%"
+        comm = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=edge_vol)
         await comm.save(out_file)
         return True
     except Exception:
         return False
 
+def _voice_family(voice: str) -> str:
+    v = (voice or "").lower()
+    if v.startswith("he-"):
+        return "hebrew"
+    if v.startswith("ar-"):
+        return "arabic"
+    if v.startswith(("ja-", "zh-", "ko-")):
+        return "cjk"
+    if v.startswith("es-"):
+        return "spanish"
+    if v.startswith("fr-"):
+        return "french"
+    if v.startswith("de-"):
+        return "german"
+    if v.startswith("it-"):
+        return "italian"
+    return "english"
+
 def speak_text(raw_text: str) -> dict:
     """Main thread-safe speech dispatcher. Returns status dictionary."""
     global _current_generation, _is_speaking
 
-    cleaned = clean_text_for_speech(raw_text)
+    cfg = load_config()
+    if cfg.get("clean_markdown", True):
+        cleaned = clean_text_for_speech(raw_text)
+    else:
+        cleaned = (raw_text or "").strip()
     if not cleaned:
         cleaned = "Nothing to read. Copy text or click to speak."
 
-    cfg = load_config()
     voice = cfg.get("voice", "en-US-AndrewMultilingualNeural")
     engine = cfg.get("engine", "neural")
     
@@ -264,24 +374,56 @@ def speak_text(raw_text: str) -> dict:
 
     pitch_hz = int(cfg.get("pitch_hz", 0))
     pitch_str = f"{pitch_hz:+d}Hz" if pitch_hz != 0 else "+0Hz"
+    volume = int(cfg.get("volume", 100))
 
     # Smart Language Detection & Voice Routing
     detected_lang = detect_language(cleaned)
     auto_route = cfg.get("auto_route_language", True)
+    routed = False
     
     if auto_route:
-        if detected_lang == "hebrew" and not voice.startswith("he-"):
-            voice = "he-IL-AvriNeural"
-            trigger_notification("FluentVoice Pro", "🇮🇱 Hebrew detected: Auto-routed to Avri (Hebrew HD)")
-        elif detected_lang == "arabic" and not voice.startswith("ar-"):
-            voice = "ar-SA-HamedNeural"
-            trigger_notification("FluentVoice Pro", "🇸🇦 Arabic detected: Auto-routed to Hamed (Arabic HD)")
-        elif detected_lang == "cjk" and not voice.startswith("ja-"):
-            voice = "ja-JP-KeitaNeural"
-            trigger_notification("FluentVoice Pro", "🇯🇵 Japanese/CJK detected: Auto-routed to Keita (Japanese HD)")
+        route_voice, route_label = resolve_route_voice(detected_lang, cfg)
+        active_family = _voice_family(voice)
+        if route_voice and detected_lang != active_family:
+            voice = route_voice
+            engine = "neural"
+            routed = True
+            flags = {
+                "hebrew": "🇮🇱",
+                "arabic": "🇸🇦",
+                "cjk": "🇯🇵",
+                "spanish": "🇪🇸",
+                "french": "🇫🇷",
+                "german": "🇩🇪",
+                "italian": "🇮🇹",
+                "english": "🇺🇸",
+            }
+            flag = flags.get(detected_lang, "🌐")
+            trigger_notification(
+                "FluentVoice Pro",
+                f"{flag} {detected_lang.title()} detected: Auto-routed to {route_label}",
+            )
     else:
-        if detected_lang == "hebrew" and not voice.startswith("he-"):
-            trigger_notification("FluentVoice Pro - Voice Notice", "ℹ️ Hebrew text detected with an English voice active.")
+        # Warn on script/voice mismatch when auto-routing is disabled
+        voice_lang = _voice_family(voice)
+        script = detect_script(cleaned)
+        non_latin = script in ("hebrew", "arabic", "cjk")
+        if non_latin and script != voice_lang:
+            names = {
+                "hebrew": "Hebrew",
+                "arabic": "Arabic",
+                "cjk": "Japanese/CJK",
+                "spanish": "Spanish",
+                "french": "French",
+                "german": "German",
+                "italian": "Italian",
+                "english": "English",
+                "latin": "English/Latin",
+            }
+            trigger_notification(
+                "FluentVoice Pro - Voice Notice",
+                f"ℹ️ {names.get(detected_lang, detected_lang)} text detected, but active voice is {names.get(voice_lang, voice_lang)}. Enable Smart Language Auto-Routing or switch voice."
+            )
 
     with _engine_lock:
         _current_generation += 1
@@ -290,10 +432,10 @@ def speak_text(raw_text: str) -> dict:
 
     snippet = (cleaned[:45] + "...") if len(cleaned) > 45 else cleaned
 
-    # Offline SAPI Mode
-    if engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower():
+    # Offline SAPI Mode (skip when auto-route forced a neural voice)
+    if (not routed) and (engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower()):
         trigger_notification("FluentVoice Pro", f"🔊 Speaking (Offline): \"{snippet}\"")
-        ok = speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult)
+        ok = speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult, volume=volume)
         if not ok:
             trigger_notification(
                 "FluentVoice Pro - Voice Alert",
@@ -307,7 +449,9 @@ def speak_text(raw_text: str) -> dict:
 
     out_file = str(CACHE_DIR / f"speech_gen_{my_gen}.mp3")
     try:
-        success = asyncio.run(_synthesize_edge(cleaned, voice, out_file, rate=rate_str, pitch=pitch_str))
+        success = asyncio.run(
+            _synthesize_edge(cleaned, voice, out_file, rate=rate_str, pitch=pitch_str, volume=volume)
+        )
     except Exception:
         success = False
 
@@ -322,7 +466,7 @@ def speak_text(raw_text: str) -> dict:
 
     if success and os.path.exists(out_file):
         trigger_notification("FluentVoice Pro", f"🔊 Speaking: \"{snippet}\"")
-        play_audio_file(out_file, my_gen)
+        play_audio_file(out_file, my_gen, volume=volume)
         try:
             os.remove(out_file)
         except Exception:

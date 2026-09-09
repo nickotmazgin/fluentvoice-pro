@@ -1,6 +1,5 @@
 """Configuration management for FluentVoice Pro."""
 
-import os
 import json
 from pathlib import Path
 
@@ -10,6 +9,17 @@ APP_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = APP_DIR / "config.json"
 CACHE_DIR = APP_DIR / "cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+DEFAULT_PREFERRED_VOICES = {
+    "english": "en-US-AndrewMultilingualNeural",
+    "hebrew": "he-IL-AvriNeural",
+    "arabic": "ar-SA-HamedNeural",
+    "cjk": "ja-JP-KeitaNeural",
+    "spanish": "es-ES-AlvaroNeural",
+    "french": "fr-FR-HenriNeural",
+    "german": "de-DE-ConradNeural",
+    "italian": "it-IT-DiegoNeural",
+}
 
 DEFAULT_CONFIG = {
     "engine": "neural",  # 'neural' or 'offline'
@@ -23,15 +33,25 @@ DEFAULT_CONFIG = {
     "pitch_hz": 0,
     "volume": 100,
     "rate": "+0%",
+    # Win+Shift+S is reserved by Windows Snipping Tool — use Ctrl+Shift+Space by default.
+    "hotkey_enabled": True,
+    "hotkey": "ctrl+shift+space",
+    "preferred_voices": DEFAULT_PREFERRED_VOICES.copy(),
 }
 
 def load_config() -> dict:
     cfg = DEFAULT_CONFIG.copy()
+    cfg["preferred_voices"] = DEFAULT_PREFERRED_VOICES.copy()
     if CONFIG_FILE.exists():
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 saved = json.load(f)
+                prefs = saved.pop("preferred_voices", None)
                 cfg.update(saved)
+                if isinstance(prefs, dict):
+                    merged = DEFAULT_PREFERRED_VOICES.copy()
+                    merged.update(prefs)
+                    cfg["preferred_voices"] = merged
         except Exception:
             pass
     return cfg

@@ -6,6 +6,7 @@ import sys
 import os
 import time
 import ctypes
+import ctypes.wintypes
 import threading
 import subprocess
 import webbrowser
@@ -38,11 +39,112 @@ def get_tray_icon_path():
     return str(Path.home() / ".antigravity" / "tray_icon.ico")
 
 def apply_win32_dark_menus():
+    """Force Windows 11 dark popup menus (fixes white menus + khaki/beige hover).
+    SetPreferredAppMode / FlushMenuThemes are ordinal-only exports on uxtheme.dll.
+    Re-call before menus open and periodically — themes can reset mid-session.
+    """
     try:
-        uxtheme = ctypes.windll.uxtheme
-        uxtheme.SetPreferredAppMode(2)  # ForceDark
+        uxtheme = ctypes.WinDLL("uxtheme.dll")
+        # PreferredAppMode: 0 Default, 1 AllowDark, 2 ForceDark, 3 ForceLight
+        for ordinal in (135, 132):
+            try:
+                fn = uxtheme[ordinal]
+                fn.argtypes = [ctypes.c_int]
+                fn.restype = ctypes.c_int
+                fn(2)  # ForceDark
+                break
+            except Exception:
+                continue
+        try:
+            flush_menu_themes = uxtheme[136]  # FlushMenuThemes
+            flush_menu_themes.argtypes = []
+            flush_menu_themes.restype = None
+            flush_menu_themes()
+        except Exception:
+            pass
+        try:
+            allow_dark = getattr(uxtheme, "AllowDarkModeForApp", None)
+            if allow_dark:
+                allow_dark(True)
+        except Exception:
+            pass
+        # Immersive dark mode attribute on process windows (helps some Win11 builds)
+        try:
+            dwmapi = ctypes.WinDLL("dwmapi.dll")
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            value = ctypes.c_int(1)
+            # Enumerate top-level windows of this PID and set dark mode
+            pid = ctypes.windll.kernel32.GetCurrentProcessId()
+
+            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            def _enum(hwnd, _lparam):
+                wpid = ctypes.c_ulong()
+                ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
+                if wpid.value == pid:
+                    try:
+                        dwmapi.DwmSetWindowAttribute(
+                            hwnd,
+                            DWMWA_USE_IMMERSIVE_DARK_MODE,
+                            ctypes.byref(value),
+                            ctypes.sizeof(value),
+                        )
+                    except Exception:
+                        pass
+                    try:
+                        uxtheme.SetWindowTheme(hwnd, "DarkMode_Explorer", None)
+                    except Exception:
+                        pass
+                return True
+
+            ctypes.windll.user32.EnumWindows(_enum, 0)
+        except Exception:
+            pass
     except Exception:
         pass
+
+
+# Virtual-key map for RegisterHotKey
+_VK_MAP = {
+    "space": 0x20,
+    "tab": 0x09,
+    "enter": 0x0D,
+    "return": 0x0D,
+    "esc": 0x1B,
+    "escape": 0x1B,
+    "up": 0x26,
+    "down": 0x28,
+    "left": 0x25,
+    "right": 0x27,
+    "f1": 0x70, "f2": 0x71, "f3": 0x72, "f4": 0x73,
+    "f5": 0x74, "f6": 0x75, "f7": 0x76, "f8": 0x77,
+    "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
+}
+for _i, _ch in enumerate("abcdefghijklmnopqrstuvwxyz"):
+    _VK_MAP[_ch] = 0x41 + _i
+for _i in range(10):
+    _VK_MAP[str(_i)] = 0x30 + _i
+
+
+def parse_hotkey(chord: str):
+    """Parse 'ctrl+shift+space' into (modifiers, vk) for RegisterHotKey."""
+    MOD_ALT, MOD_CONTROL, MOD_SHIFT, MOD_WIN = 0x0001, 0x0002, 0x0004, 0x0008
+    parts = [p.strip().lower() for p in (chord or "").replace(" ", "").split("+") if p.strip()]
+    mods = 0
+    key = None
+    for p in parts:
+        if p in ("ctrl", "control"):
+            mods |= MOD_CONTROL
+        elif p in ("shift",):
+            mods |= MOD_SHIFT
+        elif p in ("alt",):
+            mods |= MOD_ALT
+        elif p in ("win", "windows", "super", "meta"):
+            mods |= MOD_WIN
+        else:
+            key = p
+    if not key or key not in _VK_MAP:
+        return None
+    return mods, _VK_MAP[key]
 
 class FluentVoiceTrayApp:
     def __init__(self):
@@ -56,6 +158,9 @@ class FluentVoiceTrayApp:
         self.auto_read_enabled = self.cfg.get("auto_read_copy", False)
         self.last_clipboard_hash = None
         self.tray_icon = None
+        self._hotkey_id = 1
+        self._hotkey_registered = None  # (mods, vk) currently registered
+        self._dark_refresh_ticks = 0
 
         # Register notification bridge to core engine
         core.set_notify_callback(self.notify_user)
@@ -82,7 +187,7 @@ class FluentVoiceTrayApp:
     def on_open_reader(self, icon=None, item=None):
         try:
             from .gui import focus_existing_settings_window
-            if focus_existing_settings_window():
+            if focus_existing_settings_window(preferred_tab="Direct Text Reader"):
                 return
         except Exception:
             pass
@@ -95,7 +200,7 @@ class FluentVoiceTrayApp:
     def on_open_settings(self, icon=None, item=None):
         try:
             from .gui import focus_existing_settings_window
-            if focus_existing_settings_window():
+            if focus_existing_settings_window(preferred_tab="Voice & Speech"):
                 return
         except Exception:
             pass
@@ -108,7 +213,7 @@ class FluentVoiceTrayApp:
     def on_open_about(self, icon=None, item=None):
         try:
             from .gui import focus_existing_settings_window
-            if focus_existing_settings_window():
+            if focus_existing_settings_window(preferred_tab="About & Developer"):
                 return
         except Exception:
             pass
@@ -173,6 +278,16 @@ class FluentVoiceTrayApp:
     def clipboard_monitor_loop(self):
         while True:
             try:
+                # Honor Settings → Restart Tray
+                restart_flag = config.APP_DIR / "pending_tray_restart.txt"
+                if restart_flag.exists():
+                    try:
+                        restart_flag.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                    self.on_exit(self.tray_icon, None)
+                    return
+
                 fresh_cfg = load_config()
                 if fresh_cfg.get("auto_read_copy", False):
                     current = core.get_clipboard_text()
@@ -184,12 +299,69 @@ class FluentVoiceTrayApp:
                         fresh = core.get_clipboard_text()
                         if fresh == current:
                             threading.Thread(target=lambda: core.speak_text(fresh), daemon=True).start()
+
+                # Re-apply dark menus occasionally (hover theme can regress)
+                self._dark_refresh_ticks += 1
+                if self._dark_refresh_ticks % 20 == 0:
+                    apply_win32_dark_menus()
             except Exception:
                 pass
             time.sleep(0.5)
 
+    def sync_hotkey_from_config(self):
+        """Register or update the global Win32 hotkey from config."""
+        cfg = load_config()
+        user32 = ctypes.windll.user32
+        if self._hotkey_registered is not None:
+            try:
+                user32.UnregisterHotKey(None, self._hotkey_id)
+            except Exception:
+                pass
+            self._hotkey_registered = None
+
+        if not cfg.get("hotkey_enabled", True):
+            return
+        parsed = parse_hotkey(cfg.get("hotkey", "ctrl+shift+space"))
+        if not parsed:
+            return
+        mods, vk = parsed
+        if user32.RegisterHotKey(None, self._hotkey_id, mods, vk):
+            self._hotkey_registered = (mods, vk)
+
+    def hotkey_message_loop(self):
+        """Dedicated thread: GetMessage pump for WM_HOTKEY."""
+        self.sync_hotkey_from_config()
+        user32 = ctypes.windll.user32
+        msg = ctypes.wintypes.MSG()
+        last_chord = None
+        while True:
+            # Reload hotkey if Settings changed the chord
+            try:
+                cfg = load_config()
+                chord = (cfg.get("hotkey"), cfg.get("hotkey_enabled", True))
+                if chord != last_chord:
+                    last_chord = chord
+                    self.sync_hotkey_from_config()
+            except Exception:
+                pass
+
+            # Peek/wait with short timeout via MsgWaitForMultipleObjects-style polling
+            has_msg = user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, 1)  # PM_REMOVE
+            if has_msg:
+                if msg.message == 0x0312:  # WM_HOTKEY
+                    self.on_toggle_speech()
+                else:
+                    user32.TranslateMessage(ctypes.byref(msg))
+                    user32.DispatchMessageW(ctypes.byref(msg))
+            else:
+                time.sleep(0.05)
+
     def on_exit(self, icon, item):
         core.stop_all_playback()
+        try:
+            ctypes.windll.user32.UnregisterHotKey(None, self._hotkey_id)
+        except Exception:
+            pass
         if icon:
             icon.stop()
         if self.mutex_handle:
@@ -251,6 +423,9 @@ class FluentVoiceTrayApp:
 
         self.tray_icon = pystray.Icon("FluentVoice_Pro", img, "FluentVoice Pro (Click to Speak / Stop)", menu)
         threading.Thread(target=self.clipboard_monitor_loop, daemon=True).start()
+        threading.Thread(target=self.hotkey_message_loop, daemon=True).start()
+        # Re-apply dark theme once the tray HWND exists
+        threading.Thread(target=lambda: (time.sleep(0.8), apply_win32_dark_menus()), daemon=True).start()
         self.tray_icon.run()
 
 def main():

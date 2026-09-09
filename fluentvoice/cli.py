@@ -21,6 +21,14 @@ def main():
 
     args = parser.parse_args()
 
+    if args.reader or args.gui or args.about:
+        # Desktop / Settings must resurrect the tray if user previously Exit'ed it.
+        try:
+            from .lifecycle import ensure_tray_running
+            ensure_tray_running()
+        except Exception:
+            pass
+
     if args.reader:
         from .gui import open_settings_window
         open_settings_window(tab="Direct Text Reader")

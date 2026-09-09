@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.3] - 2026-09-09
+
+### Fixed
+- **Close to Tray after Exit**: Desktop/Settings no longer leaves you without a tray icon. Opening Settings (or clicking **Close to Tray**) now **ensures the tray daemon is running**.
+- **Tray dark menus (session flake)**: Re-applies ForceDark + FlushMenuThemes periodically and sets immersive dark mode on process windows for stronger hover contrast.
+
+### Added
+- **Ensure Tray / Restart Tray** controls on Automation & System (plus tray status indicator).
+- **Global hotkey** (default `Ctrl+Shift+Space`; configurable; Win+Shift+S avoided — reserved by Snipping Tool).
+- **Volume slider** in Voice & Speech (wired to neural MCI + edge-tts + offline SAPI).
+- **Spanish / French / German / Italian auto-route** (langdetect + heuristic fallback) — no longer dumps all Latin text to English voice.
+- **Per-language preferred voices** (e.g. Avri vs Hila, Alvaro vs Dalia).
+- **Unit tests** for text cleaner + language detect (`tests/`).
+- **PyInstaller script** (`scripts/build_exe.ps1`) for a single packaged app folder.
+- **Smoke-test checklist** (`docs/SMOKE_TEST.md`) for release verification.
+
+---
+
+## [1.4.2] - 2026-09-09
+
+### Fixed
+- **Tray menu dark theme & hover contrast**: Restored real `uxtheme` ordinal dark-mode APIs (`SetPreferredAppMode` / `FlushMenuThemes`). Fixes white menus with barely-visible khaki/beige hover highlights.
+- **Voice dropdown proportions**: Active Voice Profile control uses a fixed coherent width with a cyan chevron accent (no more full-bleed cyan bar + narrower popup mismatch).
+- **Offline Voices button responsiveness**: Opens `ms-settings:speech` asynchronously with instant "Opening…" feedback (no more stuck `os.system` feel).
+
+### Added
+- **Direct Text Reader voice awareness**: Shows the active reading voice + Smart auto-route state, with a **Change Voice →** button that jumps to Voice & Speech.
+
+---
+
+## [1.4.1] - 2026-09-09
+
+### Fixed
+- **Markdown Cleaner Toggle Actually Applied**: `clean_markdown` setting is now respected in `speak_text()` (was saved in Settings but previously ignored during speech).
+- **Offline Speak Toggle Reliability**: Offline SAPI now uses synchronous speak so `_is_speaking` stays accurate; tray click-to-stop works during offline playback.
+- **Smart Auto-Route + Offline Engine Conflict**: Language auto-routing now forces neural engine when switching to Hebrew/Arabic/Japanese voices (no longer tries to feed neural voice IDs into offline SAPI).
+- **Language Mismatch Notices**: When auto-routing is off, mismatch toasts cover Hebrew, Arabic, and CJK (not only Hebrew).
+- **GUI Thread Safety**: Direct Text Reader and Test Voice status labels update via `after(0, ...)` from worker threads (avoids intermittent CustomTkinter/Tk crashes).
+- **Tray Tab Switching**: Opening Direct Text Reader / Settings / About while the Control Center is already open now switches to the requested tab instead of only focusing the window.
+- **README Stale Installer References**: Removed outdated `v1.1.0` ZIP name and dual-desktop-shortcut instructions; documented `--reader`.
+
+---
+
 ## [1.4.0] - 2026-09-08
 
 ### Added

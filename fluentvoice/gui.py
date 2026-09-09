@@ -7,6 +7,7 @@ import os
 import ctypes
 import webbrowser
 import threading
+import subprocess
 from pathlib import Path
 import customtkinter as ctk
 
@@ -50,9 +51,15 @@ def build_full_voice_map():
         vm[f"{label} (Offline 0ms)"] = desc
     return vm
 
-def focus_existing_settings_window() -> bool:
-    """Checks if an instance of the Settings window is already open and brings it to front."""
+def focus_existing_settings_window(preferred_tab: str | None = None) -> bool:
+    """Checks if an instance of the Settings window is already open and brings it to front.
+    Optionally requests a tab switch via pending_tab.txt for the live window to pick up.
+    """
     try:
+        if preferred_tab:
+            pending = config.APP_DIR / "pending_tab.txt"
+            pending.write_text(preferred_tab, encoding="utf-8")
+
         hwnd = ctypes.windll.user32.FindWindowW(None, "FluentVoice Pro - Settings & Control Center")
         if hwnd:
             user32 = ctypes.windll.user32
@@ -95,10 +102,12 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.cfg = config.load_config()
         self.voice_map = build_full_voice_map()
+        self._syncing_from_disk = False
 
         self._build_header()
         self._build_tabs(initial_tab)
         self._build_footer()
+        self.after(400, self._poll_external_updates)
 
     def _set_window_icon(self):
         try:
@@ -137,7 +146,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         badge_lbl = ctk.CTkLabel(
             header_frame,
-            text="v1.4.0 • Windows 11/10 Suite • By Nick Otmazgin",
+            text="v1.4.3 • Windows 11/10 Suite • By Nick Otmazgin",
             font=ctk.CTkFont(family="Segoe UI", size=13),
             text_color="#8B949E"
         )
@@ -193,6 +202,34 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             text_color="#8B949E"
         )
         self.reader_meta_lbl.pack(side="right")
+
+        # Active voice awareness row (voice is global, not locked to this tab)
+        voice_bar = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
+        voice_bar.pack(fill="x", padx=14, pady=(0, 6))
+
+        self.reader_voice_lbl = ctk.CTkLabel(
+            voice_bar,
+            text=self._format_reader_voice_label(),
+            font=ctk.CTkFont(size=12),
+            text_color="#C9D1D9",
+            anchor="w"
+        )
+        self.reader_voice_lbl.pack(side="left", padx=(12, 8), pady=8, fill="x", expand=True)
+
+        btn_change_voice = ctk.CTkButton(
+            voice_bar,
+            text="🎙 Change Voice →",
+            width=140,
+            height=28,
+            fg_color="#1F2E45",
+            hover_color="#2A3B58",
+            border_width=1,
+            border_color="#00D2FF",
+            text_color="#00D2FF",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._on_reader_goto_voice_tab
+        )
+        btn_change_voice.pack(side="right", padx=10, pady=6)
 
         # Multi-line text box
         self.reader_textbox = ctk.CTkTextbox(
@@ -269,6 +306,28 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         self.reader_status_lbl.pack(anchor="w", padx=14, pady=(0, 8))
 
+    def _format_reader_voice_label(self) -> str:
+        curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
+        label = curr_voice
+        for l, code in self.voice_map.items():
+            if code == curr_voice or code.lower() in curr_voice.lower() or curr_voice.lower() in code.lower():
+                label = l
+                break
+        auto = " • Smart auto-route ON" if self.cfg.get("auto_route_language", True) else ""
+        return f"🎙 Active reading voice: {label}{auto}"
+
+    def _refresh_reader_voice_label(self):
+        if hasattr(self, "reader_voice_lbl"):
+            self.reader_voice_lbl.configure(text=self._format_reader_voice_label())
+
+    def _on_reader_goto_voice_tab(self):
+        self.tabview.set("Voice & Speech")
+        if hasattr(self, "test_status_lbl"):
+            self.test_status_lbl.configure(
+                text="Pick any voice below — it applies to Direct Text Reader, tray, and auto-read.",
+                text_color="#00D2FF"
+            )
+
     def _on_reader_text_change(self, event=None):
         self._update_reader_meta()
 
@@ -286,6 +345,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         }
         lang_str = lang_names.get(detected, "Universal 🌐")
         self.reader_meta_lbl.configure(text=f"{words:,} words • {chars:,} chars • Lang: {lang_str}")
+        self._refresh_reader_voice_label()
 
     def _on_reader_paste(self):
         clip = core.get_clipboard_text()
@@ -310,15 +370,21 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         def run_reader_speech():
             res = core.speak_text(txt)
-            if isinstance(res, dict):
-                if res.get("status") == "success":
-                    self.reader_status_lbl.configure(text="✔️ Speech playback active (Zero Collisions)", text_color="#3FB950")
-                elif res.get("status") == "fallback":
-                    self.reader_status_lbl.configure(text="ℹ️ Cloud unavailable -> Fallback to Windows offline voice", text_color="#E3B341")
-                elif res.get("status") == "error":
-                    self.reader_status_lbl.configure(text="⚠️ " + res.get("message", "Error"), text_color="#F85149")
-            else:
-                self.reader_status_lbl.configure(text="✔️ Speech synthesis completed", text_color="#3FB950")
+
+            def update_status():
+                if isinstance(res, dict):
+                    if res.get("status") == "success":
+                        self.reader_status_lbl.configure(text="✔️ Speech playback active (Zero Collisions)", text_color="#3FB950")
+                    elif res.get("status") == "fallback":
+                        self.reader_status_lbl.configure(text="ℹ️ Cloud unavailable -> Fallback to Windows offline voice", text_color="#E3B341")
+                    elif res.get("status") == "error":
+                        self.reader_status_lbl.configure(text="⚠️ " + res.get("message", "Error"), text_color="#F85149")
+                    elif res.get("status") == "aborted":
+                        self.reader_status_lbl.configure(text="⏹️ Speech superseded / stopped", text_color="#8B949E")
+                else:
+                    self.reader_status_lbl.configure(text="✔️ Speech synthesis completed", text_color="#3FB950")
+
+            self.after(0, update_status)
 
         threading.Thread(target=run_reader_speech, daemon=True).start()
 
@@ -333,12 +399,30 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         voice_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
         voice_card.pack(fill="x", padx=10, pady=5)
 
+        header_row = ctk.CTkFrame(voice_card, fg_color="transparent")
+        header_row.pack(fill="x", padx=14, pady=(8, 4))
+
         ctk.CTkLabel(
-            voice_card,
-            text="Active Voice Profile (English, Hebrew, World Languages & Local Offline):",
+            header_row,
+            text="Active Voice Profile (English, Hebrew, World & Offline):",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color="#E6EDF3"
-        ).pack(anchor="w", padx=14, pady=(8, 4))
+        ).pack(side="left")
+
+        self.btn_offline = ctk.CTkButton(
+            header_row,
+            text="➕ Offline Voices (Windows Settings)",
+            width=230,
+            height=26,
+            fg_color="transparent",
+            hover_color="#202D45",
+            border_width=1,
+            border_color="#00D2FF",
+            text_color="#00D2FF",
+            font=ctk.CTkFont(size=11),
+            command=self._on_open_windows_speech_settings
+        )
+        self.btn_offline.pack(side="right")
 
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
         curr_label = "Andrew Multilingual (US HD Male)"
@@ -348,35 +432,34 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 break
 
         self.voice_var = ctk.StringVar(value=curr_label)
+        # Fixed width so the dropdown list matches the control (avoids full-bleed bar + tiny list mismatch).
         self.voice_menu = ctk.CTkOptionMenu(
             voice_card,
             values=list(self.voice_map.keys()),
             variable=self.voice_var,
             command=self._on_voice_changed,
-            fg_color="#00D2FF",
-            button_color="#00B4DB",
+            width=480,
+            height=36,
+            corner_radius=8,
+            fg_color="#1F2E45",
+            button_color="#00D2FF",
             button_hover_color="#33DCFF",
-            text_color="#080C14",
-            dropdown_fg_color="#182234",
-            dropdown_hover_color="#202D45",
+            text_color="#E6EDF3",
+            dropdown_fg_color="#121824",
+            dropdown_hover_color="#00D2FF",
             dropdown_text_color="#E6EDF3",
-            font=ctk.CTkFont(size=13, weight="bold")
+            font=ctk.CTkFont(size=13, weight="bold"),
+            anchor="w"
         )
-        self.voice_menu.pack(fill="x", padx=14, pady=(0, 6))
+        self.voice_menu.pack(anchor="w", padx=14, pady=(0, 4))
 
-        btn_offline = ctk.CTkButton(
+        self.offline_status_lbl = ctk.CTkLabel(
             voice_card,
-            text="➕ Add / Download More Offline Voices (Windows Settings)...",
-            fg_color="#182234",
-            hover_color="#202D45",
-            border_width=1,
-            border_color="#00D2FF",
-            text_color="#00D2FF",
-            height=28,
-            font=ctk.CTkFont(size=12),
-            command=self._on_open_windows_speech_settings
+            text="Tip: Voice choice applies everywhere — Direct Text Reader, tray, and Auto-Read.",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E"
         )
-        btn_offline.pack(anchor="w", padx=14, pady=(2, 10))
+        self.offline_status_lbl.pack(anchor="w", padx=14, pady=(0, 10))
 
         # Modulation card
         mod_card = ctk.CTkFrame(tab, fg_color="#182234", corner_radius=10)
@@ -449,10 +532,43 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.pitch_slider.set(curr_pitch)
         self.pitch_slider.pack(fill="x", padx=14, pady=(2, 6))
 
+        # Volume slider
+        vol_box = ctk.CTkFrame(mod_card, fg_color="transparent")
+        vol_box.pack(fill="x", padx=14, pady=(4, 2))
+
+        ctk.CTkLabel(
+            vol_box,
+            text="Playback Volume:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#E6EDF3"
+        ).pack(side="left")
+
+        curr_vol = int(self.cfg.get("volume", 100))
+        self.vol_val_lbl = ctk.CTkLabel(
+            vol_box,
+            text=f"{curr_vol}%",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#00D2FF"
+        )
+        self.vol_val_lbl.pack(side="right")
+
+        self.vol_slider = ctk.CTkSlider(
+            mod_card,
+            from_=10,
+            to=100,
+            number_of_steps=18,
+            command=self._on_volume_slider,
+            progress_color="#00D2FF",
+            button_color="#00D2FF",
+            button_hover_color="#33DCFF"
+        )
+        self.vol_slider.set(curr_vol)
+        self.vol_slider.pack(fill="x", padx=14, pady=(2, 6))
+
         # Reset button
         btn_reset = ctk.CTkButton(
             mod_card,
-            text="↺ Reset Speed & Pitch to Defaults (1.0x, +0Hz)",
+            text="↺ Reset Speed, Pitch & Volume (1.0x, +0Hz, 100%)",
             fg_color="#182234",
             hover_color="#202D45",
             border_width=1,
@@ -604,6 +720,159 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.switch_notify.select()
         self.switch_notify.pack(anchor="w", padx=16, pady=8)
 
+        # Global hotkey
+        self.switch_hotkey = ctk.CTkSwitch(
+            card,
+            text="Global Hotkey — Toggle Speak / Stop (default Ctrl+Shift+Space; Win+Shift+S is reserved by Snipping Tool)",
+            font=ctk.CTkFont(size=13),
+            progress_color="#00D2FF",
+            command=self._on_toggle_hotkey
+        )
+        if self.cfg.get("hotkey_enabled", True):
+            self.switch_hotkey.select()
+        self.switch_hotkey.pack(anchor="w", padx=16, pady=(8, 4))
+
+        hk_row = ctk.CTkFrame(card, fg_color="transparent")
+        hk_row.pack(fill="x", padx=16, pady=(0, 8))
+        ctk.CTkLabel(
+            hk_row,
+            text="Hotkey chord:",
+            font=ctk.CTkFont(size=12),
+            text_color="#8B949E"
+        ).pack(side="left")
+        self.hotkey_entry = ctk.CTkEntry(
+            hk_row,
+            width=200,
+            font=ctk.CTkFont(size=12),
+            border_color="#00D2FF",
+            fg_color="#0D131D"
+        )
+        self.hotkey_entry.pack(side="left", padx=(10, 8))
+        self.hotkey_entry.insert(0, self.cfg.get("hotkey", "ctrl+shift+space"))
+        self.hotkey_entry.bind("<FocusOut>", lambda e: self._on_hotkey_commit())
+        self.hotkey_entry.bind("<Return>", lambda e: self._on_hotkey_commit())
+        ctk.CTkButton(
+            hk_row,
+            text="Apply",
+            width=70,
+            height=28,
+            fg_color="#21262D",
+            hover_color="#30363D",
+            command=self._on_hotkey_commit
+        ).pack(side="left")
+
+        # Preferred voices for auto-route
+        pref_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
+        pref_box.pack(fill="x", padx=16, pady=(4, 10))
+        ctk.CTkLabel(
+            pref_box,
+            text="Preferred voices for Smart Language Auto-Routing:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#00D2FF"
+        ).pack(anchor="w", padx=12, pady=(8, 6))
+
+        self._pref_combos = {}
+        pref_choices = {
+            "hebrew": [("Avri (Hebrew HD Male)", "he-IL-AvriNeural"), ("Hila (Hebrew HD Female)", "he-IL-HilaNeural")],
+            "english": [
+                ("Andrew Multilingual", "en-US-AndrewMultilingualNeural"),
+                ("Ava Multilingual", "en-US-AvaMultilingualNeural"),
+                ("Jenny (Studio)", "en-US-JennyNeural"),
+                ("Guy (Studio)", "en-US-GuyNeural"),
+            ],
+            "spanish": [("Alvaro (Spain)", "es-ES-AlvaroNeural"), ("Dalia (Mexico)", "es-MX-DaliaNeural")],
+            "french": [("Henri (France)", "fr-FR-HenriNeural")],
+            "german": [("Conrad (Germany)", "de-DE-ConradNeural")],
+            "italian": [("Diego (Italy)", "it-IT-DiegoNeural")],
+            "arabic": [("Hamed (Saudi)", "ar-SA-HamedNeural")],
+            "cjk": [("Keita (Japanese)", "ja-JP-KeitaNeural")],
+        }
+        labels = {
+            "hebrew": "Hebrew",
+            "english": "English",
+            "spanish": "Spanish",
+            "french": "French",
+            "german": "German",
+            "italian": "Italian",
+            "arabic": "Arabic",
+            "cjk": "Japanese / CJK",
+        }
+        prefs = self.cfg.get("preferred_voices") or {}
+        for lang_key, options in pref_choices.items():
+            row = ctk.CTkFrame(pref_box, fg_color="transparent")
+            row.pack(fill="x", padx=12, pady=2)
+            ctk.CTkLabel(
+                row,
+                text=f"{labels[lang_key]}:",
+                width=110,
+                anchor="w",
+                font=ctk.CTkFont(size=12),
+                text_color="#C9D1D9"
+            ).pack(side="left")
+            display_names = [o[0] for o in options]
+            code_by_name = {o[0]: o[1] for o in options}
+            name_by_code = {o[1]: o[0] for o in options}
+            combo = ctk.CTkComboBox(
+                row,
+                values=display_names,
+                width=260,
+                height=28,
+                font=ctk.CTkFont(size=12),
+                dropdown_font=ctk.CTkFont(size=12),
+                command=lambda choice, k=lang_key, m=code_by_name: self._on_pref_voice(k, m.get(choice, ""))
+            )
+            current_code = prefs.get(lang_key, options[0][1])
+            combo.set(name_by_code.get(current_code, options[0][0]))
+            combo.pack(side="left", padx=(4, 0))
+            self._pref_combos[lang_key] = combo
+
+        ctk.CTkLabel(
+            pref_box,
+            text="Tip: pick Avri vs Hila (or Spanish Alvaro vs Dalia) — auto-route will use your preference.",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E"
+        ).pack(anchor="w", padx=12, pady=(4, 8))
+
+        # Tray daemon status / restart
+        tray_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
+        tray_box.pack(fill="x", padx=16, pady=(0, 10))
+        ctk.CTkLabel(
+            tray_box,
+            text="System Tray Daemon:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#00D2FF"
+        ).pack(anchor="w", padx=12, pady=(8, 4))
+        self.tray_status_lbl = ctk.CTkLabel(
+            tray_box,
+            text="Checking tray…",
+            font=ctk.CTkFont(size=12),
+            text_color="#8B949E"
+        )
+        self.tray_status_lbl.pack(anchor="w", padx=12, pady=(0, 4))
+        tray_btns = ctk.CTkFrame(tray_box, fg_color="transparent")
+        tray_btns.pack(fill="x", padx=12, pady=(0, 10))
+        ctk.CTkButton(
+            tray_btns,
+            text="Ensure Tray Running",
+            width=150,
+            height=30,
+            fg_color="#00D2FF",
+            hover_color="#33DCFF",
+            text_color="#080C14",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._on_ensure_tray
+        ).pack(side="left", padx=(0, 8))
+        ctk.CTkButton(
+            tray_btns,
+            text="Restart Tray",
+            width=120,
+            height=30,
+            fg_color="#21262D",
+            hover_color="#30363D",
+            command=self._on_restart_tray
+        ).pack(side="left")
+        self.after(200, self._refresh_tray_status)
+
         # Information box
         info_box = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
         info_box.pack(fill="x", padx=16, pady=(8, 10))
@@ -618,8 +887,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         guide = (
             "• Direct Text Reader: Paste or type any long article or document directly in the Direct Text Reader tab.\n"
             "• 1-Click System Tray: Left-click (or double-click) the cyan speaker icon next to the clock to toggle speak/stop.\n"
+            "• Global Hotkey: Ctrl+Shift+Space (configurable above) toggles speak/stop from any app.\n"
             "• Right-Click System Tray: Instant context menu for all voices, auto-read toggle, notifications, and settings.\n"
-            "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center (brings existing window to front).\n"
+            "• Single Desktop Shortcut: Double-click 'FluentVoice Pro' to open Control Center and revive the tray if needed.\n"
+            "• Close to Tray: Hides Settings and ensures the tray icon is running (use Exit only to fully quit).\n"
             "• Windows Explorer: Right-click any folder or desktop background -> 'FluentVoice Pro (Read Aloud)'.\n"
             "• Instant Toggle: Triggering speech while audio is playing immediately halts playback (zero collisions)."
         )
@@ -728,15 +999,146 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             fg_color="#21262D",
             hover_color="#30363D",
             width=110,
-            command=self.destroy
+            command=self._on_close_to_tray
         )
         btn_close.pack(side="right")
+
+    def _on_close_to_tray(self):
+        """Hide Settings and ensure the tray daemon is alive (fixes Exit → reopen → no tray)."""
+        try:
+            from .lifecycle import ensure_tray_running
+            ok = ensure_tray_running(wait_sec=1.2)
+            if hasattr(self, "autosave_lbl"):
+                if ok:
+                    self.autosave_lbl.configure(text="✓ Tray running — closing…", text_color="#3FB950")
+                else:
+                    self.autosave_lbl.configure(text="⚠ Could not start tray — check install", text_color="#F85149")
+        except Exception:
+            pass
+        self.after(150, self.destroy)
+
+    def _poll_external_updates(self):
+        """Live-sync tray/CLI changes into the open Settings window (tabs + toggles + voice)."""
+        try:
+            pending = config.APP_DIR / "pending_tab.txt"
+            if pending.exists():
+                tab = pending.read_text(encoding="utf-8").strip()
+                pending.unlink(missing_ok=True)
+                valid = ["Direct Text Reader", "Voice & Speech", "Automation & System", "About & Developer"]
+                if tab in valid:
+                    self.tabview.set(tab)
+                    self.lift()
+                    self.focus_force()
+        except Exception:
+            pass
+
+        try:
+            fresh = config.load_config()
+            changed = False
+
+            def apply_switch(attr, key, default=False):
+                nonlocal changed
+                if not hasattr(self, attr):
+                    return
+                switch = getattr(self, attr)
+                want = bool(fresh.get(key, default))
+                have = switch.get() == 1
+                if want != have:
+                    self._syncing_from_disk = True
+                    try:
+                        if want:
+                            switch.select()
+                        else:
+                            switch.deselect()
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
+
+            apply_switch("switch_autoread", "auto_read_copy", False)
+            apply_switch("switch_autoroute", "auto_route_language", True)
+            apply_switch("switch_markdown", "clean_markdown", True)
+            apply_switch("switch_notify", "show_notifications", True)
+
+            # Debounce slider
+            if hasattr(self, "buf_slider"):
+                want_buf = float(fresh.get("debounce_sec", self.cfg.get("debounce_sec", 0.6)))
+                have_buf = round(float(self.cfg.get("debounce_sec", 0.6)), 1)
+                if round(want_buf, 1) != have_buf:
+                    self._syncing_from_disk = True
+                    try:
+                        self.buf_slider.set(want_buf)
+                        self.buf_val_lbl.configure(text=f"{want_buf:.1f}s")
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
+
+            # Voice selection from tray
+            if hasattr(self, "voice_menu"):
+                want_voice = fresh.get("voice", self.cfg.get("voice"))
+                if want_voice != self.cfg.get("voice"):
+                    label = want_voice
+                    for l, code in self.voice_map.items():
+                        if code == want_voice or code.lower() in want_voice.lower() or want_voice.lower() in code.lower():
+                            label = l
+                            break
+                    self._syncing_from_disk = True
+                    try:
+                        self.voice_var.set(label)
+                        self.voice_menu.set(label)
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
+
+            # Rate / pitch from other instances (rare but keep coherent)
+            if hasattr(self, "rate_slider"):
+                want_rate = float(fresh.get("rate_mult", self.cfg.get("rate_mult", 1.0)))
+                if round(want_rate, 1) != round(float(self.cfg.get("rate_mult", 1.0)), 1):
+                    self._syncing_from_disk = True
+                    try:
+                        self.rate_slider.set(want_rate)
+                        self.rate_val_lbl.configure(text=f"{want_rate:.1f}x")
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
+            if hasattr(self, "pitch_slider"):
+                want_pitch = int(fresh.get("pitch_hz", self.cfg.get("pitch_hz", 0)))
+                if want_pitch != int(self.cfg.get("pitch_hz", 0)):
+                    self._syncing_from_disk = True
+                    try:
+                        self.pitch_slider.set(want_pitch)
+                        txt = f"{want_pitch:+d}Hz (Default)" if want_pitch == 0 else f"{want_pitch:+d}Hz"
+                        self.pitch_val_lbl.configure(text=txt)
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
+            if hasattr(self, "vol_slider"):
+                want_vol = int(fresh.get("volume", self.cfg.get("volume", 100)))
+                if want_vol != int(self.cfg.get("volume", 100)):
+                    self._syncing_from_disk = True
+                    try:
+                        self.vol_slider.set(want_vol)
+                        self.vol_val_lbl.configure(text=f"{want_vol}%")
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
+
+            self.cfg = fresh
+            if changed:
+                self._refresh_reader_voice_label()
+                self.autosave_lbl.configure(text="✓ Synced from tray / live config", text_color="#00D2FF")
+                self.after(1600, lambda: self.autosave_lbl.configure(text="✓ All settings auto-saved", text_color="#8B949E"))
+        except Exception:
+            pass
+
+        self.after(500, self._poll_external_updates)
 
     def _trigger_autosave_indicator(self):
         self.autosave_lbl.configure(text="✓ Settings Saved", text_color="#00D2FF")
         self.after(1600, lambda: self.autosave_lbl.configure(text="✓ All settings auto-saved", text_color="#8B949E"))
 
     def _on_voice_changed(self, choice):
+        if self._syncing_from_disk:
+            return
         vcode = self.voice_map.get(choice, "en-US-AndrewMultilingualNeural")
         self.cfg["voice"] = vcode
         if "sapi" in vcode.lower() or "desktop" in vcode.lower():
@@ -745,23 +1147,69 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.cfg["engine"] = "neural"
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
+        self._refresh_reader_voice_label()
         core.trigger_notification("FluentVoice Pro", f"🗣️ Voice selected: {choice}")
         self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
     def _on_open_windows_speech_settings(self):
-        os.system("start ms-settings:speech")
+        # Immediate UI feedback — os.system("start ...") blocks and feels stuck.
+        if hasattr(self, "offline_status_lbl"):
+            self.offline_status_lbl.configure(
+                text="Opening Windows Speech Settings… (add language packs / offline voices there)",
+                text_color="#00D2FF"
+            )
+        if hasattr(self, "btn_offline"):
+            self.btn_offline.configure(state="disabled", text="Opening…")
+
+        def open_settings():
+            try:
+                os.startfile("ms-settings:speech")
+            except Exception:
+                try:
+                    subprocess.Popen(
+                        ["cmd", "/c", "start", "", "ms-settings:speech"],
+                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                    )
+                except Exception:
+                    pass
+
+            def restore_btn():
+                if hasattr(self, "btn_offline"):
+                    self.btn_offline.configure(state="normal", text="➕ Offline Voices (Windows Settings)")
+                if hasattr(self, "offline_status_lbl"):
+                    self.offline_status_lbl.configure(
+                        text="Windows Speech Settings opened. Install voices, then re-open FluentVoice if needed.",
+                        text_color="#3FB950"
+                    )
+
+            self.after(0, restore_btn)
+
+        threading.Thread(target=open_settings, daemon=True).start()
 
     def _on_rate_slider(self, val):
+        if self._syncing_from_disk:
+            return
         self.rate_val_lbl.configure(text=f"{val:.1f}x")
         self.cfg["rate_mult"] = round(val, 1)
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
 
     def _on_pitch_slider(self, val):
+        if self._syncing_from_disk:
+            return
         pitch_int = int(round(val))
         txt = f"{pitch_int:+d}Hz (Default)" if pitch_int == 0 else f"{pitch_int:+d}Hz"
         self.pitch_val_lbl.configure(text=txt)
         self.cfg["pitch_hz"] = pitch_int
+        config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+
+    def _on_volume_slider(self, val):
+        if self._syncing_from_disk:
+            return
+        vol = int(round(val))
+        self.vol_val_lbl.configure(text=f"{vol}%")
+        self.cfg["volume"] = vol
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
 
@@ -770,13 +1218,109 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.rate_val_lbl.configure(text="1.0x")
         self.pitch_slider.set(0)
         self.pitch_val_lbl.configure(text="+0Hz (Default)")
+        if hasattr(self, "vol_slider"):
+            self.vol_slider.set(100)
+            self.vol_val_lbl.configure(text="100%")
         self.cfg["rate_mult"] = 1.0
         self.cfg["pitch_hz"] = 0
+        self.cfg["volume"] = 100
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
-        self.test_status_lbl.configure(text="Speed & pitch reset to defaults (1.0x, +0Hz)", text_color="#8B949E")
+        self.test_status_lbl.configure(text="Speed, pitch & volume reset (1.0x, +0Hz, 100%)", text_color="#8B949E")
+
+    def _on_toggle_hotkey(self):
+        if self._syncing_from_disk:
+            return
+        self.cfg["hotkey_enabled"] = self.switch_hotkey.get() == 1
+        config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+
+    def _on_hotkey_commit(self):
+        if self._syncing_from_disk:
+            return
+        raw = (self.hotkey_entry.get() or "").strip().lower().replace(" ", "")
+        if not raw:
+            raw = "ctrl+shift+space"
+            self.hotkey_entry.delete(0, "end")
+            self.hotkey_entry.insert(0, raw)
+        # Normalize separators
+        raw = raw.replace("++", "+")
+        self.cfg["hotkey"] = raw
+        config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+
+    def _on_pref_voice(self, lang_key: str, voice_code: str):
+        if self._syncing_from_disk or not voice_code:
+            return
+        prefs = dict(self.cfg.get("preferred_voices") or {})
+        prefs[lang_key] = voice_code
+        self.cfg["preferred_voices"] = prefs
+        config.save_config(self.cfg)
+        self._trigger_autosave_indicator()
+
+    def _refresh_tray_status(self):
+        try:
+            from .lifecycle import is_tray_running
+            running = is_tray_running()
+            if hasattr(self, "tray_status_lbl"):
+                if running:
+                    self.tray_status_lbl.configure(
+                        text="● Tray daemon is running (icon should appear near the clock)",
+                        text_color="#3FB950"
+                    )
+                else:
+                    self.tray_status_lbl.configure(
+                        text="○ Tray is not running — use Ensure Tray or Close to Tray to revive it",
+                        text_color="#F85149"
+                    )
+        except Exception:
+            pass
+        self.after(2000, self._refresh_tray_status)
+
+    def _on_ensure_tray(self):
+        from .lifecycle import ensure_tray_running
+        ok = ensure_tray_running(wait_sec=1.5)
+        self._refresh_tray_status()
+        if ok:
+            self.autosave_lbl.configure(text="✓ Tray started / already running", text_color="#3FB950")
+            core.trigger_notification("FluentVoice Pro", "Tray daemon is active")
+        else:
+            self.autosave_lbl.configure(text="⚠ Failed to start tray", text_color="#F85149")
+
+    def _on_restart_tray(self):
+        """Ask running tray to exit, then start a fresh daemon."""
+        from .lifecycle import ensure_tray_running, is_tray_running
+        flag = config.APP_DIR / "pending_tray_restart.txt"
+        try:
+            flag.write_text("1", encoding="utf-8")
+        except Exception:
+            pass
+        self.autosave_lbl.configure(text="↻ Restarting tray…", text_color="#00D2FF")
+
+        def wait_and_start():
+            import time
+            # Wait for old tray to notice flag and exit
+            for _ in range(25):
+                if not is_tray_running():
+                    break
+                time.sleep(0.15)
+            time.sleep(0.25)
+            ok = ensure_tray_running(wait_sec=1.5)
+
+            def done():
+                self._refresh_tray_status()
+                if ok:
+                    self.autosave_lbl.configure(text="✓ Tray restarted", text_color="#3FB950")
+                else:
+                    self.autosave_lbl.configure(text="⚠ Tray restart failed", text_color="#F85149")
+
+            self.after(0, done)
+
+        threading.Thread(target=wait_and_start, daemon=True).start()
 
     def _on_toggle_autoread(self):
+        if self._syncing_from_disk:
+            return
         enabled = self.switch_autoread.get() == 1
         self.cfg["auto_read_copy"] = enabled
         config.save_config(self.cfg)
@@ -785,6 +1329,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         core.trigger_notification("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state_str}")
 
     def _on_buffer_slider(self, val):
+        if self._syncing_from_disk:
+            return
         buf = round(val, 1)
         self.buf_val_lbl.configure(text=f"{buf:.1f}s")
         self.cfg["debounce_sec"] = buf
@@ -792,16 +1338,23 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._trigger_autosave_indicator()
 
     def _on_toggle_autoroute(self):
+        if self._syncing_from_disk:
+            return
         self.cfg["auto_route_language"] = self.switch_autoroute.get() == 1
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
+        self._refresh_reader_voice_label()
 
     def _on_toggle_markdown(self):
+        if self._syncing_from_disk:
+            return
         self.cfg["clean_markdown"] = self.switch_markdown.get() == 1
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
 
     def _on_toggle_notifications(self):
+        if self._syncing_from_disk:
+            return
         self.cfg["show_notifications"] = self.switch_notify.get() == 1
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
@@ -815,15 +1368,21 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         def run_test():
             res = core.speak_text(txt)
-            if isinstance(res, dict):
-                if res.get("status") == "success":
-                    self.test_status_lbl.configure(text="✔️ Speech playback active (Zero Collisions)", text_color="#3FB950")
-                elif res.get("status") == "fallback":
-                    self.test_status_lbl.configure(text="ℹ️ Cloud unavailable -> Fallback to Windows offline voice", text_color="#E3B341")
-                elif res.get("status") == "error":
-                    self.test_status_lbl.configure(text="⚠️ Synthesis failed: " + res.get("message", "Error"), text_color="#F85149")
-            else:
-                self.test_status_lbl.configure(text="✔️ Speech synthesis completed", text_color="#3FB950")
+
+            def update_status():
+                if isinstance(res, dict):
+                    if res.get("status") == "success":
+                        self.test_status_lbl.configure(text="✔️ Speech playback active (Zero Collisions)", text_color="#3FB950")
+                    elif res.get("status") == "fallback":
+                        self.test_status_lbl.configure(text="ℹ️ Cloud unavailable -> Fallback to Windows offline voice", text_color="#E3B341")
+                    elif res.get("status") == "error":
+                        self.test_status_lbl.configure(text="⚠️ Synthesis failed: " + res.get("message", "Error"), text_color="#F85149")
+                    elif res.get("status") == "aborted":
+                        self.test_status_lbl.configure(text="⏹️ Speech superseded / stopped", text_color="#8B949E")
+                else:
+                    self.test_status_lbl.configure(text="✔️ Speech synthesis completed", text_color="#3FB950")
+
+            self.after(0, update_status)
 
         threading.Thread(target=run_test, daemon=True).start()
 
@@ -832,7 +1391,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.test_status_lbl.configure(text="⏹️ Speech stopped immediately", text_color="#8B949E")
 
 def open_settings_window(tab="Voice & Speech"):
-    if focus_existing_settings_window():
+    if focus_existing_settings_window(preferred_tab=tab):
         return
     app = FluentVoiceSettingsWindow(initial_tab=tab)
     app.mainloop()

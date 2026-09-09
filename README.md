@@ -14,7 +14,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.0** — Direct Text Reader & Scratchpad window, Smart Language Auto-Routing (Hebrew/Arabic/World), Advanced PDF/OCR & Hebrew Niqqud sanitizer, immediate synthesis queue feedback, and Win32 menu ampersand fixes. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.4.3** — Close-to-Tray resurrects the daemon, global hotkey, volume slider, Spanish/French auto-route, preferred voices, smoke checklist. Download from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -34,17 +34,19 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
 - 📋 **Dedicated Direct Text Reader & Scratchpad:** Full-fledged scratchpad window in the Control Center to paste, review, and read long articles, PDFs, OCR texts, or code notes with live word/char counters and language tags.
-- 🌐 **Smart Language Auto-Routing:** Intelligently detects whether copied or pasted text is Hebrew, Arabic, Japanese, or English, automatically switching to the native HD voice model so speech never fails or mangles accents.
+- 🌐 **Smart Language Auto-Routing:** Detects Hebrew, Arabic, Japanese/CJK, and Latin languages (Spanish, French, German, Italian, English) and switches to your preferred native HD voice (e.g. Avri vs Hila).
 - ⏳ **Instant Synthesis Queue & Preparation Alerts:** Eliminates waiting ambiguity during cloud voice generation with real-time `⏳ Synthesizing...` feedback followed by seamless playback.
 - 🧹 **Advanced PDF, OCR & Niqqud Text Sanitizer:** Automatically repairs hyphenated line wraps from PDF copy-pastes, normalizes Unicode (NFKC), strips invisible zero-width and bidirectional markers, and cleans code blocks and markdown.
-- 🎛️ **Modern Fluent UI Control Center:** Built with CustomTkinter in dark mode with native dark title bars. Tweak voices, pitch (-40Hz to +40Hz), speed (0.5x to 2.0x), test phrases, and configure automation.
+- 🎛️ **Modern Fluent UI Control Center:** Dark Fluent UI with voices, pitch, **volume**, speed, preferred auto-route voices, tray ensure/restart, and automation.
+- ⌨️ **Global Hotkey:** Configurable chord (default `Ctrl+Shift+Space`) toggles speak/stop from any app.
 - 🔔 **Windows Toast & Popup Notifications:** Sleek native Windows notification popups for voice changes, auto-read toggle events, and active speech playback—fully configurable in settings.
 - 🗣️ **Ultra HD Multilingual Voices (English, Hebrew & World Languages):** Studio-grade Microsoft Neural voices (`Andrew`, `Ava`, `Jenny`, `Guy`, `Ryan`, `Sonia`, `Avri`, `Hila`, `Alvaro`, `Henri`, `Conrad`, `Diego`, `Hamed`, `Keita`) with lifelike inflections.
 - ⚡ **Dynamic Offline Voice Discovery:** Automatically enumerates every SAPI5/OneCore voice installed on your system. Plus, a 1-click button to install more offline language packs via Windows Settings.
 - 📋 **Configurable Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an adjustable stability buffer (0.3s to 1.5s).
 - 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus and escaped Win32 menu accelerators.
-- 🖥️ **Single Unified Desktop Shortcut & Single-Instance Locking:** Clean `FluentVoice Pro` desktop launcher brings any open window to the front without stacking duplicate instances.
+- 🖥️ **Single Unified Desktop Shortcut & Tray Revive:** Desktop launcher opens Control Center and **Close to Tray** / **Ensure Tray** bring the icon back after Exit.
 - 🚀 **Silent Headless Boot:** Auto-starts silently on Windows login through a background VBS launcher—zero flashing terminal windows.
+- ✅ **Smoke checklist:** See [`docs/SMOKE_TEST.md`](docs/SMOKE_TEST.md) for a 2-minute release verification path.
 
 ---
 
@@ -62,7 +64,7 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 ### Method 1: Automated Installer (Recommended)
 
-1. Download **`fluentvoice-pro-v1.1.0-windows.zip`** from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+1. Download the latest **`fluentvoice-pro`** release ZIP from **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 2. Extract the ZIP folder.
 3. Right-click **`install.ps1`** and choose **Run with PowerShell** (or run `.\install.ps1`).
 
@@ -81,18 +83,19 @@ python -m fluentvoice.installer
 
 1. **System Tray Icon (Next to Clock):**
    - **Left-Click**: Instant Toggle (Read clipboard / Stop speech immediately).
-   - **Right-Click**: Open Settings, switch voices, toggle Auto-Read, or access developer links.
-2. **Desktop Shortcuts:**
-   - Double-click **`FluentVoice Pro`** to speak or stop.
-   - Double-click **`FluentVoice Settings`** to open the Control Center.
-3. **Windows Explorer Context Menu:**
+   - **Right-Click**: Open Direct Text Reader, Settings, switch voices, toggle Auto-Read, or access developer links.
+2. **Global Hotkey:** `Ctrl+Shift+Space` (change under Automation & System).
+3. **Desktop Shortcut:**
+   - Double-click **`FluentVoice Pro`** to open the Control Center (brings an existing window to the front; revives tray if you previously Exit'ed).
+4. **Windows Explorer Context Menu:**
    - Right-click any folder or desktop background $\rightarrow$ **`FluentVoice Pro (Read Aloud)`**.
-4. **Command Line (CLI):**
+5. **Command Line (CLI):**
    ```powershell
    fluentvoice "Hello world"      # Speak specific text
    fluentvoice --clip             # Speak current clipboard
    fluentvoice --stop             # Stop speech immediately
    fluentvoice --gui              # Open Settings & Control Center
+   fluentvoice --reader           # Open Direct Text Reader scratchpad
    fluentvoice --about            # Open About & Credits window
    ```
 

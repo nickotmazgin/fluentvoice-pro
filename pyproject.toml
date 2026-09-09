@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluentvoice-pro"
-version = "1.4.0"
+version = "1.4.3"
 authors = [
   { name="Nick Otmazgin", email="nickotmazgin.dev@gmail.com" },
 ]
@@ -25,6 +25,7 @@ dependencies = [
     "Pillow>=10.0.0",
     "pywin32>=306",
     "customtkinter>=6.0.0",
+    "langdetect>=1.0.9",
 ]
 
 [project.urls]
