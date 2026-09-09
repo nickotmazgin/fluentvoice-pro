@@ -57,10 +57,10 @@ jobs:
           ## FluentVoice Pro v$ver
 
           ### Download options (pick one)
-          1. **Recommended — Source ZIP** ``fluentvoice-pro-$ver-windows.zip``
-             - Needs Python 3.10+ · run ``install.ps1``
+          1. **Recommended â€” Source ZIP** ``fluentvoice-pro-$ver-windows.zip``
+             - Needs Python 3.10+ Â· run ``install.ps1``
           2. **Portable EXE ZIP** ``FluentVoicePro-$ver-portable-win64.zip``
-             - No Python · run ``FluentVoicePro.exe`` (tray)
+             - No Python Â· run ``FluentVoicePro.exe`` (tray)
 
           Both assets are **GitHub Artifact Attested** (green verification on this Release).
           Windows SmartScreen / Unblock / firewall notes: see ``docs/WINDOWS_TRUST.md`` in the source ZIP.
@@ -92,7 +92,7 @@ jobs:
           $ver = "${{ steps.meta.outputs.version }}"
           $src = "${{ steps.meta.outputs.source_zip }}"
           $port = "${{ steps.meta.outputs.portable_zip }}"
-          $title = "FluentVoice Pro $ver — Tray revive, hotkey, volume, attested ZIP + portable"
+          $title = "FluentVoice Pro $ver â€” Tray revive, hotkey, volume, attested ZIP + portable"
           if (gh release view $tag 2>$null) {
             gh release upload $tag $src $port --clobber
             gh release edit $tag --title $title --notes-file release-notes.md
