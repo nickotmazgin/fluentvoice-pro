@@ -52,22 +52,36 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
       <b>05</b> — Footer · Emergency Stop
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/05-taskbar-tray-strip.png"><img src="screenshots/v1.4.14/05-taskbar-tray-strip.png" width="260" alt="Tray icon"></a><br>
-      <b>06</b> — Tray icon
+      <a href="screenshots/v1.4.14/06b-tray-menu-crop.png"><img src="screenshots/v1.4.14/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
+      <b>06b</b> — Tray right-click menu
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.14/00-desktop-icon-asset.png"><img src="screenshots/v1.4.14/00-desktop-icon-asset.png" width="260" alt="Desktop icon"></a><br>
-      <b>00</b> — Desktop icon
+      <a href="screenshots/v1.4.14/00-desktop-icon-live.png"><img src="screenshots/v1.4.14/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
+      <b>00</b> — Desktop icon (live)
     </td>
+    <td align="center">
+      <a href="screenshots/v1.4.14/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.14/05c-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
+      <b>05c</b> — Tray icon close-up
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg"><img src="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg" width="260" alt="Social collage 1080"></a><br>
+      <b>SQ</b> — Social collage 1080×1080
+    </td>
+  </tr>
+  <tr>
     <td align="center">
       <a href="screenshots/v1.4.14/social-preview-1280x640.jpg"><img src="screenshots/v1.4.14/social-preview-1280x640.jpg" width="260" alt="Social preview 1280x640"></a><br>
       <b>OG</b> — Social preview 1280×640
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg"><img src="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg" width="260" alt="Social collage 1080"></a><br>
-      <b>SQ</b> — Social collage 1080×1080
+      <a href="screenshots/v1.4.14/00-desktop-icon-asset.png"><img src="screenshots/v1.4.14/00-desktop-icon-asset.png" width="260" alt="Desktop icon asset"></a><br>
+      <b>00a</b> — Icon asset
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.14/06-tray-menu-full.png"><img src="screenshots/v1.4.14/06-tray-menu-full.png" width="260" alt="Tray menu full"></a><br>
+      <b>06</b> — Tray menu (full)
     </td>
   </tr>
 </table>
