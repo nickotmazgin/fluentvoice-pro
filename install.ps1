@@ -9,6 +9,7 @@ Write-Host "==========================================================" -Foregro
 # 1. Install dependencies
 Write-Host "`n[1/3] Installing Python dependencies..." -ForegroundColor Yellow
 python -m pip install -r requirements.txt --quiet
+python -m pip install -e . --no-deps --quiet
 
 # 2. Run Windows shortcut & registry setup
 Write-Host "[2/3] Configuring Desktop, Startup, and Context Menus..." -ForegroundColor Yellow
