@@ -25,11 +25,12 @@ def install_all():
     shell = win32com.client.Dispatch("WScript.Shell")
     desktop = Path.home() / "Desktop"
 
-    # Clean old obsolete shortcuts from Desktop
+    # Clean old obsolete shortcuts from Desktop (one desktop icon only: Settings)
     old_desktop_shortcuts = [
         desktop / "Read Aloud.lnk",
         desktop / "Natural Voice Reader.lnk",
-        desktop / "FluentVoice Settings.lnk"
+        desktop / "FluentVoice Settings.lnk",
+        desktop / "FluentVoice Emergency Stop.lnk",  # stop lives in Settings UI + Start Menu
     ]
     for old_s in old_desktop_shortcuts:
         if old_s.exists():
@@ -39,7 +40,7 @@ def install_all():
             except Exception:
                 pass
 
-    # 1. Desktop: Settings (main) + Emergency Stop (failsafe when tray icon missing)
+    # 1. Single Desktop icon → Settings & Control Center (Emergency Stop is in the UI footer)
     desktop_lnk = desktop / "FluentVoice Pro.lnk"
     sc = shell.CreateShortcut(str(desktop_lnk))
     sc.TargetPath = str(pythonw)
@@ -50,17 +51,7 @@ def install_all():
     sc.Save()
     print(f"[OK] Desktop Settings Shortcut: {desktop_lnk}")
 
-    stop_lnk = desktop / "FluentVoice Emergency Stop.lnk"
-    sc_stop = shell.CreateShortcut(str(stop_lnk))
-    sc_stop.TargetPath = str(pythonw)
-    sc_stop.Arguments = '-m fluentvoice.cli --stop'
-    sc_stop.WorkingDirectory = str(base_dir)
-    sc_stop.IconLocation = f"{ico_path},0"
-    sc_stop.Description = "FluentVoice Pro - Emergency Stop Speech (works without tray icon)"
-    sc_stop.Save()
-    print(f"[OK] Desktop Emergency Stop: {stop_lnk}")
-
-    # Start Menu folder with Settings / Stop / Restart Tray / Reader
+    # Start Menu extras (optional failsafes — not on Desktop)
     programs = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs"))
     sm_dir = programs / "FluentVoice Pro"
     sm_dir.mkdir(parents=True, exist_ok=True)
@@ -77,7 +68,7 @@ def install_all():
         print(f"[OK] Start Menu: {p.name}")
 
     _write_sm("FluentVoice Settings.lnk", "-m fluentvoice.cli --gui", "Open Settings & Control Center")
-    _write_sm("FluentVoice Emergency Stop.lnk", "-m fluentvoice.cli --stop", "Stop speech immediately")
+    _write_sm("FluentVoice Emergency Stop.lnk", "-m fluentvoice.cli --stop", "Stop speech immediately (Start Menu failsafe)")
     _write_sm("FluentVoice Direct Text Reader.lnk", "-m fluentvoice.cli --reader", "Open Direct Text Reader")
     _write_sm("Restart FluentVoice Tray.lnk", "-m fluentvoice.cli --restart-tray", "Restart the system tray daemon")
     _write_sm("Toggle Speak Stop.lnk", "-m fluentvoice.cli --toggle", "Toggle Speak / Stop")

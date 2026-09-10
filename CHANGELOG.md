@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.9] - 2026-09-10
+
+### Changed
+- **One desktop icon only**: Removed the separate Desktop "Emergency Stop" shortcut. Stop controls belong in the Settings UI (and optional Start Menu failsafes), not as a second app icon on the desktop.
+
+### Added
+- **Settings footer Emergency Stop**: Always-visible **Emergency Stop** button on every Settings tab for instant speech halt without the tray icon.
+
+---
+
 ## [1.4.8] - 2026-09-10
 
 ### Fixed

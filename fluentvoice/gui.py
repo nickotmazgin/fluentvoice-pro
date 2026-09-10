@@ -998,7 +998,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             "• Direct Text Reader — paste/type long text, then Read Aloud.\n"
             "• Tray icon — left-click toggles speak/stop; right-click for voices and settings.\n"
             "• Global hotkey — Ctrl+Shift+Space (configurable above).\n"
-            "• Desktop shortcut — opens Control Center and revives tray if needed.\n"
+            "• Desktop shortcut — one icon opens this Control Center (Emergency Stop is in the footer).\n"
+            "• Footer Emergency Stop — always available on every Settings tab.\n"
+            "• Start Menu → FluentVoice Pro — optional Stop / Restart Tray / Reader shortcuts.\n"
             "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
             "• Explorer — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
         )
@@ -1116,6 +1118,35 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_close_to_tray
         )
         btn_close.pack(side="right")
+
+        # Always-visible Emergency Stop on every tab (no second desktop icon needed)
+        btn_emergency = ctk.CTkButton(
+            footer,
+            text="⏹ Emergency Stop",
+            fg_color="#DA3633",
+            hover_color="#F85149",
+            text_color="#FFFFFF",
+            width=150,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._on_emergency_stop,
+        )
+        btn_emergency.pack(side="right", padx=(0, 8))
+
+    def _on_emergency_stop(self):
+        """Hard-stop speech from Settings footer — primary failsafe without a second desktop icon."""
+        try:
+            from . import core
+            core.stop_all_playback()
+        except Exception:
+            pass
+        if hasattr(self, "autosave_lbl"):
+            self.autosave_lbl.configure(text="⏹ Speech stopped immediately", text_color="#F85149")
+            self.after(
+                2500,
+                lambda: self.autosave_lbl.configure(
+                    text="✓ All settings auto-saved", text_color="#8B949E"
+                ),
+            )
 
     def _on_close_to_tray(self):
         """Hide Settings and ensure the tray daemon is alive (fixes Exit → reopen → no tray)."""
