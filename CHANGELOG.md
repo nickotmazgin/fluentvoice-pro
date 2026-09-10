@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.11] - 2026-09-10
+
+### Fixed
+- **Settings footer layout**: Status + auto-save now stack on the left with a clear vertical divider before Emergency Stop / Close to Tray, so long status strings never collide with the buttons.
+
+---
+
 ## [1.4.10] - 2026-09-10
 
 ### Fixed
