@@ -1093,9 +1093,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(fill="x", padx=16, pady=(4, 14))
 
-        # Row 1: action buttons alone on the right (never share a line with status text)
+        # Row 1: action buttons alone on the right
         actions = ctk.CTkFrame(footer, fg_color="transparent")
-        actions.pack(fill="x", pady=(0, 8))
+        actions.pack(fill="x", pady=(0, 10))
 
         btn_close = ctk.CTkButton(
             actions,
@@ -1119,31 +1119,32 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         btn_emergency.pack(side="right", padx=(0, 8))
 
-        # Thin horizontal rule between buttons and status
-        rule = ctk.CTkFrame(footer, height=1, fg_color="#30363D")
-        rule.pack(fill="x", pady=(0, 8))
+        # Visible horizontal separator
+        rule = ctk.CTkFrame(footer, height=2, fg_color="#484F58")
+        rule.pack(fill="x", pady=(0, 10))
+        rule.pack_propagate(False)
 
-        # Row 2: status messages only
-        status_row = ctk.CTkFrame(footer, fg_color="transparent")
-        status_row.pack(fill="x")
+        # Row 2: status stacked on the left only (never under the buttons)
+        status_col = ctk.CTkFrame(footer, fg_color="transparent")
+        status_col.pack(anchor="w")
 
         status_lbl = ctk.CTkLabel(
-            status_row,
+            status_col,
             text="Single-Stream Engine Active • Zero Collisions",
             text_color="#3FB950",
             font=ctk.CTkFont(size=12, weight="bold"),
             anchor="w",
         )
-        status_lbl.pack(side="left")
+        status_lbl.pack(anchor="w")
 
         self.autosave_lbl = ctk.CTkLabel(
-            status_row,
+            status_col,
             text="✓ All settings auto-saved",
             text_color="#8B949E",
             font=ctk.CTkFont(size=12),
             anchor="w",
         )
-        self.autosave_lbl.pack(side="left", padx=(16, 0))
+        self.autosave_lbl.pack(anchor="w", pady=(3, 0))
 
     def _on_emergency_stop(self):
         """Hard-stop speech from Settings footer — primary failsafe without a second desktop icon."""

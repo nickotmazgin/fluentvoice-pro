@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.13] - 2026-09-10
+
+### Fixed
+- **Settings footer collision**: Emergency Stop / Close to Tray sit on their own row above a clear horizontal divider; status + auto-save stack on the left underneath so text never sits beside or under the buttons.
+
+---
+
 ## [1.4.12] - 2026-09-10
 
 ### Fixed
