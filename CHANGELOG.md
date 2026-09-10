@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.7] - 2026-09-10
+
+### Fixed
+- **Setuptools Flat-Layout Package Discovery**: Added `[tool.setuptools.packages.find]` to `pyproject.toml` so `pip install -e .` and `pip install .` succeed without flat-layout package ambiguity errors.
+- **Global CLI Entry Point Registration**: Updated `install.ps1` to register `fluentvoice` in Python `Scripts` automatically via `pip install -e . --no-deps`.
+- **Complete Clipboard Immunity**: Inherits the critical clipboard lock fix, zero-lock Win32 sequence monitoring (`GetClipboardSequenceNumber`), and SAPI `CoInitialize` COM threading safety from v1.4.6.
+
+---
+
 ## [1.4.6] - 2026-09-10
 
 ### Fixed
