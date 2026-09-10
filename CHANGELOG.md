@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.6] - 2026-09-10
+
+### Fixed
+- **Critical Clipboard Lock Bug**: Fixed unhandled format exceptions in `core.get_clipboard_text()` when non-text data (screenshots, images, files, or binary) was copied. Added format pre-checks (`CF_UNICODETEXT` / `CF_TEXT`), 5-stage retry backoff, and guaranteed unlock via a `try ... finally: CloseClipboard()` block. This permanently resolves system-wide clipboard lockups and empty Windows Clipboard History (`Win + V`) issues.
+- **Zero-Lock Clipboard Sequence Monitoring**: Replaced aggressive polling in `tray.clipboard_monitor_loop()` with native Win32 `user32.GetClipboardSequenceNumber()`. The daemon now checks a lightweight kernel counter without acquiring clipboard locks or causing contention with user copy operations.
+- **Config Disk I/O Throttling**: Cached configuration in tray monitoring loop with a 2-second heartbeat instead of reading `config.json` from disk every 500ms.
+- **COM Apartment Threading**: Added `pythoncom.CoInitialize()` before SAPI `SpVoice` initialization and playback in worker threads, preventing `0x800401F0` (`CO_E_NOTINITIALIZED`) exceptions.
+
+### Added
+- **Clipboard Safety Unit Tests**: Added `tests/test_clipboard.py` covering Unicode text readback, empty clipboard handling, non-text safety, and verifying zero lock leaks across threads.
+
+---
+
 ## [1.4.5] - 2026-09-09
 
 ### Fixed

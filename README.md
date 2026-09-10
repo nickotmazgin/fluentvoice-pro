@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.5** — Packaging refresh: community/security docs in the source ZIP, contain-fit GitHub social preview, Actions/CodeQL hardening. App behavior same as **v1.4.3** (tray revive, hotkey, volume, auto-route, attested ZIP + portable EXE). See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.4.6** — Critical clipboard lock bug eliminated, zero-lock Win32 sequence monitoring, SAPI COM apartment stability, and comprehensive clipboard safety tests. Both Source ZIP and Portable EXE are **GitHub Artifact Attested**. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 

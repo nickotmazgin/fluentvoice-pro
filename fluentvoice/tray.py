@@ -276,6 +276,11 @@ class FluentVoiceTrayApp:
         return load_config().get("show_notifications", True)
 
     def clipboard_monitor_loop(self):
+        user32 = ctypes.windll.user32
+        last_seq = user32.GetClipboardSequenceNumber()
+        last_cfg_check = 0.0
+        cfg_cached = load_config()
+
         while True:
             try:
                 # Honor Settings → Restart Tray
@@ -288,17 +293,25 @@ class FluentVoiceTrayApp:
                     self.on_exit(self.tray_icon, None)
                     return
 
-                fresh_cfg = load_config()
-                if fresh_cfg.get("auto_read_copy", False):
-                    current = core.get_clipboard_text()
-                    current_h = hash(current)
-                    if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
-                        self.last_clipboard_hash = current_h
-                        debounce = float(fresh_cfg.get("debounce_sec", 0.6))
-                        time.sleep(debounce)
-                        fresh = core.get_clipboard_text()
-                        if fresh == current:
-                            threading.Thread(target=lambda: core.speak_text(fresh), daemon=True).start()
+                # Refresh cached config every 2 seconds instead of every 500ms
+                now = time.time()
+                if now - last_cfg_check >= 2.0:
+                    cfg_cached = load_config()
+                    last_cfg_check = now
+
+                if cfg_cached.get("auto_read_copy", False):
+                    curr_seq = user32.GetClipboardSequenceNumber()
+                    if curr_seq != last_seq:
+                        last_seq = curr_seq
+                        current = core.get_clipboard_text()
+                        current_h = hash(current)
+                        if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
+                            self.last_clipboard_hash = current_h
+                            debounce = float(cfg_cached.get("debounce_sec", 0.6))
+                            time.sleep(debounce)
+                            fresh = core.get_clipboard_text()
+                            if fresh == current:
+                                threading.Thread(target=lambda: core.speak_text(fresh), daemon=True).start()
 
                 # Re-apply dark menus occasionally (hover theme can regress)
                 self._dark_refresh_ticks += 1

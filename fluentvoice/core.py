@@ -54,6 +54,11 @@ def stop_all_playback():
     winmm.mciSendStringW("close all", None, 0, None)
 
     try:
+        try:
+            import pythoncom
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
         import win32com.client
         sp = win32com.client.Dispatch("SAPI.SpVoice")
         sp.Speak("", 2)  # SVSFPurgeBeforeSpeak
@@ -215,20 +220,55 @@ def clean_text_for_speech(text: str) -> str:
     return text
 
 def get_clipboard_text() -> str:
-    """Safely retrieves text from the Windows clipboard."""
+    """Safely retrieves text from the Windows clipboard with retries, format checks, and guaranteed unlock."""
     try:
         import win32clipboard
-        win32clipboard.OpenClipboard()
-        text = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
-        win32clipboard.CloseClipboard()
-        return text if text else ""
-    except Exception:
+        import win32con
+    except ImportError:
         return ""
+
+    # Fast pre-check: if neither Unicode nor ANSI text is on clipboard, do not even open it
+    try:
+        if not win32clipboard.IsClipboardFormatAvailable(win32con.CF_UNICODETEXT):
+            if not win32clipboard.IsClipboardFormatAvailable(win32con.CF_TEXT):
+                return ""
+    except Exception:
+        pass
+
+    for attempt in range(5):
+        opened = False
+        try:
+            win32clipboard.OpenClipboard()
+            opened = True
+            if win32clipboard.IsClipboardFormatAvailable(win32con.CF_UNICODETEXT):
+                data = win32clipboard.GetClipboardData(win32con.CF_UNICODETEXT)
+                return str(data) if data else ""
+            elif win32clipboard.IsClipboardFormatAvailable(win32con.CF_TEXT):
+                data = win32clipboard.GetClipboardData(win32con.CF_TEXT)
+                if isinstance(data, bytes):
+                    return data.decode("utf-8", errors="replace")
+                return str(data) if data else ""
+            return ""
+        except Exception:
+            if attempt < 4:
+                time.sleep(0.02)
+        finally:
+            if opened:
+                try:
+                    win32clipboard.CloseClipboard()
+                except Exception:
+                    pass
+    return ""
 
 def get_installed_sapi_voices() -> list:
     """Dynamically enumerates all Windows SAPI/OneCore voices installed on this PC."""
     voices = []
     try:
+        try:
+            import pythoncom
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
         import win32com.client
         sp = win32com.client.Dispatch("SAPI.SpVoice")
         for i in range(sp.GetVoices().Count):
@@ -249,6 +289,11 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
     global _is_speaking
     _is_speaking = True
     try:
+        try:
+            import pythoncom
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
         import win32com.client
         sp = win32com.client.Dispatch("SAPI.SpVoice")
         if sp.GetVoices().Count == 0:
