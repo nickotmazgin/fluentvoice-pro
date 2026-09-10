@@ -74,4 +74,7 @@ screenshots/**/00-desktop-full.png
 screenshots/**/_github*
 screenshots/**/github-og-*
 screenshots/**/ig/
+screenshots/verify-*/
+screenshots/**/*.tmp.png
+screenshots/**/00-desktop-full.tmp.png
 

@@ -23,56 +23,56 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Screenshots
 
-*FluentVoice Pro v1.4.3 — click any image to view it full size.*
+*FluentVoice Pro **v1.4.14** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.4.3 collage](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)
+[![FluentVoice Pro v1.4.14 collage](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.3/01-settings-reader.png"><img src="screenshots/v1.4.3/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.4.14/01-settings-reader.png"><img src="screenshots/v1.4.14/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.3/02-settings-voice.png"><img src="screenshots/v1.4.3/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.4.14/02-settings-voice.png"><img src="screenshots/v1.4.14/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.3/03-settings-automation.png"><img src="screenshots/v1.4.3/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <a href="screenshots/v1.4.14/03-settings-automation.png"><img src="screenshots/v1.4.14/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
       <b>03</b> — Automation &amp; System
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.3/03c-settings-automation-bottom.png"><img src="screenshots/v1.4.3/03c-settings-automation-bottom.png" width="260" alt="Automation bottom"></a><br>
-      <b>03c</b> — Automation · bottom (tray / tips)
+      <a href="screenshots/v1.4.14/04-settings-about.png"><img src="screenshots/v1.4.14/04-settings-about.png" width="260" alt="About &amp; Factory Reset"></a><br>
+      <b>04</b> — About · Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.3/04-settings-about.png"><img src="screenshots/v1.4.3/04-settings-about.png" width="260" alt="About &amp; Developer"></a><br>
-      <b>04</b> — About &amp; Developer
+      <a href="screenshots/v1.4.14/05-footer-emergency-stop.png"><img src="screenshots/v1.4.14/05-footer-emergency-stop.png" width="260" alt="Emergency Stop footer"></a><br>
+      <b>05</b> — Footer · Emergency Stop
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.3/06b-tray-menu-crop.png"><img src="screenshots/v1.4.3/06b-tray-menu-crop.png" width="260" alt="Tray menu"></a><br>
-      <b>06b</b> — Tray menu (dark + hover)
+      <a href="screenshots/v1.4.14/05-taskbar-tray-strip.png"><img src="screenshots/v1.4.14/05-taskbar-tray-strip.png" width="260" alt="Tray icon"></a><br>
+      <b>06</b> — Tray icon
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.3/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.3/05c-tray-icon-closeup.png" width="260" alt="Tray icon"></a><br>
-      <b>05c</b> — Tray icon
-    </td>
-    <td align="center">
-      <a href="screenshots/v1.4.3/00-desktop-icon-asset.png"><img src="screenshots/v1.4.3/00-desktop-icon-asset.png" width="260" alt="Desktop icon"></a><br>
+      <a href="screenshots/v1.4.14/00-desktop-icon-asset.png"><img src="screenshots/v1.4.14/00-desktop-icon-asset.png" width="260" alt="Desktop icon"></a><br>
       <b>00</b> — Desktop icon
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.3/social-preview-1280x640.jpg"><img src="screenshots/v1.4.3/social-preview-1280x640.jpg" width="260" alt="Social preview"></a><br>
+      <a href="screenshots/v1.4.14/social-preview-1280x640.jpg"><img src="screenshots/v1.4.14/social-preview-1280x640.jpg" width="260" alt="Social preview 1280x640"></a><br>
       <b>OG</b> — Social preview 1280×640
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg"><img src="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg" width="260" alt="Social collage 1080"></a><br>
+      <b>SQ</b> — Social collage 1080×1080
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.4.3-2026.jpg](screenshots/v1.4.3/collage-v1.4.3-2026.jpg)
+Full combined image (download): [collage-v1.4.14-2026.jpg](screenshots/v1.4.14/collage-v1.4.14-2026.jpg) · Social square: [social-collage-1080-v1.4.14.jpg](screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg)
 
 ---
 
