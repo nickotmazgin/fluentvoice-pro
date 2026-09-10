@@ -62,3 +62,11 @@ def save_config(cfg: dict):
             json.dump(cfg, f, indent=2)
     except Exception:
         pass
+
+
+def factory_reset_config() -> dict:
+    """Restore all settings to factory defaults and persist to disk."""
+    cfg = DEFAULT_CONFIG.copy()
+    cfg["preferred_voices"] = DEFAULT_PREFERRED_VOICES.copy()
+    save_config(cfg)
+    return cfg

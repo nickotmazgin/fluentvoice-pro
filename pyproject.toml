@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluentvoice-pro"
-version = "1.4.13"
+version = "1.4.14"
 authors = [
   { name="Nick Otmazgin", email="nickotmazgin.dev@gmail.com" },
 ]

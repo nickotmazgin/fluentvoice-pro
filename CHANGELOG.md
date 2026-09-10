@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.14] - 2026-09-10
+
+### Fixed
+- **Speech modulation reset**: Also clears the legacy `rate` config string to `+0%` so reset is fully consistent with defaults.
+
+### Added
+- **Restore Factory Settings**: About & Developer → Advanced button (with confirmation) restores all settings to factory defaults and reloads the Control Center. Not added to the tray menu.
+
+---
+
 ## [1.4.13] - 2026-09-10
 
 ### Fixed

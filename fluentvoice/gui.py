@@ -1082,6 +1082,36 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         btn_bug.pack(side="left")
 
+        # Advanced / factory reset (Settings only — not in tray)
+        adv = ctk.CTkFrame(card, fg_color="#121824", corner_radius=8, border_width=1, border_color="#30363D")
+        adv.pack(fill="x", padx=16, pady=(16, 8))
+        ctk.CTkLabel(
+            adv,
+            text="Advanced",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#E6EDF3",
+        ).pack(anchor="w", padx=12, pady=(10, 2))
+        ctk.CTkLabel(
+            adv,
+            text="Restore voice, modulation, hotkey, automation, and preferred voices to factory defaults.",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E",
+            wraplength=520,
+            justify="left",
+        ).pack(anchor="w", padx=12, pady=(0, 8))
+        ctk.CTkButton(
+            adv,
+            text="↺ Restore Factory Settings…",
+            fg_color="#21262D",
+            hover_color="#DA3633",
+            border_width=1,
+            border_color="#484F58",
+            text_color="#E6EDF3",
+            height=32,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._on_factory_reset,
+        ).pack(anchor="w", padx=12, pady=(0, 12))
+
         ctk.CTkLabel(
             card,
             text="Licensed under the MIT License • Built with Python, Win32 API & CustomTkinter.",
@@ -1383,9 +1413,38 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.cfg["rate_mult"] = 1.0
         self.cfg["pitch_hz"] = 0
         self.cfg["volume"] = 100
+        self.cfg["rate"] = "+0%"  # keep legacy rate string in sync
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
         self.test_status_lbl.configure(text="Speed, pitch & volume reset (1.0x, +0Hz, 100%)", text_color="#8B949E")
+
+    def _on_factory_reset(self):
+        """Confirm, restore DEFAULT_CONFIG, then reopen Settings so every control reloads."""
+        from tkinter import messagebox
+
+        ok = messagebox.askyesno(
+            "Restore Factory Settings",
+            "Reset ALL FluentVoice Pro settings to factory defaults?\n\n"
+            "This restores voice, speed, pitch, volume, hotkey, automation toggles,\n"
+            "notifications, debounce, and preferred language voices.\n\n"
+            "This cannot be undone.",
+            parent=self,
+        )
+        if not ok:
+            return
+        try:
+            current_tab = self.tabview.get()
+        except Exception:
+            current_tab = "About & Developer"
+        config.factory_reset_config()
+        # Soft-nudge tray to reload config on next poll
+        try:
+            from .lifecycle import ensure_tray_running
+            ensure_tray_running(wait_sec=0.4)
+        except Exception:
+            pass
+        self.destroy()
+        open_settings_window(tab=current_tab)
 
     def _on_toggle_hotkey(self):
         if self._syncing_from_disk:
