@@ -39,7 +39,7 @@ def install_all():
             except Exception:
                 pass
 
-    # 1. Single Official Desktop Shortcut: "FluentVoice Pro.lnk" (Opens Settings & Control Center)
+    # 1. Desktop: Settings (main) + Emergency Stop (failsafe when tray icon missing)
     desktop_lnk = desktop / "FluentVoice Pro.lnk"
     sc = shell.CreateShortcut(str(desktop_lnk))
     sc.TargetPath = str(pythonw)
@@ -48,7 +48,39 @@ def install_all():
     sc.IconLocation = f"{ico_path},0"
     sc.Description = "FluentVoice Pro - Settings & Voice Control Center"
     sc.Save()
-    print(f"[OK] Single Unified Desktop Shortcut: {desktop_lnk}")
+    print(f"[OK] Desktop Settings Shortcut: {desktop_lnk}")
+
+    stop_lnk = desktop / "FluentVoice Emergency Stop.lnk"
+    sc_stop = shell.CreateShortcut(str(stop_lnk))
+    sc_stop.TargetPath = str(pythonw)
+    sc_stop.Arguments = '-m fluentvoice.cli --stop'
+    sc_stop.WorkingDirectory = str(base_dir)
+    sc_stop.IconLocation = f"{ico_path},0"
+    sc_stop.Description = "FluentVoice Pro - Emergency Stop Speech (works without tray icon)"
+    sc_stop.Save()
+    print(f"[OK] Desktop Emergency Stop: {stop_lnk}")
+
+    # Start Menu folder with Settings / Stop / Restart Tray / Reader
+    programs = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs"))
+    sm_dir = programs / "FluentVoice Pro"
+    sm_dir.mkdir(parents=True, exist_ok=True)
+
+    def _write_sm(name, args, desc):
+        p = sm_dir / name
+        s = shell.CreateShortcut(str(p))
+        s.TargetPath = str(pythonw)
+        s.Arguments = args
+        s.WorkingDirectory = str(base_dir)
+        s.IconLocation = f"{ico_path},0"
+        s.Description = desc
+        s.Save()
+        print(f"[OK] Start Menu: {p.name}")
+
+    _write_sm("FluentVoice Settings.lnk", "-m fluentvoice.cli --gui", "Open Settings & Control Center")
+    _write_sm("FluentVoice Emergency Stop.lnk", "-m fluentvoice.cli --stop", "Stop speech immediately")
+    _write_sm("FluentVoice Direct Text Reader.lnk", "-m fluentvoice.cli --reader", "Open Direct Text Reader")
+    _write_sm("Restart FluentVoice Tray.lnk", "-m fluentvoice.cli --restart-tray", "Restart the system tray daemon")
+    _write_sm("Toggle Speak Stop.lnk", "-m fluentvoice.cli --toggle", "Toggle Speak / Stop")
 
     # 2. Taskbar Quick-Toggle Shortcut: "FluentVoice Pro.lnk" (1-Click Read / Stop)
     tb = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"))

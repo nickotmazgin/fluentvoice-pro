@@ -18,8 +18,19 @@ def main():
     parser.add_argument("--gui", "-g", action="store_true", help="Open FluentVoice Pro Settings & Control Center")
     parser.add_argument("--reader", "-r", action="store_true", help="Open Direct Text Reader scratchpad window")
     parser.add_argument("--about", "-a", action="store_true", help="Open About & Developer Credits window")
+    parser.add_argument(
+        "--restart-tray",
+        action="store_true",
+        help="Restart the FluentVoice system tray daemon (failsafe if icon disappears)",
+    )
 
     args = parser.parse_args()
+
+    if args.restart_tray:
+        from .lifecycle import request_tray_restart
+        ok = request_tray_restart()
+        print("FluentVoice tray restarted." if ok else "FluentVoice tray restart failed.")
+        sys.exit(0 if ok else 1)
 
     if args.reader or args.gui or args.about:
         # Desktop / Settings must resurrect the tray if user previously Exit'ed it.

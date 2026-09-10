@@ -37,6 +37,7 @@ MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
+TRAY_TOOLTIP = "FluentVoice Pro (Click to Speak / Stop)"
 
 def check_single_instance():
     kernel32 = ctypes.windll.kernel32
@@ -49,11 +50,104 @@ def get_tray_icon_path():
     p = Path(__file__).parent.parent / "assets" / "tray_icon.ico"
     if p.exists():
         return str(p)
-    return str(Path.home() / ".antigravity" / "tray_icon.ico")
+    # Prefer packaged assets; last-resort legacy path
+    fallback = Path.home() / ".fluentvoice" / "tray_icon.ico"
+    if fallback.exists():
+        return str(fallback)
+    return str(p)
+
+def load_tray_image():
+    """Load a crisp RGBA tray image (prefer multi-size ICO, fall back to PNG)."""
+    ico = Path(get_tray_icon_path())
+    png = ico.with_suffix(".png")
+    src = ico if ico.exists() else png
+    img = Image.open(src)
+    # Use the smallest available frame when multi-frame ICO — Windows picks size,
+    # but giving pystray a clean RGBA bitmap avoids blank/transparent draws.
+    try:
+        if getattr(img, "n_frames", 1) > 1:
+            # Prefer ~32px frame for crisp taskbar at 100–150% DPI
+            best = None
+            best_score = 10**9
+            for i in range(img.n_frames):
+                img.seek(i)
+                w, h = img.size
+                score = abs(w - 32) + abs(h - 32)
+                if score < best_score:
+                    best_score = score
+                    best = img.copy().convert("RGBA")
+            if best is not None:
+                return best
+    except Exception:
+        pass
+    return img.convert("RGBA")
+
+def promote_notify_icons():
+    """Force FluentVoice / pythonw notify icons to stay visible (not overflow-only)."""
+    try:
+        import winreg
+        root = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Control Panel\NotifyIconSettings",
+            0,
+            winreg.KEY_READ,
+        )
+        promoted = 0
+        i = 0
+        while True:
+            try:
+                name = winreg.EnumKey(root, i)
+                i += 1
+            except OSError:
+                break
+            try:
+                sk = winreg.OpenKey(root, name, 0, winreg.KEY_READ | winreg.KEY_SET_VALUE)
+            except OSError:
+                continue
+            try:
+                exe = ""
+                tip = ""
+                try:
+                    exe = winreg.QueryValueEx(sk, "ExecutablePath")[0] or ""
+                except OSError:
+                    pass
+                try:
+                    tip = winreg.QueryValueEx(sk, "Tooltip")[0] or ""
+                except OSError:
+                    pass
+                exe_l = exe.lower()
+                tip_l = tip.lower()
+                match = (
+                    "pythonw.exe" in exe_l
+                    or "python.exe" in exe_l
+                    or "fluentvoice" in tip_l
+                    or "fluent voice" in tip_l
+                )
+                if not match:
+                    winreg.CloseKey(sk)
+                    continue
+                winreg.SetValueEx(sk, "IsPromoted", 0, winreg.REG_DWORD, 1)
+                if not tip.strip():
+                    winreg.SetValueEx(sk, "Tooltip", 0, winreg.REG_SZ, "FluentVoice Pro")
+                promoted += 1
+                winreg.CloseKey(sk)
+            except Exception:
+                try:
+                    winreg.CloseKey(sk)
+                except Exception:
+                    pass
+        winreg.CloseKey(root)
+        if promoted:
+            logger.info("Promoted %s Windows notify-icon entr(y/ies) to always-show", promoted)
+        return promoted
+    except Exception as e:
+        logger.debug("promote_notify_icons: %s", e)
+        return 0
 
 def apply_win32_dark_menus():
     """Force Windows 11 dark popup menus (fixes white menus + khaki/beige hover).
     SetPreferredAppMode / FlushMenuThemes are process-wide uxtheme.dll exports.
+    Does NOT EnumWindows/SetWindowTheme on pystray HWNDs (that broke the tray).
     """
     try:
         uxtheme = ctypes.WinDLL("uxtheme.dll")
@@ -370,20 +464,79 @@ class FluentVoiceTrayApp:
         logger.info("FluentVoice Pro exited cleanly.")
         os._exit(0)
 
+    def _open_settings_failsafe(self, reason: str):
+        """Open Settings when tray visibility cannot be confirmed (emergency back door)."""
+        logger.error("Tray failsafe opening Settings: %s", reason)
+        try:
+            pythonw = Path(sys.executable).parent / "pythonw.exe"
+            if not pythonw.exists():
+                pythonw = Path(sys.executable)
+            base_dir = Path(__file__).parent.parent.resolve()
+            subprocess.Popen(
+                [str(pythonw), "-m", "fluentvoice.cli", "--gui"],
+                cwd=str(base_dir),
+            )
+        except Exception as e:
+            logger.error("Failsafe Settings launch failed: %s", e)
+
+    def _verify_and_promote_icon(self, icon):
+        """Honest tray check: HWND + visible flag + promote in Windows notify settings."""
+        hwnd = getattr(icon, "_hwnd", None)
+        visible = bool(getattr(icon, "visible", False))
+        icon_handle = getattr(icon, "_icon_handle", None) or getattr(icon, "icon", None)
+        logger.info(
+            "Tray status: visible=%s hwnd=%s has_icon=%s",
+            visible,
+            hwnd,
+            bool(icon_handle),
+        )
+        promote_notify_icons()
+        if visible and hwnd:
+            logger.info("Tray icon registration OK (HWND present + visible=True)")
+            return True
+        logger.warning(
+            "Tray icon NOT fully confirmed (visible=%s hwnd=%s). "
+            "Use Desktop/Start Menu Emergency Stop / Settings if the icon is missing.",
+            visible,
+            hwnd,
+        )
+        return False
+
     def _on_icon_ready(self, icon):
         """Called by pystray once the tray window is live and ready to receive messages."""
         try:
+            icon.title = TRAY_TOOLTIP
             icon.visible = True
-            logger.info("Tray icon verified visible in Windows system tray")
+            # Nudge Windows to redraw the notification area icon
+            try:
+                icon.icon = icon.icon
+            except Exception:
+                pass
+            ok = self._verify_and_promote_icon(icon)
             threading.Thread(target=self.clipboard_monitor_loop, daemon=True, name="ClipboardWatcher").start()
             threading.Thread(target=self.hotkey_message_loop, daemon=True, name="HotkeyWatcher").start()
             logger.info("Background watcher threads started successfully")
+            if not ok:
+                # Delayed failsafe: give the shell a moment, then offer Settings UI
+                def _delayed_failsafe():
+                    time.sleep(2.5)
+                    promote_notify_icons()
+                    if not getattr(icon, "visible", False) or not getattr(icon, "_hwnd", None):
+                        self._open_settings_failsafe("tray HWND/visible still missing after startup")
+                threading.Thread(target=_delayed_failsafe, daemon=True, name="TrayFailsafe").start()
+            else:
+                # Second promote pass after Explorer finishes registering the icon
+                threading.Thread(
+                    target=lambda: (time.sleep(1.0), promote_notify_icons()),
+                    daemon=True,
+                    name="PromoteIcons",
+                ).start()
         except Exception as e:
             logger.error(f"Error during tray icon setup: {e}", exc_info=True)
+            self._open_settings_failsafe(str(e))
 
     def run(self):
-        icon_path = get_tray_icon_path()
-        img = Image.open(icon_path)
+        img = load_tray_image()
 
         # Build dynamic offline SAPI menu items
         offline_items = []
@@ -437,7 +590,7 @@ class FluentVoiceTrayApp:
             item("❌ Exit FluentVoice Pro", self.on_exit)
         )
 
-        self.tray_icon = pystray.Icon("FluentVoice_Pro", img, "FluentVoice Pro (Click to Speak / Stop)", menu)
+        self.tray_icon = pystray.Icon("FluentVoice_Pro", img, TRAY_TOOLTIP, menu)
         logger.info("Running pystray tray_icon event loop...")
         self.tray_icon.run(setup=self._on_icon_ready)
 

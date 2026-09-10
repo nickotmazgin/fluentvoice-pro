@@ -57,3 +57,43 @@ def ensure_tray_running(wait_sec: float = 0.8) -> bool:
         return is_tray_running()
     except Exception:
         return False
+
+
+def request_tray_restart(wait_exit_sec: float = 3.0, wait_start_sec: float = 2.0) -> bool:
+    """Ask a running tray to exit via pending flag, then start a fresh daemon."""
+    from .config import APP_DIR
+
+    flag = APP_DIR / "pending_tray_restart.txt"
+    try:
+        flag.write_text("restart", encoding="utf-8")
+    except Exception:
+        pass
+
+    if is_tray_running():
+        deadline = time.time() + wait_exit_sec
+        while time.time() < deadline:
+            if not is_tray_running():
+                break
+            time.sleep(0.15)
+        # Force-kill leftover fluentvoice.tray pythonw if flag was ignored
+        if is_tray_running():
+            try:
+                ps = (
+                    "Get-CimInstance Win32_Process | "
+                    "Where-Object { $_.CommandLine -like '*fluentvoice.tray*' } | "
+                    "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+                )
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", ps],
+                    capture_output=True,
+                    timeout=8,
+                )
+            except Exception:
+                pass
+            time.sleep(0.4)
+
+    try:
+        flag.unlink(missing_ok=True)
+    except Exception:
+        pass
+    return ensure_tray_running(wait_sec=wait_start_sec)

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.8] - 2026-09-10
+
+### Fixed
+- **System tray visibility**: Stopped `EnumWindows`/`SetWindowTheme` from mutating pystray notification HWNDs (caused silent tray disappearance under `pythonw`).
+- **Honest tray diagnostics**: Startup now logs HWND + visibility, promotes notify-icon entries to always-show, and opens Settings as a failsafe if registration cannot be confirmed.
+- **Multi-resolution tray icon**: Packaged crisp 16/24/32/48/64 RGBA frames for Windows 11 DPI scaling.
+
+### Added
+- **Emergency failsafe shortcuts**: Desktop + Start Menu entries for Settings, Emergency Stop Speech, Direct Text Reader, Toggle Speak/Stop, and Restart Tray (`fluentvoice --restart-tray`).
+- **CLI `--restart-tray`**: Restarts the tray daemon cleanly when the icon is missing or stuck.
+
+---
+
 ## [1.4.7] - 2026-09-10
 
 ### Fixed
