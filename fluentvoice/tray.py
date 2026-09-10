@@ -15,10 +15,23 @@ from PIL import Image
 import pystray
 from pystray import MenuItem as item
 
+import logging
+
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from fluentvoice import config, core
 from fluentvoice.config import load_config, save_config
+
+LOG_DIR = Path.home() / ".fluentvoice"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / "tray.log"
+
+logger = logging.getLogger("fluentvoice.tray")
+if not logger.handlers:
+    logger.setLevel(logging.INFO)
+    _fh = logging.FileHandler(str(LOG_FILE), encoding="utf-8")
+    _fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] (%(threadName)s) %(message)s"))
+    logger.addHandler(_fh)
 
 MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
@@ -40,8 +53,7 @@ def get_tray_icon_path():
 
 def apply_win32_dark_menus():
     """Force Windows 11 dark popup menus (fixes white menus + khaki/beige hover).
-    SetPreferredAppMode / FlushMenuThemes are ordinal-only exports on uxtheme.dll.
-    Re-call before menus open and periodically — themes can reset mid-session.
+    SetPreferredAppMode / FlushMenuThemes are process-wide uxtheme.dll exports.
     """
     try:
         uxtheme = ctypes.WinDLL("uxtheme.dll")
@@ -68,39 +80,8 @@ def apply_win32_dark_menus():
                 allow_dark(True)
         except Exception:
             pass
-        # Immersive dark mode attribute on process windows (helps some Win11 builds)
-        try:
-            dwmapi = ctypes.WinDLL("dwmapi.dll")
-            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-            value = ctypes.c_int(1)
-            # Enumerate top-level windows of this PID and set dark mode
-            pid = ctypes.windll.kernel32.GetCurrentProcessId()
-
-            @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
-            def _enum(hwnd, _lparam):
-                wpid = ctypes.c_ulong()
-                ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wpid))
-                if wpid.value == pid:
-                    try:
-                        dwmapi.DwmSetWindowAttribute(
-                            hwnd,
-                            DWMWA_USE_IMMERSIVE_DARK_MODE,
-                            ctypes.byref(value),
-                            ctypes.sizeof(value),
-                        )
-                    except Exception:
-                        pass
-                    try:
-                        uxtheme.SetWindowTheme(hwnd, "DarkMode_Explorer", None)
-                    except Exception:
-                        pass
-                return True
-
-            ctypes.windll.user32.EnumWindows(_enum, 0)
-        except Exception:
-            pass
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"apply_win32_dark_menus error: {e}")
 
 
 # Virtual-key map for RegisterHotKey
@@ -369,17 +350,36 @@ class FluentVoiceTrayApp:
             else:
                 time.sleep(0.05)
 
-    def on_exit(self, icon, item):
+    def on_exit(self, icon=None, item=None):
+        logger.info("FluentVoice Pro shutting down...")
         core.stop_all_playback()
         try:
             ctypes.windll.user32.UnregisterHotKey(None, self._hotkey_id)
         except Exception:
             pass
         if icon:
-            icon.stop()
+            try:
+                icon.stop()
+            except Exception:
+                pass
         if self.mutex_handle:
-            ctypes.windll.kernel32.CloseHandle(self.mutex_handle)
+            try:
+                ctypes.windll.kernel32.CloseHandle(self.mutex_handle)
+            except Exception:
+                pass
+        logger.info("FluentVoice Pro exited cleanly.")
         os._exit(0)
+
+    def _on_icon_ready(self, icon):
+        """Called by pystray once the tray window is live and ready to receive messages."""
+        try:
+            icon.visible = True
+            logger.info("Tray icon verified visible in Windows system tray")
+            threading.Thread(target=self.clipboard_monitor_loop, daemon=True, name="ClipboardWatcher").start()
+            threading.Thread(target=self.hotkey_message_loop, daemon=True, name="HotkeyWatcher").start()
+            logger.info("Background watcher threads started successfully")
+        except Exception as e:
+            logger.error(f"Error during tray icon setup: {e}", exc_info=True)
 
     def run(self):
         icon_path = get_tray_icon_path()
@@ -387,10 +387,13 @@ class FluentVoiceTrayApp:
 
         # Build dynamic offline SAPI menu items
         offline_items = []
-        for label, desc in core.get_installed_sapi_voices():
-            offline_items.append(
-                item(label, self.set_voice(desc, label), checked=self.is_voice_checked(desc))
-            )
+        try:
+            for label, desc in core.get_installed_sapi_voices():
+                offline_items.append(
+                    item(label, self.set_voice(desc, label), checked=self.is_voice_checked(desc))
+                )
+        except Exception as e:
+            logger.warning(f"Failed to enumerate SAPI voices: {e}")
 
         menu = pystray.Menu(
             item("🔊 FluentVoice (Toggle Speak / Stop)", self.on_toggle_speech, default=True),
@@ -435,15 +438,16 @@ class FluentVoiceTrayApp:
         )
 
         self.tray_icon = pystray.Icon("FluentVoice_Pro", img, "FluentVoice Pro (Click to Speak / Stop)", menu)
-        threading.Thread(target=self.clipboard_monitor_loop, daemon=True).start()
-        threading.Thread(target=self.hotkey_message_loop, daemon=True).start()
-        # Re-apply dark theme once the tray HWND exists
-        threading.Thread(target=lambda: (time.sleep(0.8), apply_win32_dark_menus()), daemon=True).start()
-        self.tray_icon.run()
+        logger.info("Running pystray tray_icon event loop...")
+        self.tray_icon.run(setup=self._on_icon_ready)
 
 def main():
-    app = FluentVoiceTrayApp()
-    app.run()
+    try:
+        app = FluentVoiceTrayApp()
+        app.run()
+    except Exception as e:
+        logger.critical(f"Fatal crash in FluentVoiceTrayApp: {e}", exc_info=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
