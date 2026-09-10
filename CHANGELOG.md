@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.10] - 2026-09-10
+
+### Fixed
+- **Settings footer spacing**: Separated status/auto-save text from Emergency Stop with a vertical divider and dedicated left/right layout so messages never crowd the action buttons.
+
+---
+
 ## [1.4.9] - 2026-09-10
 
 ### Changed

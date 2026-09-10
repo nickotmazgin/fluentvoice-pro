@@ -1093,35 +1093,22 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(fill="x", padx=16, pady=(4, 14))
 
-        status_lbl = ctk.CTkLabel(
-            footer,
-            text="Single-Stream Engine Active • Zero Collisions",
-            text_color="#3FB950",
-            font=ctk.CTkFont(size=12, weight="bold")
-        )
-        status_lbl.pack(side="left")
-
-        self.autosave_lbl = ctk.CTkLabel(
-            footer,
-            text="✓ All settings auto-saved",
-            text_color="#8B949E",
-            font=ctk.CTkFont(size=12)
-        )
-        self.autosave_lbl.pack(side="left", padx=(16, 0))
+        # Right cluster first (pack side=right: first = outermost)
+        actions = ctk.CTkFrame(footer, fg_color="transparent")
+        actions.pack(side="right")
 
         btn_close = ctk.CTkButton(
-            footer,
+            actions,
             text="Close to Tray",
             fg_color="#21262D",
             hover_color="#30363D",
             width=110,
-            command=self._on_close_to_tray
+            command=self._on_close_to_tray,
         )
         btn_close.pack(side="right")
 
-        # Always-visible Emergency Stop on every tab (no second desktop icon needed)
         btn_emergency = ctk.CTkButton(
-            footer,
+            actions,
             text="⏹ Emergency Stop",
             fg_color="#DA3633",
             hover_color="#F85149",
@@ -1131,6 +1118,32 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_emergency_stop,
         )
         btn_emergency.pack(side="right", padx=(0, 8))
+
+        # Divider between status text and action buttons
+        divider = ctk.CTkFrame(footer, width=1, height=28, fg_color="#30363D")
+        divider.pack(side="right", padx=(10, 14))
+        divider.pack_propagate(False)
+
+        # Left: status messages (expand into remaining space, never overlap buttons)
+        left = ctk.CTkFrame(footer, fg_color="transparent")
+        left.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        status_lbl = ctk.CTkLabel(
+            left,
+            text="Single-Stream Engine Active • Zero Collisions",
+            text_color="#3FB950",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        status_lbl.pack(side="left")
+
+        self.autosave_lbl = ctk.CTkLabel(
+            left,
+            text="✓ All settings auto-saved",
+            text_color="#8B949E",
+            font=ctk.CTkFont(size=12),
+            anchor="w",
+        )
+        self.autosave_lbl.pack(side="left", padx=(16, 0))
 
     def _on_emergency_stop(self):
         """Hard-stop speech from Settings footer — primary failsafe without a second desktop icon."""
