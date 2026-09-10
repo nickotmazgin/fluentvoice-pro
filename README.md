@@ -23,44 +23,52 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Screenshots
 
-*FluentVoice Pro **v1.4.14** — collage overview first, then unique close-ups only (no repeated panels).*
+*FluentVoice Pro **v1.4.14** — click any image to view it full size.*
 
 [![FluentVoice Pro v1.4.14 collage](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.14/05-footer-emergency-stop.png"><img src="screenshots/v1.4.14/05-footer-emergency-stop.png" width="260" alt="Emergency Stop footer"></a><br>
-      <b>01</b> — Footer · Emergency Stop
+      <a href="screenshots/v1.4.14/01-settings-reader.png"><img src="screenshots/v1.4.14/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/06b-tray-menu-crop.png"><img src="screenshots/v1.4.14/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
-      <b>02</b> — Tray right-click menu
+      <a href="screenshots/v1.4.14/02-settings-voice.png"><img src="screenshots/v1.4.14/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/00-desktop-icon-live.png"><img src="screenshots/v1.4.14/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
-      <b>03</b> — Desktop icon (live)
+      <a href="screenshots/v1.4.14/03-settings-automation.png"><img src="screenshots/v1.4.14/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <b>03</b> — Automation &amp; System
     </td>
   </tr>
   <tr>
     <td align="center">
+      <a href="screenshots/v1.4.14/04-settings-about.png"><img src="screenshots/v1.4.14/04-settings-about.png" width="260" alt="About &amp; Factory Reset"></a><br>
+      <b>04</b> — About · Factory Reset
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.14/05-footer-emergency-stop.png"><img src="screenshots/v1.4.14/05-footer-emergency-stop.png" width="260" alt="Emergency Stop footer"></a><br>
+      <b>05</b> — Footer · Emergency Stop
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.14/06b-tray-menu-crop.png"><img src="screenshots/v1.4.14/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
+      <b>06</b> — Tray right-click menu
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="screenshots/v1.4.14/00-desktop-icon-live.png"><img src="screenshots/v1.4.14/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
+      <b>07</b> — Desktop icon (live)
+    </td>
+    <td align="center">
       <a href="screenshots/v1.4.14/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.14/05c-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
-      <b>04</b> — Tray icon close-up
-    </td>
-    <td align="center">
-      <a href="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg"><img src="screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg" width="260" alt="Social collage 1080"></a><br>
-      <b>05</b> — Social collage 1080×1080
-    </td>
-    <td align="center">
-      <a href="screenshots/v1.4.14/social-preview-1280x640.jpg"><img src="screenshots/v1.4.14/social-preview-1280x640.jpg" width="260" alt="Social preview 1280x640"></a><br>
-      <b>06</b> — Social preview 1280×640
+      <b>08</b> — Tray icon close-up
     </td>
   </tr>
 </table>
 
-Full-size settings tabs (also in the collage): [01 Reader](screenshots/v1.4.14/01-settings-reader.png) · [02 Voice](screenshots/v1.4.14/02-settings-voice.png) · [03 Automation](screenshots/v1.4.14/03-settings-automation.png) · [04 About](screenshots/v1.4.14/04-settings-about.png)
-
-Downloads: [full collage](screenshots/v1.4.14/collage-v1.4.14-2026.jpg) · [social 1080×1080](screenshots/v1.4.14/social-collage-1080-v1.4.14.jpg) · [social 1280×640](screenshots/v1.4.14/social-preview-1280x640.jpg)
+Full combined image (download): [collage-v1.4.14-2026.jpg](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)
 
 ---
 
