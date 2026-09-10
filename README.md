@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.11** — Settings footer divider + stacked status (no collision with Emergency Stop); one desktop FluentVoice icon; tray visibility hardened; multi-language auto-route (including Hebrew). Both Source ZIP and Portable EXE are **GitHub Artifact Attested**. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.4.12** — Settings footer: buttons on their own row with a divider above status/auto-save (no collision); one desktop FluentVoice icon; tray visibility hardened; multi-language auto-route (including Hebrew). Both Source ZIP and Portable EXE are **GitHub Artifact Attested**. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 

@@ -1092,39 +1092,20 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _build_footer(self):
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(fill="x", padx=16, pady=(4, 14))
-        footer.grid_columnconfigure(0, weight=1)
-        footer.grid_columnconfigure(1, weight=0)
-        footer.grid_columnconfigure(2, weight=0)
 
-        # Left column: stacked status (never reaches into the button column)
-        left = ctk.CTkFrame(footer, fg_color="transparent")
-        left.grid(row=0, column=0, sticky="w", padx=(0, 16))
-
-        status_lbl = ctk.CTkLabel(
-            left,
-            text="Single-Stream Engine Active • Zero Collisions",
-            text_color="#3FB950",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            anchor="w",
-        )
-        status_lbl.pack(anchor="w")
-
-        self.autosave_lbl = ctk.CTkLabel(
-            left,
-            text="✓ All settings auto-saved",
-            text_color="#8B949E",
-            font=ctk.CTkFont(size=12),
-            anchor="w",
-        )
-        self.autosave_lbl.pack(anchor="w", pady=(2, 0))
-
-        # Clear vertical separator between status block and actions
-        divider = ctk.CTkFrame(footer, width=2, height=36, fg_color="#484F58")
-        divider.grid(row=0, column=1, sticky="ns", padx=(4, 14), pady=2)
-        divider.grid_propagate(False)
-
+        # Row 1: action buttons alone on the right (never share a line with status text)
         actions = ctk.CTkFrame(footer, fg_color="transparent")
-        actions.grid(row=0, column=2, sticky="e")
+        actions.pack(fill="x", pady=(0, 8))
+
+        btn_close = ctk.CTkButton(
+            actions,
+            text="Close to Tray",
+            fg_color="#21262D",
+            hover_color="#30363D",
+            width=110,
+            command=self._on_close_to_tray,
+        )
+        btn_close.pack(side="right")
 
         btn_emergency = ctk.CTkButton(
             actions,
@@ -1136,17 +1117,33 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._on_emergency_stop,
         )
-        btn_emergency.pack(side="left", padx=(0, 8))
+        btn_emergency.pack(side="right", padx=(0, 8))
 
-        btn_close = ctk.CTkButton(
-            actions,
-            text="Close to Tray",
-            fg_color="#21262D",
-            hover_color="#30363D",
-            width=110,
-            command=self._on_close_to_tray,
+        # Thin horizontal rule between buttons and status
+        rule = ctk.CTkFrame(footer, height=1, fg_color="#30363D")
+        rule.pack(fill="x", pady=(0, 8))
+
+        # Row 2: status messages only
+        status_row = ctk.CTkFrame(footer, fg_color="transparent")
+        status_row.pack(fill="x")
+
+        status_lbl = ctk.CTkLabel(
+            status_row,
+            text="Single-Stream Engine Active • Zero Collisions",
+            text_color="#3FB950",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            anchor="w",
         )
-        btn_close.pack(side="left")
+        status_lbl.pack(side="left")
+
+        self.autosave_lbl = ctk.CTkLabel(
+            status_row,
+            text="✓ All settings auto-saved",
+            text_color="#8B949E",
+            font=ctk.CTkFont(size=12),
+            anchor="w",
+        )
+        self.autosave_lbl.pack(side="left", padx=(16, 0))
 
     def _on_emergency_stop(self):
         """Hard-stop speech from Settings footer — primary failsafe without a second desktop icon."""
