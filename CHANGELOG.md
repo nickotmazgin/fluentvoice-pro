@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.15] - 2026-09-11
+
+### Fixed
+- **Stop / Emergency Stop**: Hard-stop now bumps the speech generation counter and purges the live shared SAPI voice, so Direct Text Reader Stop and Settings Emergency Stop actually halt neural MCI playback and offline speech mid-utterance.
+- **Settings tab contrast**: Unselected tabs use light readable text (no more near-black dormant labels on dark pills).
+
+### Changed
+- **Notifications tact**: Rate-limit / dedupe toasts; drop the redundant “Synthesizing…” toast (UI status already covers it).
+- **Offline Voices button**: Renamed/clarified — opens Windows Speech settings so installed OneCore/SAPI packs appear under Local Windows Voices (does not add Edge neural voices).
+
+### Added
+- Extra neural voices: Aria, Davis, Australian William/Natasha, Portuguese Antonio, Russian Dmitry; auto-route prefers Portuguese and Cyrillic/Russian when detected.
+
+---
+
 ## [1.4.14] - 2026-09-10
 
 ### Fixed

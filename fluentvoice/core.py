@@ -23,35 +23,57 @@ _current_generation = 0
 _engine_lock = threading.Lock()
 _is_speaking = False
 _notify_callback = None
+_sapi_voice = None  # shared SpVoice so purge hits the speaking instance
+_last_notify_key = None
+_last_notify_ts = 0.0
+_NOTIFY_MIN_INTERVAL_SEC = 1.6
 
 MCI_DEVICE_ALIAS = "FluentVoiceDevice"
+# SAPI flags: SVSFlagsAsync=1, SVSFPurgeBeforeSpeak=2
+_SVSF_PURGE_ASYNC = 3
 
 def set_notify_callback(cb):
     """Registers a notification handler (e.g. from the system tray daemon)."""
     global _notify_callback
     _notify_callback = cb
 
-def trigger_notification(title: str, message: str):
-    """Sends a notification if enabled in config."""
+def trigger_notification(title: str, message: str, *, force: bool = False):
+    """Sends a notification if enabled — with tact (dedupe / rate-limit)."""
+    global _last_notify_key, _last_notify_ts
     cfg = load_config()
     if not cfg.get("show_notifications", True):
         return
-    if _notify_callback:
-        try:
-            _notify_callback(title, message)
-        except Exception:
-            pass
+    if not _notify_callback:
+        return
+    now = time.time()
+    key = f"{title}|{message}"
+    if not force:
+        if key == _last_notify_key and (now - _last_notify_ts) < _NOTIFY_MIN_INTERVAL_SEC:
+            return
+        if (now - _last_notify_ts) < 0.45:
+            # Hard ceiling: never stack toasts faster than ~2/sec
+            return
+    _last_notify_key = key
+    _last_notify_ts = now
+    try:
+        _notify_callback(title, message)
+    except Exception:
+        pass
 
-def stop_all_playback():
-    """Instantly halts any active audio playback across MCI and SAPI."""
-    global _is_speaking
-    _is_speaking = False
-
+def _halt_audio_engines():
+    """Stop MCI + purge SAPI without touching generation counters."""
+    global _sapi_voice
     winmm = ctypes.windll.winmm
-    winmm.mciSendStringW(f"stop {MCI_DEVICE_ALIAS}", None, 0, None)
-    winmm.mciSendStringW(f"close {MCI_DEVICE_ALIAS}", None, 0, None)
-    winmm.mciSendStringW("stop all", None, 0, None)
-    winmm.mciSendStringW("close all", None, 0, None)
+    try:
+        winmm.mciSendStringW(f"stop {MCI_DEVICE_ALIAS}", None, 0, None)
+        winmm.mciSendStringW(f"close {MCI_DEVICE_ALIAS}", None, 0, None)
+    except Exception:
+        pass
+    try:
+        winmm.mciSendStringW("stop all", None, 0, None)
+        winmm.mciSendStringW("close all", None, 0, None)
+    except Exception:
+        pass
 
     try:
         try:
@@ -60,10 +82,33 @@ def stop_all_playback():
         except Exception:
             pass
         import win32com.client
-        sp = win32com.client.Dispatch("SAPI.SpVoice")
-        sp.Speak("", 2)  # SVSFPurgeBeforeSpeak
+        # Purge the live shared voice first (same COM object that is speaking).
+        if _sapi_voice is not None:
+            try:
+                _sapi_voice.Speak("", _SVSF_PURGE_ASYNC)
+            except Exception:
+                try:
+                    _sapi_voice.Speak("", 2)
+                except Exception:
+                    pass
+        # Backup purge on a fresh instance (covers odd OneCore edge cases).
+        try:
+            sp = win32com.client.Dispatch("SAPI.SpVoice")
+            sp.Speak("", _SVSF_PURGE_ASYNC)
+        except Exception:
+            pass
     except Exception:
         pass
+
+def stop_all_playback(*, notify: bool = True):
+    """Instantly halts any active audio — bumps generation so play loops abort."""
+    global _is_speaking, _current_generation
+    with _engine_lock:
+        _current_generation += 1
+        _is_speaking = False
+    _halt_audio_engines()
+    if notify:
+        trigger_notification("FluentVoice Pro", "⏹️ Speech stopped.", force=True)
 
 def detect_script(text: str) -> str:
     """Script family from Unicode ranges: hebrew, arabic, cjk, cyrillic, or latin."""
@@ -135,7 +180,8 @@ def detect_language(text: str) -> str:
             "fr": "french",
             "de": "german",
             "it": "italian",
-            "pt": "spanish",  # closest world voice in our catalog for now
+            "pt": "portuguese",
+            "ru": "cyrillic",
             "he": "hebrew",
             "ar": "arabic",
             "ja": "cjk",
@@ -157,10 +203,12 @@ def resolve_route_voice(detected_lang: str, cfg: dict):
         "hebrew": "Hebrew HD",
         "arabic": "Arabic HD",
         "cjk": "Japanese/CJK HD",
+        "cyrillic": "Russian HD",
         "spanish": "Spanish HD",
         "french": "French HD",
         "german": "German HD",
         "italian": "Italian HD",
+        "portuguese": "Portuguese HD",
         "english": "English HD",
     }
     return voice, labels.get(key, key)
@@ -286,7 +334,8 @@ def get_installed_sapi_voices() -> list:
 
 def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1.0, volume: int = 100) -> bool:
     """Zero-latency offline speech using Windows OneCore / SAPI5. Returns True on success."""
-    global _is_speaking
+    global _is_speaking, _sapi_voice, _current_generation
+    my_gen = _current_generation
     _is_speaking = True
     try:
         try:
@@ -295,7 +344,10 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
         except Exception:
             pass
         import win32com.client
-        sp = win32com.client.Dispatch("SAPI.SpVoice")
+        # Reuse one SpVoice so stop_all_playback() can purge the same instance.
+        if _sapi_voice is None:
+            _sapi_voice = win32com.client.Dispatch("SAPI.SpVoice")
+        sp = _sapi_voice
         if sp.GetVoices().Count == 0:
             return False
 
@@ -311,15 +363,25 @@ def speak_offline_sapi(text: str, voice_pref: str = "Zira", rate_mult: float = 1
         sapi_rate = max(-10, min(10, sapi_rate))
         sp.Rate = sapi_rate
         sp.Volume = max(0, min(100, int(volume)))
-        # Synchronous speak so _is_speaking stays True for tray toggle/stop.
-        # stop_all_playback() can still purge mid-speech via SVSFPurgeBeforeSpeak.
-        sp.Speak(text, 0)
-        return True
+        # Async + pump wait so Stop / Emergency Stop can purge mid-utterance.
+        sp.Speak(text, 1)  # SVSFlagsAsync
+        while sp.Status.RunningState == 2:  # SPRS_IS_SPEAKING
+            if my_gen != _current_generation:
+                try:
+                    sp.Speak("", _SVSF_PURGE_ASYNC)
+                except Exception:
+                    pass
+                return False
+            time.sleep(0.05)
+        return my_gen == _current_generation
     except Exception as e:
         print(f"[Offline SAPI] Error: {e}")
         return False
     finally:
-        _is_speaking = False
+        if my_gen == _current_generation:
+            _is_speaking = False
+        else:
+            _is_speaking = False
 
 def play_audio_file(file_path: str, generation_id: int, volume: int = 100) -> bool:
     """Plays audio through a single dedicated MCI device with instant generation abort."""
@@ -388,6 +450,8 @@ def _voice_family(voice: str) -> str:
         return "arabic"
     if v.startswith(("ja-", "zh-", "ko-")):
         return "cjk"
+    if v.startswith("ru-"):
+        return "cyrillic"
     if v.startswith("es-"):
         return "spanish"
     if v.startswith("fr-"):
@@ -396,6 +460,8 @@ def _voice_family(voice: str) -> str:
         return "german"
     if v.startswith("it-"):
         return "italian"
+    if v.startswith("pt-"):
+        return "portuguese"
     return "english"
 
 def speak_text(raw_text: str) -> dict:
@@ -437,10 +503,12 @@ def speak_text(raw_text: str) -> dict:
                 "hebrew": "🇮🇱",
                 "arabic": "🇸🇦",
                 "cjk": "🇯🇵",
+                "cyrillic": "🇷🇺",
                 "spanish": "🇪🇸",
                 "french": "🇫🇷",
                 "german": "🇩🇪",
                 "italian": "🇮🇹",
+                "portuguese": "🇧🇷",
                 "english": "🇺🇸",
             }
             flag = flags.get(detected_lang, "🌐")
@@ -473,7 +541,9 @@ def speak_text(raw_text: str) -> dict:
     with _engine_lock:
         _current_generation += 1
         my_gen = _current_generation
-        stop_all_playback()
+        _is_speaking = False
+    # Halt prior audio without a second generation bump / "stopped" toast.
+    _halt_audio_engines()
 
     snippet = (cleaned[:45] + "...") if len(cleaned) > 45 else cleaned
 
@@ -481,17 +551,18 @@ def speak_text(raw_text: str) -> dict:
     if (not routed) and (engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower()):
         trigger_notification("FluentVoice Pro", f"🔊 Speaking (Offline): \"{snippet}\"")
         ok = speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult, volume=volume)
+        if my_gen != _current_generation:
+            return {"status": "aborted", "mode": "superseded"}
         if not ok:
             trigger_notification(
                 "FluentVoice Pro - Voice Alert",
-                "⚠️ No local Windows offline voices found. Open Settings -> 'Add More Offline Voices' to install one."
+                "⚠️ No local Windows offline voices found. Open Settings -> 'Install Windows Offline Voices' to add one.",
+                force=True,
             )
             return {"status": "error", "mode": "offline", "message": "No local Windows voices found."}
         return {"status": "success", "mode": "offline", "message": "Played via Windows offline SAPI"}
 
-    # Neural Cloud Mode: Notify user immediately that synthesis has commenced
-    trigger_notification("FluentVoice Pro", f"⏳ Synthesizing speech: \"{snippet}\"")
-
+    # Neural: synthesize quietly (Settings/tray UI already show status) — toast only when speaking.
     out_file = str(CACHE_DIR / f"speech_gen_{my_gen}.mp3")
     try:
         success = asyncio.run(
@@ -500,7 +571,7 @@ def speak_text(raw_text: str) -> dict:
     except Exception:
         success = False
 
-    # Check if superseded
+    # Check if superseded (Stop pressed during synthesis)
     if my_gen != _current_generation:
         try:
             if os.path.exists(out_file):
@@ -516,18 +587,24 @@ def speak_text(raw_text: str) -> dict:
             os.remove(out_file)
         except Exception:
             pass
+        if my_gen != _current_generation:
+            return {"status": "aborted", "mode": "superseded"}
         return {"status": "success", "mode": "neural", "voice": voice}
     else:
         # Fallback to local SAPI
         trigger_notification(
             "FluentVoice Pro - Network Notice",
-            "🌐 Cloud voice unreachable. Automatically switching to offline Windows speech."
+            "🌐 Cloud voice unreachable. Automatically switching to offline Windows speech.",
+            force=True,
         )
         ok = speak_offline_sapi(cleaned, voice_pref="Zira", rate_mult=rate_mult)
+        if my_gen != _current_generation:
+            return {"status": "aborted", "mode": "superseded"}
         if not ok:
             trigger_notification(
                 "FluentVoice Pro - Speech Alert",
-                "⚠️ Speech synthesis failed. Check your internet connection or install local Windows voices."
+                "⚠️ Speech synthesis failed. Check your internet connection or install local Windows voices.",
+                force=True,
             )
             return {"status": "error", "mode": "failed", "message": "Cloud unreachable and no offline voice."}
         return {"status": "fallback", "mode": "offline", "message": "Cloud failed, fell back to offline."}
@@ -536,8 +613,7 @@ def toggle_speak_or_stop():
     """1-Click Toggle: If speaking, stops immediately. Otherwise, reads clipboard."""
     global _is_speaking
     if _is_speaking:
-        stop_all_playback()
-        trigger_notification("FluentVoice Pro", "⏹️ Speech stopped.")
+        stop_all_playback(notify=True)
     else:
         text = get_clipboard_text()
         threading.Thread(target=lambda: speak_text(text), daemon=True).start()

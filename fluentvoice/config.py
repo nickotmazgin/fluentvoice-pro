@@ -15,10 +15,12 @@ DEFAULT_PREFERRED_VOICES = {
     "hebrew": "he-IL-AvriNeural",
     "arabic": "ar-SA-HamedNeural",
     "cjk": "ja-JP-KeitaNeural",
+    "cyrillic": "ru-RU-DmitryNeural",
     "spanish": "es-ES-AlvaroNeural",
     "french": "fr-FR-HenriNeural",
     "german": "de-DE-ConradNeural",
     "italian": "it-IT-DiegoNeural",
+    "portuguese": "pt-BR-AntonioNeural",
 }
 
 DEFAULT_CONFIG = {

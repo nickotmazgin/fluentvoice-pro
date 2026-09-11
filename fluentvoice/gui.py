@@ -29,9 +29,13 @@ BASE_VOICE_MAP = {
     "Emma Multilingual (US HD Expressive)": "en-US-EmmaMultilingualNeural",
     "Jenny (US HD Studio Female)": "en-US-JennyNeural",
     "Guy (US HD Studio Male)": "en-US-GuyNeural",
-    # English (UK) HD Neural
+    "Aria (US HD Friendly Female)": "en-US-AriaNeural",
+    "Davis (US HD Narration Male)": "en-US-DavisNeural",
+    # English (UK / AU) HD Neural
     "Ryan (UK HD British Male)": "en-GB-RyanNeural",
     "Sonia (UK HD British Female)": "en-GB-SoniaNeural",
+    "William (AU HD Australian Male)": "en-AU-WilliamNeural",
+    "Natasha (AU HD Australian Female)": "en-AU-NatashaNeural",
     # Hebrew HD Neural
     "Avri (Hebrew HD Male)": "he-IL-AvriNeural",
     "Hila (Hebrew HD Female)": "he-IL-HilaNeural",
@@ -41,6 +45,8 @@ BASE_VOICE_MAP = {
     "Henri (French HD France)": "fr-FR-HenriNeural",
     "Conrad (German HD Germany)": "de-DE-ConradNeural",
     "Diego (Italian HD Italy)": "it-IT-DiegoNeural",
+    "Antonio (Portuguese HD Brazil)": "pt-BR-AntonioNeural",
+    "Dmitry (Russian HD Male)": "ru-RU-DmitryNeural",
     "Hamed (Arabic HD Saudi Arabia)": "ar-SA-HamedNeural",
     "Keita (Japanese HD Japan)": "ja-JP-KeitaNeural",
 }
@@ -158,11 +164,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self,
             fg_color="#121824",
             segmented_button_fg_color="#0D131D",
-            segmented_button_selected_color="#00D2FF",
-            segmented_button_selected_hover_color="#33DCFF",
-            segmented_button_unselected_color="#182234",
-            segmented_button_unselected_hover_color="#202D45",
-            text_color="#0B0F19"
+            # Deep teal selected pill + light text on ALL tabs (CTk uses one text_color).
+            # Bright cyan fill + near-black text made dormant tabs unreadable.
+            segmented_button_selected_color="#0E4A5C",
+            segmented_button_selected_hover_color="#13607A",
+            segmented_button_unselected_color="#1C2536",
+            segmented_button_unselected_hover_color="#2A3548",
+            text_color="#E6EDF3",
         )
         self.tabview.pack(fill="both", expand=True, padx=16, pady=6)
 
@@ -506,8 +514,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.btn_offline = ctk.CTkButton(
             header_row,
-            text="➕ Offline Voices (Windows Settings)",
-            width=230,
+            text="Install Windows Offline Voices…",
+            width=250,
             height=26,
             fg_color="transparent",
             hover_color="#202D45",
@@ -518,6 +526,15 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_open_windows_speech_settings
         )
         self.btn_offline.pack(side="right")
+        ctk.CTkLabel(
+            voice_card,
+            text="Opens Windows Speech settings. Voices you install there show up under Local Windows Voices (Offline 0ms) in FluentVoice — neural Edge voices are unchanged.",
+            font=ctk.CTkFont(size=11),
+            text_color="#A8B3C0",
+            wraplength=720,
+            justify="left",
+            anchor="w",
+        ).pack(fill="x", padx=14, pady=(0, 6))
 
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
         curr_label = "Andrew Multilingual (US HD Male)"
@@ -1180,9 +1197,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         """Hard-stop speech from Settings footer — primary failsafe without a second desktop icon."""
         try:
             from . import core
-            core.stop_all_playback()
-        except Exception:
-            pass
+            core.stop_all_playback(notify=True)
+        except Exception as e:
+            if hasattr(self, "autosave_lbl"):
+                self.autosave_lbl.configure(text=f"⚠ Stop failed: {e}", text_color="#F85149")
+                return
         if hasattr(self, "autosave_lbl"):
             self.autosave_lbl.configure(text="⏹ Speech stopped immediately", text_color="#F85149")
             self.after(
@@ -1341,10 +1360,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
     def _on_open_windows_speech_settings(self):
-        # Immediate UI feedback — os.system("start ...") blocks and feels stuck.
+        # Opens OS Speech Settings so user can install OneCore/SAPI packs.
+        # Those packs then appear in FluentVoice offline voice list (not neural Edge list).
         if hasattr(self, "offline_status_lbl"):
             self.offline_status_lbl.configure(
-                text="Opening Windows Speech Settings… (add language packs / offline voices there)",
+                text="Opening Windows Speech Settings… Install a speech language pack, then return here.",
                 text_color="#00D2FF"
             )
         if hasattr(self, "btn_offline"):
@@ -1364,12 +1384,19 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
             def restore_btn():
                 if hasattr(self, "btn_offline"):
-                    self.btn_offline.configure(state="normal", text="➕ Offline Voices (Windows Settings)")
+                    self.btn_offline.configure(state="normal", text="Install Windows Offline Voices…")
                 if hasattr(self, "offline_status_lbl"):
                     self.offline_status_lbl.configure(
-                        text="Windows Speech Settings opened. Install voices, then re-open FluentVoice if needed.",
+                        text="Windows Speech opened. After installing voices, reopen Voice & Speech to refresh the Offline list.",
                         text_color="#3FB950"
                     )
+                # Refresh offline voice entries if dropdown exists
+                try:
+                    self.voice_map = build_full_voice_map()
+                    if hasattr(self, "voice_menu"):
+                        self.voice_menu.configure(values=list(self.voice_map.keys()))
+                except Exception:
+                    pass
 
             self.after(0, restore_btn)
 
