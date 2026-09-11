@@ -498,43 +498,17 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         scroll.pack(fill="both", expand=True, padx=0, pady=0)
 
-        # Voice selection card
+        # Voice selection card — clear hierarchy: title → dropdown → one tip → secondary action
         voice_card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)
         voice_card.pack(fill="x", padx=10, pady=(8, 5))
 
-        header_row = ctk.CTkFrame(voice_card, fg_color="transparent")
-        header_row.pack(fill="x", padx=14, pady=(8, 4))
-
-        ctk.CTkLabel(
-            header_row,
-            text="Active Voice Profile (English, Hebrew, World & Offline):",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#E6EDF3"
-        ).pack(side="left")
-
-        self.btn_offline = ctk.CTkButton(
-            header_row,
-            text="Install Windows Offline Voices…",
-            width=250,
-            height=26,
-            fg_color="transparent",
-            hover_color="#202D45",
-            border_width=1,
-            border_color="#00D2FF",
-            text_color="#00D2FF",
-            font=ctk.CTkFont(size=11),
-            command=self._on_open_windows_speech_settings
-        )
-        self.btn_offline.pack(side="right")
         ctk.CTkLabel(
             voice_card,
-            text="Opens Windows Speech settings. Voices you install there show up under Local Windows Voices (Offline 0ms) in FluentVoice — neural Edge voices are unchanged.",
-            font=ctk.CTkFont(size=11),
-            text_color="#A8B3C0",
-            wraplength=720,
-            justify="left",
+            text="Active Voice Profile",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#E6EDF3",
             anchor="w",
-        ).pack(fill="x", padx=14, pady=(0, 6))
+        ).pack(fill="x", padx=14, pady=(12, 6))
 
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
         curr_label = "Andrew Multilingual (US HD Male)"
@@ -544,13 +518,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 break
 
         self.voice_var = ctk.StringVar(value=curr_label)
-        # Fixed width so the dropdown list matches the control (avoids full-bleed bar + tiny list mismatch).
         self.voice_menu = ctk.CTkOptionMenu(
             voice_card,
             values=list(self.voice_map.keys()),
             variable=self.voice_var,
             command=self._on_voice_changed,
-            width=480,
             height=36,
             corner_radius=8,
             fg_color="#1F2E45",
@@ -561,17 +533,36 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             dropdown_hover_color="#00D2FF",
             dropdown_text_color="#E6EDF3",
             font=ctk.CTkFont(size=13, weight="bold"),
-            anchor="w"
+            anchor="w",
         )
-        self.voice_menu.pack(anchor="w", padx=14, pady=(0, 4))
+        self.voice_menu.pack(fill="x", padx=14, pady=(0, 6))
 
         self.offline_status_lbl = ctk.CTkLabel(
             voice_card,
-            text="Tip: Voice choice applies everywhere — Direct Text Reader, tray, and Auto-Read.",
-            font=ctk.CTkFont(size=11),
-            text_color="#8B949E"
+            text="Applies everywhere (Reader, tray, Auto-Read). Use the button below to install Windows offline speech packs.",
+            font=ctk.CTkFont(size=12),
+            text_color="#C9D1D9",
+            wraplength=860,
+            justify="left",
+            anchor="w",
         )
-        self.offline_status_lbl.pack(anchor="w", padx=14, pady=(0, 10))
+        self.offline_status_lbl.pack(fill="x", padx=14, pady=(0, 8))
+
+        self.btn_offline = ctk.CTkButton(
+            voice_card,
+            text="Install Windows Offline Voices…",
+            width=260,
+            height=28,
+            fg_color="transparent",
+            hover_color="#202D45",
+            border_width=1,
+            border_color="#00D2FF",
+            text_color="#00D2FF",
+            font=ctk.CTkFont(size=12),
+            command=self._on_open_windows_speech_settings,
+            anchor="w",
+        )
+        self.btn_offline.pack(anchor="w", padx=14, pady=(0, 12))
 
         # Modulation card
         mod_card = ctk.CTkFrame(scroll, fg_color="#182234", corner_radius=10)

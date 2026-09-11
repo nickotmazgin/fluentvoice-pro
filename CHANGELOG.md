@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.16] - 2026-09-11
+
+### Changed
+- **Active Voice Profile layout**: Clear hierarchy — title → full-width dropdown → one readable tip → secondary Offline Voices action (no competing header/button row).
+
+---
+
 ## [1.4.15] - 2026-09-11
 
 ### Fixed

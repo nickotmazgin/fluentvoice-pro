@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.15** — Stop / Emergency Stop actually halt speech mid-play; Settings tabs readable when dormant; notification tact; clearer Install Windows Offline Voices; extra neural voices (Aria/Davis/AU/PT/RU). Attested ZIP + portable EXE. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.4.16** — Clearer Active Voice Profile layout; hard-stop speech; readable tabs; notification tact; extra neural voices. Attested ZIP + portable EXE. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -23,52 +23,52 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Screenshots
 
-*FluentVoice Pro **v1.4.14** — click any image to view it full size.*
+*FluentVoice Pro **v1.4.16** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.4.14 collage](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)
+[![FluentVoice Pro v1.4.16 collage](screenshots/v1.4.16/collage-v1.4.16-2026.jpg)](screenshots/v1.4.16/collage-v1.4.16-2026.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.14/01-settings-reader.png"><img src="screenshots/v1.4.14/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.4.16/01-settings-reader.png"><img src="screenshots/v1.4.16/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/02-settings-voice.png"><img src="screenshots/v1.4.14/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.4.16/02-settings-voice.png"><img src="screenshots/v1.4.16/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/03-settings-automation.png"><img src="screenshots/v1.4.14/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <a href="screenshots/v1.4.16/03-settings-automation.png"><img src="screenshots/v1.4.16/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
       <b>03</b> — Automation &amp; System
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.14/04-settings-about.png"><img src="screenshots/v1.4.14/04-settings-about.png" width="260" alt="About &amp; Factory Reset"></a><br>
+      <a href="screenshots/v1.4.16/04-settings-about.png"><img src="screenshots/v1.4.16/04-settings-about.png" width="260" alt="About &amp; Factory Reset"></a><br>
       <b>04</b> — About · Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/05-footer-emergency-stop.png"><img src="screenshots/v1.4.14/05-footer-emergency-stop.png" width="260" alt="Emergency Stop footer"></a><br>
+      <a href="screenshots/v1.4.16/05-footer-emergency-stop.png"><img src="screenshots/v1.4.16/05-footer-emergency-stop.png" width="260" alt="Emergency Stop footer"></a><br>
       <b>05</b> — Footer · Emergency Stop
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/06b-tray-menu-crop.png"><img src="screenshots/v1.4.14/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
+      <a href="screenshots/v1.4.16/06b-tray-menu-crop.png"><img src="screenshots/v1.4.16/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
       <b>06</b> — Tray right-click menu
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.14/00-desktop-icon-live.png"><img src="screenshots/v1.4.14/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
+      <a href="screenshots/v1.4.16/00-desktop-icon-live.png"><img src="screenshots/v1.4.16/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
       <b>07</b> — Desktop icon (live)
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.14/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.14/05c-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
+      <a href="screenshots/v1.4.16/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.16/05c-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
       <b>08</b> — Tray icon close-up
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.4.14-2026.jpg](screenshots/v1.4.14/collage-v1.4.14-2026.jpg)
+Full combined image (download): [collage-v1.4.16-2026.jpg](screenshots/v1.4.16/collage-v1.4.16-2026.jpg)
 
 ---
 
