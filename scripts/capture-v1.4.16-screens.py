@@ -191,23 +191,12 @@ def main():
             sq.paste(b, pos)
         sq.save(OUT / "social-collage-1080-v1.4.16.jpg", "JPEG", quality=96, optimize=True)
 
-        # OG 1280x640
+        # OG 1280x640 — letterbox the full 6-panel collage (not a 2-panel substitute)
         og = Image.new("RGB", (1280, 640), (8, 12, 20))
-        do = ImageDraw.Draw(og)
-        do.rectangle((0, 0, 12, 640), fill=(0, 210, 255))
-        do.text((40, 28), "FluentVoice Pro", fill=(0, 210, 255), font=font(44, True))
-        do.text(
-            (40, 88),
-            "v1.4.16 — Voice Profile · Tray · Control Center",
-            fill=(230, 237, 243),
-            font=font(22),
-        )
-        L = fit(shots["voice"], (620, 440), 6)
-        R = fit(shots["tray"], (560, 440), 6)
-        for im, pos in [(L, (40, 160)), (R, (700, 160))]:
-            b = Image.new("RGB", (im.width + 4, im.height + 4), (0, 210, 255))
-            b.paste(im, (2, 2))
-            og.paste(b, pos)
+        fitted = bg.copy()
+        fitted.thumbnail((1280, 640), Image.Resampling.LANCZOS)
+        og.paste(fitted, ((1280 - fitted.width) // 2, (640 - fitted.height) // 2))
+        ImageDraw.Draw(og).rectangle((0, 0, 8, 640), fill=(0, 210, 255))
         og.save(OUT / "social-preview-1280x640.jpg", "JPEG", quality=96, optimize=True)
         og.save(ROOT / "screenshots" / "social-preview.jpg", "JPEG", quality=96, optimize=True)
         print("collages OK")
