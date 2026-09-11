@@ -48,22 +48,18 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
       <b>04</b> — About · Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.16/05-footer-emergency-stop.png"><img src="screenshots/v1.4.16/05-footer-emergency-stop.png" width="260" alt="Emergency Stop footer"></a><br>
-      <b>05</b> — Footer · Emergency Stop
+      <a href="screenshots/v1.4.16/06b-tray-menu-crop.png"><img src="screenshots/v1.4.16/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
+      <b>05</b> — Tray right-click menu
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.16/06b-tray-menu-crop.png"><img src="screenshots/v1.4.16/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
-      <b>06</b> — Tray right-click menu
+      <a href="screenshots/v1.4.16/00-desktop-icon-live.png"><img src="screenshots/v1.4.16/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
+      <b>06</b> — Desktop icon (live)
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.16/00-desktop-icon-live.png"><img src="screenshots/v1.4.16/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
-      <b>07</b> — Desktop icon (live)
-    </td>
-    <td align="center">
       <a href="screenshots/v1.4.16/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.16/05c-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
-      <b>08</b> — Tray icon close-up
+      <b>07</b> — Tray icon close-up
     </td>
   </tr>
 </table>

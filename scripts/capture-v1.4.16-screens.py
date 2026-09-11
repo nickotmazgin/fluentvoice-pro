@@ -118,12 +118,6 @@ def main():
             img.save(OUT / name, "PNG", optimize=True)
             shots[key] = img
             print("saved", name, img.size)
-            # Footer crop from voice window
-            if key == "voice":
-                w, h = img.size
-                footer = img.crop((0, max(0, h - 110), w, h))
-                footer.save(OUT / "05-footer-emergency-stop.png", "PNG", optimize=True)
-                shots["footer"] = footer
 
         # Reuse live tray/desktop from prior HD set if present
         for src_name, dst_name in [
