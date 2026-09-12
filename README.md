@@ -215,12 +215,52 @@ FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazg
 - **Location:** Israel
 
 [![AI assisted — Cursor Agent](https://img.shields.io/badge/AI%20assisted-Cursor%20Agent-1A1A1A)](https://cursor.com)
-[![AI assisted — Google Antigravity](https://img.shields.io/badge/AI%20assisted-Google%20Antigravity-4285F4)](https://github.com/google/antigravity)
+[![AI assisted — Google Antigravity](https://img.shields.io/badge/AI%20assisted-Google%20Antigravity-4285F4)](https://github.com/google-antigravity)
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="33.33%">
+        <a href="https://github.com/nickotmazgin">
+          <img src="https://avatars.githubusercontent.com/u/227995249?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Nick Otmazgin"/>
+          <br />
+          <sub><b>Nick Otmazgin</b></sub>
+        </a>
+        <br />
+        <sub>Project Creator &amp; Solo Maintainer</sub>
+        <br />
+        <sub>💻 🎨 📦 🚀 📖</sub>
+      </td>
+      <td align="center" valign="top" width="33.33%">
+        <a href="https://github.com/cursoragent">
+          <img src="https://avatars.githubusercontent.com/u/199161495?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Cursor Agent"/>
+          <br />
+          <sub><b>Cursor Agent</b></sub>
+        </a>
+        <br />
+        <sub>AI Pair-Programming Co-Pilot</sub>
+        <br />
+        <sub>💻 ⚙️ 🎧 📝</sub>
+      </td>
+      <td align="center" valign="top" width="33.33%">
+        <a href="https://github.com/google-antigravity">
+          <img src="https://avatars.githubusercontent.com/u/242056456?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Google Antigravity"/>
+          <br />
+          <sub><b>Google Antigravity</b></sub>
+        </a>
+        <br />
+        <sub>AI Autonomous Engineering Agent</sub>
+        <br />
+        <sub>🧪 🤖 🔄 🛡️</sub>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 Built with pair-programming assistance from AI co-pilots operated under the maintainer's direction, verification, and code review:
 
-- **Cursor Agent** — Audio engine architecture, concurrency design, UI automation, and packaging
-- **Google Antigravity** — System integration, Windows desktop testing, and performance profiling
+- **Cursor Agent** ([@cursoragent](https://github.com/cursoragent)) — Audio engine architecture, concurrency design, UI automation, and packaging
+- **Google Antigravity** ([@google-antigravity](https://github.com/google-antigravity)) — System integration, Windows desktop testing, and performance profiling
 
 ---
 
