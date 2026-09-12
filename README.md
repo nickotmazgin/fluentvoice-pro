@@ -1,4 +1,4 @@
-# FluentVoice Pro
+# FluentVoice Pro™
 
 [![Release](https://img.shields.io/github/v/release/nickotmazgin/fluentvoice-pro?display_name=tag)](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/nickotmazgin/fluentvoice-pro/validate.yml?branch=main&label=CI)](https://github.com/nickotmazgin/fluentvoice-pro/actions)
@@ -11,7 +11,7 @@
 [![Issues](https://img.shields.io/github/issues/nickotmazgin/fluentvoice-pro)](https://github.com/nickotmazgin/fluentvoice-pro/issues)
 [![Discussions](https://img.shields.io/github/discussions/nickotmazgin/fluentvoice-pro?label=discussions&color=8B5CF6)](https://github.com/nickotmazgin/fluentvoice-pro/discussions)
 
-**FluentVoice Pro** is a modern, lightweight Native Desktop Application and System Tray Suite for **Windows 11 and Windows 10** that reads aloud any text across your entire operating system.
+**FluentVoice Pro™** is a modern, lightweight Native Desktop Application and System Tray Suite for **Windows 11 and Windows 10** that reads aloud any text across your entire operating system.
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
@@ -266,13 +266,15 @@ Built with pair-programming assistance from AI co-pilots operated under the main
 
 ## Legal & Trademarks Disclaimer
 
-> Microsoft, Windows, Windows 11, and Microsoft Edge are registered trademarks of Microsoft Corporation. FluentVoice Pro is an independent open-source project and is **not** affiliated with, sponsored, or endorsed by Microsoft Corporation. All voice synthesis APIs and endpoints are utilized strictly for personal, accessibility, and educational interoperability under fair use principles.
+> **FluentVoice Pro™** is an unregistered trademark claim of **Nick Otmazgin**. The source code remains free and open-source under the MIT License; the trademark claim covers the product name/brand only.
+>
+> Microsoft, Windows, Windows 11, and Microsoft Edge are registered trademarks of Microsoft Corporation. FluentVoice Pro™ is an independent open-source project and is **not** affiliated with, sponsored, or endorsed by Microsoft Corporation. All voice synthesis APIs and endpoints are utilized strictly for personal, accessibility, and educational interoperability under fair use principles.
 
 ---
 
 ## Support & Donations
 
-If you find FluentVoice Pro useful, consider supporting continued development and maintenance:
+If you find FluentVoice Pro™ useful, consider supporting continued development and maintenance:
 
 [![PayPal](https://img.shields.io/badge/Donate-PayPal-0070BA?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW)
 
@@ -280,7 +282,8 @@ If you find FluentVoice Pro useful, consider supporting continued development an
 
 ## License
 
-Released under the **[MIT License](LICENSE)**. Copyright © 2026 Nick Otmazgin.
+Released under the **[MIT License](LICENSE)**. Copyright © 2026 Nick Otmazgin.  
+**FluentVoice Pro™** — name/brand claim; MIT license applies to the software.
 
 ---
 

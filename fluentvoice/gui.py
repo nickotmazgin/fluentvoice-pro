@@ -145,7 +145,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         title_lbl = ctk.CTkLabel(
             header_frame,
-            text="🔊 FluentVoice Pro",
+            text="🔊 FluentVoice Pro™",
             font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"),
             text_color="#00D2FF"
         )
@@ -1051,7 +1051,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(anchor="w", padx=16, pady=(4, 2))
 
         projects = (
-            "• FluentVoice Pro — Native Windows 11 Text-to-Speech & Background Voice Suite\n"
+            "• FluentVoice Pro™ — Native Windows 11 Text-to-Speech & Background Voice Suite\n"
             "• ClipFlow Pro — Advanced Clipboard Synchronization Daemon\n"
             "• Linux Desktop Infrastructure & Kernel Performance Tooling"
         )
@@ -1122,9 +1122,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         ctk.CTkLabel(
             card,
-            text="Licensed under the MIT License • Built with Python, Win32 API & CustomTkinter.",
+            text="FluentVoice Pro™ • MIT License • Built with Python, Win32 API & CustomTkinter.\n"
+                 "Name/brand claim of Nick Otmazgin; source remains free and open-source (MIT).",
             font=ctk.CTkFont(size=11),
-            text_color="#8B949E"
+            text_color="#8B949E",
+            justify="left",
         ).pack(anchor="w", padx=16, pady=(12, 8))
 
     def _build_footer(self):
