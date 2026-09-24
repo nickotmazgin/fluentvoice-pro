@@ -19,13 +19,15 @@ HD captures for the README, the GitHub social preview, and social posts.
 | `screenshots/v1.4.19/08-settings-automation-updates.png` | 08 Automation · Startup & Shortcuts, tray daemon, Updates |
 | `screenshots/v1.4.19/09-portable-first-launch.png` | 09 Portable EXE first-launch prompt (Start with Windows?) |
 
-## Rebuild the collages
-
-Drop new captures into `screenshots/v<version>/` with the file names above, then:
+## Recapture + rebuild
 
 ```powershell
-python scriptsuild_collage.py
+python scripts\capture_settings.py   # 01–04 (maximized Settings tabs, temporary profile)
+python scripts\build_collage.py      # collage + social images
 ```
+
+05 (tray menu), 06/07 (icons), 08 (Automation bottom: `capture_settings.py --bottom <png>`) and
+09 (portable first-launch prompt) are captured by hand into the same folder with the names above.
 
 The version is read from `fluentvoice/__init__.py`. The GitHub social preview image must be uploaded
 by hand under **Settings → General → Social preview** (GitHub has no API for it).
