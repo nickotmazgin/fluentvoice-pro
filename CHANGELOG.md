@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.17] - 2026-09-24
+
+### Added
+- **Check for Updates** — in three places: Settings → **Automation & System → Updates**, Settings → **About & Developer → Updates**, and the tray menu item (turns into **⬆️ Update Available: vX…** when a release is out), Settings → About & Developer → **Updates** card, green header badge, and a popup with release notes and **Download & Verify / Release Page / Skip This Version / Later**. Downloads come from GitHub Releases and are **SHA-256 verified** against GitHub's published asset digest (or `SHA256SUMS.txt`); a mismatch is discarded. After a verified download, **🚀 Install Now** (with confirmation) extracts the ZIP next to your current copy (zip-slip safe) and runs `install.ps1` — or relaunches the new portable EXE. Git checkouts are detected and told to `git pull` instead. Once-a-day anonymous check, toggle in Settings (documented in `PRIVACY.md`).
+- CLI: `fluentvoice --check-update`, `fluentvoice --version`.
+- **Live speech status** in Direct Text Reader and the Voice test box: `Connecting… Ns` → `🔊 Speaking — <voice> • part i/n • m:ss / m:ss` → `✔️ Finished` (or fallback / error with the reason). Read Aloud shows `Working… / Speaking…` while active.
+- `~/.fluentvoice/speech.log` (rotating) — synthesis/playback errors are logged instead of swallowed.
+- `scripts/diag_reader_tts.py` — one-command diagnostic for edge-tts latency, MCI playback and offline voices.
+- Release pipeline: `SHA256SUMS.txt` asset (attested), tag↔version guard, `gh attestation verify` gate before publishing; CI matrix on Python 3.10 / 3.12 / 3.14 with compile + version-consistency checks.
+- 29 new unit tests (streaming, fallback, timeouts, cross-process stop, toggle, updater, checksum verification).
+
+### Fixed
+- **Direct Text Reader stuck on "Synthesizing voice… Connecting to neural engine…"** — status only changed after the whole text finished playing, and long texts were synthesized in one piece before any audio. Speech now streams in chunks (first audio ≈ 1–2 s).
+- **No more silent hangs** — 15 s no-response timeout on neural synthesis and an MCI stall watchdog; both fall back to the offline voice for the *remaining* text.
+- **Tray ↔ Settings audio collisions** — both processes wrote `speech_gen_1.mp3` into the same cache and could lock/overwrite/delete each other's audio. Files are now unique per process + request, written atomically, and stale leftovers are cleaned.
+- **Stop now works across processes** — Settings Stop / Emergency Stop silence tray Auto-Read; Read Aloud cuts any other FluentVoice voice; Start Menu **Emergency Stop** (`--stop`) finally stops the tray's speech.
+- **Start Menu / taskbar "Toggle Speak Stop" was silent** — the short-lived CLI process exited immediately and killed its own speech thread. `--toggle` now speaks in the foreground, or stops if any FluentVoice process is talking.
+- **Portable EXE: Settings / Reader / About never opened** — relaunch arguments (`-m fluentvoice.cli --gui`) were ignored by the frozen launcher, which started a second tray and exited. Arguments are now dispatched.
+- **Reader showed "Lang: Universal" for English** and other Latin languages — language label map now covers English, Spanish, French, German, Italian, Portuguese, Russian.
+- Reader typing lag on long texts (language detection on every keystroke) — debounced.
+- Voice labels/checkmarks could match the wrong voice via substring matching — exact match first.
+- Tray single-instance check read `GetLastError` unreliably (possible duplicate tray) — now uses `use_last_error`.
+- Re-enabling Auto-Read on Copy immediately read whatever was already on the clipboard.
+- Auto-Read thread captured the clipboard text by late-binding lambda (could speak the wrong text).
+- Hotkey thread re-read `config.json` ~20×/second — throttled to every 2 s; failed hotkey registration is now logged.
+- Tray toasts ignored the Settings notification switch until restart.
+- **config.json could be read half-written** (tray and Settings both write it; sliders save on every tick) and silently fall back to defaults — saves are now atomic (temp file + replace, with Windows lock retry).
+- Invalid global hotkeys were saved silently and never registered — now validated with an inline error.
+- `uninstall.ps1` killed **every** `pythonw.exe` on the machine — now only FluentVoice processes; also removes Start Menu folder and taskbar shortcut.
+- `install.ps1`: runs from its own folder, checks Python 3.10+, stops an old FluentVoice tray before upgrading, prints installed version.
+
+### Changed
+- README (streaming status, updates, troubleshooting, architecture), `SECURITY.md` (how to verify downloads), `PRIVACY.md` (update check), `docs/SMOKE_TEST.md` (v1.4.17 checks), `.gitignore` (local captures, generated VBS, dist).
+
+---
+
 ## [1.4.16] - 2026-09-11
 
 ### Changed

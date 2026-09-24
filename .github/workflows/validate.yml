@@ -11,7 +11,12 @@ permissions:
 
 jobs:
   test:
+    name: Tests (Python ${{ matrix.python }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.14"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -19,13 +24,25 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
 
       - name: Install dependencies
         run: |
           python -m pip install -U pip
           python -m pip install -r requirements.txt
           python -m pip install pytest
+
+      - name: Byte-compile all sources
+        run: python -m compileall -q fluentvoice scripts tests
+
+      - name: Version consistency (__init__ == pyproject == CHANGELOG)
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path "fluentvoice\__init__.py" -Pattern '__version__\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          $p = (Select-String -Path "pyproject.toml" -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          if ($v -ne $p) { throw "Version mismatch: __init__=$v pyproject=$p" }
+          if (-not (Select-String -Path CHANGELOG.md -Pattern "## \[$v\]" -Quiet)) { throw "CHANGELOG.md has no entry for $v" }
+          Write-Host "Version $v consistent"
 
       - name: Unit tests
         run: python -m pytest -q

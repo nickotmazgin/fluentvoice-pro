@@ -49,6 +49,22 @@ jobs:
           "source_zip=$src" >> $env:GITHUB_OUTPUT
           "portable_zip=$port" >> $env:GITHUB_OUTPUT
 
+      - name: Tag must match package version
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.meta.outputs.version }}"
+          if ("$env:GITHUB_REF_NAME" -ne "v$ver") { throw "Tag $env:GITHUB_REF_NAME does not match __version__ v$ver" }
+
+      - name: SHA-256 checksums
+        id: sums
+        shell: pwsh
+        run: |
+          $files = @("${{ steps.meta.outputs.source_zip }}", "${{ steps.meta.outputs.portable_zip }}")
+          $lines = foreach ($f in $files) { "{0}  {1}" -f (Get-FileHash $f -Algorithm SHA256).Hash.ToLower(), (Split-Path $f -Leaf) }
+          $lines | Set-Content -Encoding ascii dist/SHA256SUMS.txt
+          Get-Content dist/SHA256SUMS.txt
+          "sums=dist/SHA256SUMS.txt" >> $env:GITHUB_OUTPUT
+
       - name: Build release notes from CHANGELOG
         shell: pwsh
         run: |
@@ -62,7 +78,14 @@ jobs:
           2. **Portable EXE ZIP** ``FluentVoicePro-$ver-portable-win64.zip``
              - No Python · run ``FluentVoicePro.exe`` (tray)
 
-          Both assets are **GitHub Artifact Attested** (green verification on this Release).
+          Both assets are **GitHub Artifact Attested** (green verification on this Release) and listed in ``SHA256SUMS.txt``.
+          Already on v1.4.17+? Settings → About & Developer → **Check for Updates** downloads and SHA-256-verifies this release for you.
+
+          ### Verify
+          ``````powershell
+          gh attestation verify .\fluentvoice-pro-$ver-windows.zip --repo ${{ github.repository }}
+          Get-FileHash .\fluentvoice-pro-$ver-windows.zip -Algorithm SHA256   # compare with SHA256SUMS.txt
+          ``````
           Windows SmartScreen / Unblock / firewall notes: see ``docs/WINDOWS_TRUST.md`` in the source ZIP.
 
           "@
@@ -83,6 +106,21 @@ jobs:
         with:
           subject-path: ${{ steps.meta.outputs.portable_zip }}
 
+      - name: Attest checksum manifest
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ steps.sums.outputs.sums }}
+
+      - name: Verify attestations (green check before publishing)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          foreach ($f in @("${{ steps.meta.outputs.source_zip }}", "${{ steps.meta.outputs.portable_zip }}", "${{ steps.sums.outputs.sums }}")) {
+            gh attestation verify $f --repo ${{ github.repository }}
+            if ($LASTEXITCODE -ne 0) { throw "Attestation verification failed for $f" }
+          }
+
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -92,10 +130,11 @@ jobs:
           $ver = "${{ steps.meta.outputs.version }}"
           $src = "${{ steps.meta.outputs.source_zip }}"
           $port = "${{ steps.meta.outputs.portable_zip }}"
+          $sums = "${{ steps.sums.outputs.sums }}"
           $title = "FluentVoice Pro $ver — Attested source ZIP + portable EXE"
           if (gh release view $tag 2>$null) {
-            gh release upload $tag $src $port --clobber
+            gh release upload $tag $src $port $sums --clobber
             gh release edit $tag --title $title --notes-file release-notes.md
           } else {
-            gh release create $tag $src $port --title $title --notes-file release-notes.md
+            gh release create $tag $src $port $sums --title $title --notes-file release-notes.md --latest
           }

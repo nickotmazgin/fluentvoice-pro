@@ -12,6 +12,17 @@ FluentVoice Pro is a **local Windows 11/10** system-tray TTS suite. It can:
 
 Install only from official [GitHub Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases) (attested ZIP assets) or this repository’s `main` tag.
 
+**Verify a download** (any of these):
+
+```powershell
+# 1) Sigstore build provenance (GitHub CLI)
+gh attestation verify .\fluentvoice-pro-<ver>-windows.zip --repo nickotmazgin/fluentvoice-pro
+# 2) Checksum — compare with SHA256SUMS.txt on the Release
+Get-FileHash .\fluentvoice-pro-<ver>-windows.zip -Algorithm SHA256
+```
+
+The in-app updater (Settings → About → **Check for Updates**) downloads over HTTPS from GitHub and refuses any file whose SHA-256 does not match the digest GitHub publishes for that release asset.
+
 **Platforms:** Windows **11** and **10** (x64). Python **3.10+** for the source install; portable EXE ZIP needs no Python.
 
 ## Supported versions

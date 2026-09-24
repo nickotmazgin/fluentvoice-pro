@@ -78,3 +78,12 @@ screenshots/verify-*/
 screenshots/**/*.tmp.png
 screenshots/**/00-desktop-full.tmp.png
 
+
+# Local-only captures / social screenshots at repo root
+/ig-*.png
+/*.png
+.pytest_cache/
+# Generated per-machine by the installer (contains local python path)
+start_fluentvoice_silent.vbs
+dist/
+release-notes.md

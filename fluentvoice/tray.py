@@ -40,9 +40,14 @@ GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
 TRAY_TOOLTIP = "FluentVoice Pro (Click to Speak / Stop)"
 
 def check_single_instance():
-    kernel32 = ctypes.windll.kernel32
+    # use_last_error=True: plain ctypes.windll does not reliably preserve GetLastError(),
+    # which could let a second tray instance start.
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateMutexW.restype = ctypes.wintypes.HANDLE
     handle = kernel32.CreateMutexW(None, False, MUTEX_NAME)
-    if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+        if handle:
+            kernel32.CloseHandle(handle)
         return None
     return handle
 
@@ -236,12 +241,13 @@ class FluentVoiceTrayApp:
         self._hotkey_id = 1
         self._hotkey_registered = None  # (mods, vk) currently registered
         self._dark_refresh_ticks = 0
+        self.update_info = None  # set when a newer GitHub release is found
 
         # Register notification bridge to core engine
         core.set_notify_callback(self.notify_user)
 
     def notify_user(self, title: str, message: str):
-        if not self.cfg.get("show_notifications", True):
+        if not load_config().get("show_notifications", True):
             return
         if self.tray_icon:
             try:
@@ -259,10 +265,10 @@ class FluentVoiceTrayApp:
     def on_stop(self, icon=None, item=None):
         core.stop_all_playback()
 
-    def on_open_reader(self, icon=None, item=None):
+    def _launch_cli(self, flag: str, tab: str):
         try:
             from .gui import focus_existing_settings_window
-            if focus_existing_settings_window(preferred_tab="Direct Text Reader"):
+            if focus_existing_settings_window(preferred_tab=tab):
                 return
         except Exception:
             pass
@@ -270,33 +276,77 @@ class FluentVoiceTrayApp:
         if not pythonw.exists():
             pythonw = Path(sys.executable)
         base_dir = Path(__file__).parent.parent.resolve()
-        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--reader"], cwd=str(base_dir))
+        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", flag], cwd=str(base_dir))
+
+    def on_open_reader(self, icon=None, item=None):
+        self._launch_cli("--reader", "Direct Text Reader")
 
     def on_open_settings(self, icon=None, item=None):
-        try:
-            from .gui import focus_existing_settings_window
-            if focus_existing_settings_window(preferred_tab="Voice & Speech"):
-                return
-        except Exception:
-            pass
-        pythonw = Path(sys.executable).parent / "pythonw.exe"
-        if not pythonw.exists():
-            pythonw = Path(sys.executable)
-        base_dir = Path(__file__).parent.parent.resolve()
-        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--gui"], cwd=str(base_dir))
+        self._launch_cli("--gui", "Voice & Speech")
 
     def on_open_about(self, icon=None, item=None):
+        self._launch_cli("--about", "About & Developer")
+
+    # ------------------------------------------------------------------ updates
+    def _update_menu_text(self, item=None):
+        if self.update_info:
+            return f"⬆️ Update Available: v{self.update_info.get('latest')}…"
+        return "🔄 Check for Updates…"
+
+    def on_check_updates(self, icon=None, item=None):
+        if self.update_info:
+            self._open_update_popup()
+            return
+
+        def _run():
+            from . import updater
+            res = updater.check_for_update(force=True)
+            st = res.get("status")
+            if st == "update":
+                self._set_update(res)
+                self._open_update_popup()
+            elif st == "current":
+                self.notify_user("FluentVoice Pro", f"✅ You're up to date (v{res.get('current')}).")
+            else:
+                self.notify_user("FluentVoice Pro", "⚠️ Could not check for updates (offline?). Try again later.")
+        threading.Thread(target=_run, daemon=True, name="UpdateCheck").start()
+
+    def _open_update_popup(self):
         try:
-            from .gui import focus_existing_settings_window
-            if focus_existing_settings_window(preferred_tab="About & Developer"):
-                return
+            (config.APP_DIR / "pending_update_popup.txt").write_text("1", encoding="utf-8")
         except Exception:
             pass
-        pythonw = Path(sys.executable).parent / "pythonw.exe"
-        if not pythonw.exists():
-            pythonw = Path(sys.executable)
-        base_dir = Path(__file__).parent.parent.resolve()
-        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", "--about"], cwd=str(base_dir))
+        self._launch_cli("--about", "About & Developer")
+
+    def _set_update(self, info):
+        self.update_info = info
+        try:
+            if self.tray_icon:
+                self.tray_icon.update_menu()
+        except Exception:
+            pass
+
+    def update_check_loop(self):
+        """Quiet background check: shortly after start, then every few hours (updater self-throttles to 1/day)."""
+        time.sleep(25)
+        from . import updater
+        announced = None
+        while True:
+            try:
+                res = updater.check_for_update(force=False)
+                if res.get("status") == "update":
+                    self._set_update(res)
+                    if announced != res.get("latest"):
+                        announced = res.get("latest")
+                        self.notify_user(
+                            "FluentVoice Pro — Update available",
+                            f"⬆️ v{res.get('latest')} is out (you have v{res.get('current')}). "
+                            "Right-click the tray icon → Update Available.",
+                        )
+                        logger.info("Update available: %s", res.get("latest"))
+            except Exception as e:
+                logger.warning("update check failed: %s", e)
+            time.sleep(6 * 3600)
 
     def on_open_paypal(self, icon=None, item=None):
         webbrowser.open(PAYPAL_DONATE_URL)
@@ -321,8 +371,7 @@ class FluentVoiceTrayApp:
 
     def is_voice_checked(self, voice_name):
         def _inner(item):
-            curr = load_config().get("voice", "")
-            return curr == voice_name or voice_name in curr or curr in voice_name
+            return load_config().get("voice", "") == voice_name
         return _inner
 
     def toggle_auto_read(self, icon=None, item=None):
@@ -374,19 +423,21 @@ class FluentVoiceTrayApp:
                     cfg_cached = load_config()
                     last_cfg_check = now
 
-                if cfg_cached.get("auto_read_copy", False):
-                    curr_seq = user32.GetClipboardSequenceNumber()
-                    if curr_seq != last_seq:
-                        last_seq = curr_seq
-                        current = core.get_clipboard_text()
-                        current_h = hash(current)
-                        if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
-                            self.last_clipboard_hash = current_h
-                            debounce = float(cfg_cached.get("debounce_sec", 0.6))
-                            time.sleep(debounce)
-                            fresh = core.get_clipboard_text()
-                            if fresh == current:
-                                threading.Thread(target=lambda: core.speak_text(fresh), daemon=True).start()
+                curr_seq = user32.GetClipboardSequenceNumber()
+                if not cfg_cached.get("auto_read_copy", False):
+                    # Keep tracking while disabled so re-enabling does not read stale clipboard.
+                    last_seq = curr_seq
+                elif curr_seq != last_seq:
+                    last_seq = curr_seq
+                    current = core.get_clipboard_text()
+                    current_h = hash(current)
+                    if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
+                        self.last_clipboard_hash = current_h
+                        debounce = float(cfg_cached.get("debounce_sec", 0.6))
+                        time.sleep(debounce)
+                        fresh = core.get_clipboard_text()
+                        if fresh == current:
+                            threading.Thread(target=core.speak_text, args=(fresh,), daemon=True).start()
 
                 # Re-apply dark menus occasionally (hover theme can regress)
                 self._dark_refresh_ticks += 1
@@ -415,6 +466,8 @@ class FluentVoiceTrayApp:
         mods, vk = parsed
         if user32.RegisterHotKey(None, self._hotkey_id, mods, vk):
             self._hotkey_registered = (mods, vk)
+        else:
+            logger.warning("Global hotkey %r could not be registered (in use by another app?)", cfg.get("hotkey"))
 
     def hotkey_message_loop(self):
         """Dedicated thread: GetMessage pump for WM_HOTKEY."""
@@ -422,14 +475,20 @@ class FluentVoiceTrayApp:
         user32 = ctypes.windll.user32
         msg = ctypes.wintypes.MSG()
         last_chord = None
+        last_cfg_check = 0.0
         while True:
-            # Reload hotkey if Settings changed the chord
+            # Reload hotkey if Settings changed the chord (throttled: was reading config 20x/sec)
             try:
+                if time.time() - last_cfg_check < 2.0:
+                    raise StopIteration
+                last_cfg_check = time.time()
                 cfg = load_config()
                 chord = (cfg.get("hotkey"), cfg.get("hotkey_enabled", True))
                 if chord != last_chord:
                     last_chord = chord
                     self.sync_hotkey_from_config()
+            except StopIteration:
+                pass
             except Exception:
                 pass
 
@@ -515,6 +574,7 @@ class FluentVoiceTrayApp:
             ok = self._verify_and_promote_icon(icon)
             threading.Thread(target=self.clipboard_monitor_loop, daemon=True, name="ClipboardWatcher").start()
             threading.Thread(target=self.hotkey_message_loop, daemon=True, name="HotkeyWatcher").start()
+            threading.Thread(target=self.update_check_loop, daemon=True, name="UpdateWatcher").start()
             logger.info("Background watcher threads started successfully")
             if not ok:
                 # Delayed failsafe: give the shell a moment, then offer Settings UI
@@ -592,6 +652,7 @@ class FluentVoiceTrayApp:
             item("💖 Donate && Support (PayPal)...", self.on_open_paypal),
             item("🌐 GitHub Repository && Docs...", self.on_open_github),
             item("🐛 Report an Issue / Feedback...", self.on_open_feedback),
+            item(self._update_menu_text, self.on_check_updates),
             pystray.Menu.SEPARATOR,
             item("❌ Exit FluentVoice Pro", self.on_exit)
         )

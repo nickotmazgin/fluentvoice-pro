@@ -31,3 +31,15 @@ Use after install or before cutting a release.
    - Global hotkey (default `Ctrl+Shift+Space`) toggles speak/stop.
    - Settings tabs (Voice / Automation) show content on first open (not blank).
    - Release assets: try source ZIP install **or** portable EXE ZIP; see `docs/WINDOWS_TRUST.md` if SmartScreen prompts.
+
+7. **Reader streaming + status (v1.4.17+)**
+   - Paste a 3,000+ character article into Direct Text Reader → Read Aloud.
+   - Audio starts within ~2 s; status shows `🔊 Speaking — <voice> • part i/n • m:ss / m:ss`, then `✔️ Finished`.
+   - With Auto-Read on Copy ON, copy text (tray starts reading) then click Read Aloud → tray voice stops, Reader voice takes over (no double voices).
+   - Settings **Stop** / **Emergency Stop** also silences tray Auto-Read. Start Menu **Emergency Stop** and **Toggle Speak Stop** work.
+   - `%USERPROFILE%\.fluentvoice\speech.log` records any synthesis/playback failure.
+
+8. **Updates (v1.4.17+)**
+   - Tray → **Check for Updates…** → toast "up to date" (or popup if newer).
+   - Settings → About & Developer → **Check for Updates** → status line updates; toggle auto-check persists.
+   - Portable EXE: tray → Settings / Reader / About open (not a second tray).

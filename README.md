@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.16** — Clearer Active Voice Profile layout; hard-stop speech; readable tabs; notification tact; extra neural voices. Attested ZIP + portable EXE. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.4.17** — Direct Text Reader no longer "stuck on Synthesizing": streaming playback starts in ~1–2 s with live status; built-in **Check for Updates** (SHA-256 verified downloads); tray ↔ Settings true single-stream Stop; portable EXE Settings fix. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -83,7 +83,8 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
 - 📋 **Dedicated Direct Text Reader & Scratchpad:** Full-fledged scratchpad window in the Control Center to paste, review, and read long articles, PDFs, OCR texts, or code notes with live word/char counters and language tags.
 - 🌐 **Smart Language Auto-Routing:** Detects Hebrew, Arabic, Japanese/CJK, and Latin languages (Spanish, French, German, Italian, English) and switches to your preferred native HD voice (e.g. Avri vs Hila).
-- ⏳ **Instant Synthesis Queue & Preparation Alerts:** Eliminates waiting ambiguity during cloud voice generation with real-time `⏳ Synthesizing...` feedback followed by seamless playback.
+- ⏳ **Streaming Playback & Live Status:** Long texts are synthesized in chunks, so audio starts in ~1–2 s while the rest is prepared. The Reader shows `Connecting… → 🔊 Speaking — voice • part 2/7 • 1:05 / 3:10 → ✔️ Finished`, with automatic offline fallback if the cloud voice stalls.
+- ⬆️ **Built-in Update Checker:** Tray menu **Check for Updates…**, Settings → **Automation & System → Updates** and **About & Developer → Updates**, a green header badge and a release-notes popup. Downloads come straight from GitHub Releases and are **SHA-256 verified**; then **🚀 Install Now** (you confirm) installs and restarts FluentVoice. Git clones are told to `git pull` instead. Once-a-day anonymous check, switchable off.
 - 🧹 **Advanced PDF, OCR & Niqqud Text Sanitizer:** Automatically repairs hyphenated line wraps from PDF copy-pastes, normalizes Unicode (NFKC), strips invisible zero-width and bidirectional markers, and cleans code blocks and markdown.
 - 🎛️ **Modern Fluent UI Control Center:** Dark Fluent UI with voices, pitch, **volume**, speed, preferred auto-route voices, tray ensure/restart, and automation.
 - ⌨️ **Global Hotkey:** Configurable chord (default `Ctrl+Shift+Space`) toggles speak/stop from any app.
@@ -158,33 +159,46 @@ python -m fluentvoice.installer
    fluentvoice --gui              # Open Settings & Control Center
    fluentvoice --reader           # Open Direct Text Reader scratchpad
    fluentvoice --about            # Open About & Credits window
+   fluentvoice --check-update     # Check GitHub for a newer release
+   fluentvoice --version          # Print installed version
    ```
+6. **Updates:** Right-click tray → **Check for Updates…** (or Settings → Automation & System / About & Developer → Updates). When a new version is out you'll see a toast, a green **⬆ vX available** badge, and a popup with **Download & Verify → Install Now / Release Page / Skip This Version**.
 
 ---
 
 ## Architecture & Concurrency Model
 
 ```text
-[ Trigger: Click / Shortcut / Auto-Copy ]
+[ Trigger: Click / Shortcut / Auto-Copy / Direct Text Reader ]
                    │
                    ▼
        [ Atomic Generation Token (Gen ID++) ] ────► Invalidate prior downloads
                    │
                    ▼
-        [ Instant Hard Audio Purge ] ──────────► Stop MCI alias & SAPI
+   [ Cross-process claim + Hard Audio Purge ] ─► Tray & Settings never talk at once
                    │
          ┌─────────┴─────────┐
          ▼                   ▼
   [ Neural Engine ]   [ Local SAPI/OneCore ]
-  (Edge HD WebSocket)  (Instant 0ms Offline)
+  (Edge HD, chunked    (Instant 0ms Offline)
+   streaming, 15s          │
+   no-response timeout)    │
          │                   │
          └─────────┬─────────┘
                    ▼
-    [ Generation Valid Check ] ────────► If Gen != Active: DISCARD
+    [ Generation / Stop-signal Check ] ─► If superseded: DISCARD
                    │
                    ▼
-  [ Named MCI Device Playback ] ──────► "FluentVoiceDevice" (Single Stream)
+  [ Named MCI Device Playback ] ──────► "FluentVoiceDevice" + stall watchdog
+                   │                     (auto-fallback to offline voice)
+                   ▼
+  [ Live status → UI ] ───────────────► Connecting… → Speaking part i/n → Finished
 ```
+
+### Troubleshooting speech
+
+- Status stuck or no audio? Check `%USERPROFILE%\.fluentvoice\speech.log` — every synthesis/playback failure is logged there.
+- Run the diagnostic from the repo folder: `python scripts\diag_reader_tts.py` (tests neural latency, MCI playback and offline voices).
 
 ---
 

@@ -28,6 +28,9 @@ python -m PyInstaller `
   --hidden-import=fluentvoice.cli `
   --hidden-import=fluentvoice.gui `
   --hidden-import=fluentvoice.core `
+  --hidden-import=fluentvoice.config `
+  --hidden-import=fluentvoice.lifecycle `
+  --hidden-import=fluentvoice.updater `
   --hidden-import=edge_tts `
   --hidden-import=pystray `
   --hidden-import=customtkinter `

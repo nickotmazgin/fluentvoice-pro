@@ -24,6 +24,9 @@ def main():
         help="Restart the FluentVoice system tray daemon (failsafe if icon disappears)",
     )
 
+    parser.add_argument("--check-update", action="store_true", help="Check GitHub for a newer FluentVoice Pro release")
+    parser.add_argument("--version", "-V", action="store_true", help="Print the installed version")
+
     args = parser.parse_args()
 
     if args.restart_tray:
@@ -70,8 +73,26 @@ def main():
         core.speak_text(text)
         return
 
-    # Default: Toggle speak or stop
-    core.toggle_speak_or_stop()
+    if args.check_update:
+        from . import updater
+        res = updater.check_for_update(force=True)
+        st = res.get("status")
+        if st == "update":
+            print(f"Update available: v{res['latest']} (you have v{res['current']})\n{res['url']}")
+        elif st == "current":
+            print(f"FluentVoice Pro v{res['current']} is up to date.")
+        else:
+            print(f"Update check failed: {res.get('message', st)}")
+        return
+
+    if args.version:
+        from . import __version__
+        print(f"FluentVoice Pro v{__version__}")
+        return
+
+    # Default: Toggle speak or stop. Blocking: this CLI process must stay alive while
+    # speaking (Start Menu / taskbar shortcuts used to exit instantly = silence).
+    core.toggle_speak_or_stop(blocking=True)
 
 if __name__ == "__main__":
     main()

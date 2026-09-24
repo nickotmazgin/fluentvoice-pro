@@ -39,6 +39,9 @@ DEFAULT_CONFIG = {
     "hotkey_enabled": True,
     "hotkey": "ctrl+shift+space",
     "preferred_voices": DEFAULT_PREFERRED_VOICES.copy(),
+    # Update checker (Settings → About & Developer → Updates)
+    "check_updates": True,
+    "skipped_update_version": "",
 }
 
 def load_config() -> dict:
@@ -59,11 +62,26 @@ def load_config() -> dict:
     return cfg
 
 def save_config(cfg: dict):
+    """Atomic write (temp file + replace) so the tray and Settings never read a
+    half-written config.json (which silently fell back to defaults)."""
+    import os
+    import time
+    tmp = CONFIG_FILE.with_name(f"config.{os.getpid()}.tmp")
     try:
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
+        for attempt in range(10):
+            try:
+                os.replace(tmp, CONFIG_FILE)
+                return
+            except PermissionError:  # another process is reading it right now (Windows)
+                time.sleep(0.02 * (attempt + 1))
+        os.replace(tmp, CONFIG_FILE)
     except Exception:
-        pass
+        try:
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 def factory_reset_config() -> dict:

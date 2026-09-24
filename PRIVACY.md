@@ -12,6 +12,7 @@ FluentVoice Pro is a **local Windows** TTS / read-aloud suite. It does **not** c
 
 - **Online neural voices (Edge TTS):** outbound HTTPS to Microsoft speech endpoints with the text you ask to speak
 - **Offline SAPI / OneCore:** no network required for synthesis
+- **Update check (optional, on by default):** one anonymous HTTPS GET to the public GitHub Releases API (`api.github.com/repos/nickotmazgin/fluentvoice-pro/releases/latest`) at most once a day, or when you click **Check for Updates**. No identifiers are sent. Turn it off in Settings → About & Developer → Updates.
 - Donate / GitHub / PayPal links open **only when you click them**
 
 FluentVoice does **not** embed advertising SDKs or third-party trackers.
