@@ -11,9 +11,11 @@ prompt are captured by hand; then run scripts/build_collage.py.
 from __future__ import annotations
 
 import argparse
+import atexit
 import ctypes
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -34,6 +36,7 @@ TABS = [
 def capture(out: Path, tab: str, scroll_bottom: bool = False) -> None:
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
     home = tempfile.mkdtemp(prefix="fv-capture-")
+    atexit.register(shutil.rmtree, home, ignore_errors=True)
     os.environ["HOME"] = os.environ["USERPROFILE"] = home
     sys.path.insert(0, str(ROOT))
     from PIL import ImageGrab
