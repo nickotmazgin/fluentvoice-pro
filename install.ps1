@@ -31,18 +31,16 @@ Write-Host "`n[1/3] Installing Python dependencies..." -ForegroundColor Yellow
 python -m pip install -r requirements.txt --quiet
 python -m pip install -e . --no-deps --quiet
 
-# 2. Run Windows shortcut & registry setup (also writes start_fluentvoice_silent.vbs)
+# 2. Run Windows shortcut & registry setup (Desktop, Start Menu, Startup, right-click menu)
 Write-Host "[2/3] Configuring Desktop, Startup, and Context Menus..." -ForegroundColor Yellow
 python -m fluentvoice.installer
 
 # 3. Launch Tray Daemon
 Write-Host "[3/3] Starting FluentVoice Pro Tray Daemon..." -ForegroundColor Yellow
+# v1.4.19+: Startup runs pythonw directly; the old VBS launcher is no longer used.
 $vbs = Join-Path $PSScriptRoot "start_fluentvoice_silent.vbs"
-if (Test-Path $vbs) {
-    wscript.exe "$vbs"
-} else {
-    Start-Process -WindowStyle Hidden -FilePath "pythonw" -ArgumentList "-m", "fluentvoice.tray" -WorkingDirectory $PSScriptRoot
-}
+if (Test-Path $vbs) { Remove-Item $vbs -Force -ErrorAction SilentlyContinue }
+Start-Process -WindowStyle Hidden -FilePath "pythonw" -ArgumentList "-m", "fluentvoice.tray" -WorkingDirectory $PSScriptRoot
 
 $v = & python -c "import fluentvoice; print(fluentvoice.__version__)"
 Write-Host "`n[DONE] FluentVoice Pro v$v is installed, active, and running in your tray!" -ForegroundColor Green

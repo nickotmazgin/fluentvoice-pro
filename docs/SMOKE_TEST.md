@@ -4,7 +4,7 @@ Use after install or before cutting a release.
 
 1. **Install / launch tray**
    - Run installer or Startup: tray icon appears near the clock.
-   - Confirm Startup shortcut launches `pythonw -m fluentvoice.tray` (via `start_fluentvoice_silent.vbs`).
+   - Confirm the Startup shortcut `FluentVoice Pro Tray.lnk` targets `pythonw -m fluentvoice.tray` (portable: `FluentVoicePro.exe`); no `.vbs` launcher since v1.4.19.
 
 2. **Tray basics**
    - Left-click tray → speak clipboard / toggle stop.
