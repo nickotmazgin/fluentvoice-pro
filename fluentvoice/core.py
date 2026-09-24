@@ -797,22 +797,9 @@ def _speak_text_impl(raw_text: str, on_status=None) -> dict:
             voice = route_voice
             engine = "neural"
             routed = True
-            flags = {
-                "hebrew": "🇮🇱",
-                "arabic": "🇸🇦",
-                "cjk": "🇯🇵",
-                "cyrillic": "🇷🇺",
-                "spanish": "🇪🇸",
-                "french": "🇫🇷",
-                "german": "🇩🇪",
-                "italian": "🇮🇹",
-                "portuguese": "🇧🇷",
-                "english": "🇺🇸",
-            }
-            flag = flags.get(detected_lang, "🌐")
             trigger_notification(
                 "FluentVoice Pro",
-                f"{flag} {detected_lang.title()} detected: Auto-routed to {route_label}",
+                f"🌐 {detected_lang.title()} detected: Auto-routed to {route_label}",
             )
     else:
         # Warn on script/voice mismatch when auto-routing is disabled

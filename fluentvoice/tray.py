@@ -631,7 +631,7 @@ class FluentVoiceTrayApp:
                 item("William (AU Australian Male)", self.set_voice("en-AU-WilliamNeural", "William (AU)"), checked=self.is_voice_checked("en-AU-WilliamNeural")),
                 item("Natasha (AU Australian Female)", self.set_voice("en-AU-NatashaNeural", "Natasha (AU)"), checked=self.is_voice_checked("en-AU-NatashaNeural")),
             )),
-            item("🇮🇱 Neural Voices (Hebrew HD)", pystray.Menu(
+            item("🎙 Neural Voices (Hebrew HD)", pystray.Menu(
                 item("Avri (Hebrew Natural Male)", self.set_voice("he-IL-AvriNeural", "Avri (Hebrew)"), checked=self.is_voice_checked("he-IL-AvriNeural")),
                 item("Hila (Hebrew Natural Female)", self.set_voice("he-IL-HilaNeural", "Hila (Hebrew)"), checked=self.is_voice_checked("he-IL-HilaNeural")),
             )),
