@@ -95,7 +95,16 @@ FluentVoice Pro $Ver — Portable (no Python install required)
 ===========================================================
 1) Extract this ZIP anywhere
 2) Right-click FluentVoicePro.exe → Properties → Unblock (if shown)
-3) Double-click FluentVoicePro.exe (starts tray daemon)
+3) Double-click FluentVoicePro.exe (starts the tray icon near the clock)
+4) First launch asks once: "Start with Windows + add Desktop & Start Menu shortcuts?"
+   Yes = it comes back after every reboot. Change it any time in
+   Settings -> Automation & System -> Startup & Shortcuts
+   (Start with Windows switch, Create / Remove Shortcuts buttons).
+   Keep this folder where it is. If you move it, run FluentVoicePro.exe once
+   from the new place and the shortcuts follow it automatically.
+
+To remove: turn off "Start with Windows", click "Remove Shortcuts", then Exit
+from the tray menu and delete this folder (settings live in %USERPROFILE%\.fluentvoice).
 
 First launch may show Windows SmartScreen on unsigned builds:
   More info → Run anyway

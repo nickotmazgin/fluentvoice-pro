@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.19] - 2026-09-24
+
+### Added
+- **Start with Windows + shortcuts for the portable EXE.** Before, the portable ZIP created nothing, so after a reboot users had to find the EXE again and there was no desktop icon.
+  - **First launch** of `FluentVoicePro.exe` asks once: *Start with Windows and add Desktop + Start Menu shortcuts?*
+  - **Settings → Automation & System → Startup & Shortcuts** (both editions): *Start FluentVoice Pro with Windows* switch, **Create / Recreate Desktop & Start Menu Shortcuts** and **Remove Shortcuts** buttons, with a status line showing where this copy runs from.
+  - **Moved or updated the portable folder?** On the next launch, shortcuts that point at an older `FluentVoicePro.exe` are re-pointed at the current one.
+- `fluentvoice/shortcuts.py`: one shared module for Startup, Desktop and Start Menu shortcuts (source install and portable EXE). `install.ps1` now uses it too.
+- 7 new unit tests (`tests/test_shortcuts.py`).
+
+### Fixed
+- **Uninstall left "FluentVoice Pro Settings" on the desktop right-click menu.** The installer adds three entries but `uninstall.ps1` removed only two.
+- **Shortcuts on OneDrive-synced Desktops.** Installer and uninstaller assumed `%USERPROFILE%\Desktop`; both now ask Windows for the real Desktop folder.
+- Start with Windows no longer needs the generated `start_fluentvoice_silent.vbs`: the Startup shortcut runs `pythonw` / `FluentVoicePro.exe` directly (no console window either way).
+
+### Changed
+- Portable `README-PORTABLE.txt` explains the first-launch prompt, moving the folder, and clean removal.
+- README screenshots: 08 retaken on v1.4.19 and new **09 · Portable first launch**; collage is now 3×3 (01–09).
+
 ## [1.4.18] - 2026-09-24
 
 ### Fixed

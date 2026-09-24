@@ -11,8 +11,21 @@ import win32clipboard
 import win32con
 
 
-def test_clipboard_reads_unicode_text():
+def _open_clipboard():
+    """The system clipboard is shared: another app (e.g. a running FluentVoice tray's
+    Auto-Read watcher) may hold it for a moment, so retry like core.get_clipboard_text."""
+    import time
+    for _ in range(20):
+        try:
+            win32clipboard.OpenClipboard()
+            return
+        except Exception:
+            time.sleep(0.05)
     win32clipboard.OpenClipboard()
+
+
+def test_clipboard_reads_unicode_text():
+    _open_clipboard()
     win32clipboard.EmptyClipboard()
     win32clipboard.SetClipboardText("FluentVoice Pro Clipboard Test")
     win32clipboard.CloseClipboard()
@@ -22,7 +35,7 @@ def test_clipboard_reads_unicode_text():
 
 
 def test_clipboard_empty_returns_empty_string():
-    win32clipboard.OpenClipboard()
+    _open_clipboard()
     win32clipboard.EmptyClipboard()
     win32clipboard.CloseClipboard()
 
@@ -32,7 +45,7 @@ def test_clipboard_empty_returns_empty_string():
 
 def test_clipboard_non_text_does_not_lock():
     # Set non-text format
-    win32clipboard.OpenClipboard()
+    _open_clipboard()
     win32clipboard.EmptyClipboard()
     win32clipboard.SetClipboardData(win32con.CF_LOCALE, b"\x09\x04\x00\x00")
     win32clipboard.CloseClipboard()
@@ -44,7 +57,7 @@ def test_clipboard_non_text_does_not_lock():
     # Verify clipboard is immediately openable by another caller
     opened = False
     try:
-        win32clipboard.OpenClipboard()
+        _open_clipboard()
         opened = True
     finally:
         if opened:

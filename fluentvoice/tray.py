@@ -326,6 +326,46 @@ class FluentVoiceTrayApp:
         except Exception:
             pass
 
+    def portable_setup(self):
+        """Portable EXE only: keep our shortcuts pointing at this folder, and offer
+        Start-with-Windows + Desktop/Start Menu shortcuts once on first launch
+        (the portable ZIP has no installer, so otherwise it vanishes after a reboot)."""
+        from fluentvoice import shortcuts
+        if not shortcuts.is_frozen():
+            return
+        try:
+            fixed = shortcuts.repair_moved_portable()
+            if fixed:
+                logger.info(f"Re-pointed {fixed} shortcut(s) at {shortcuts.app_dir()}")
+        except Exception as e:
+            logger.warning(f"Shortcut repair failed: {e}")
+
+        marker = config.APP_DIR / "portable_setup_offered"
+        if marker.exists():
+            return
+        try:
+            if shortcuts.startup_enabled() and shortcuts.shortcuts_installed():
+                marker.touch()
+                return
+            time.sleep(1.5)
+            # MB_YESNO | MB_ICONQUESTION | MB_SETFOREGROUND | MB_TOPMOST
+            answer = ctypes.windll.user32.MessageBoxW(
+                None,
+                "FluentVoice Pro is running in the tray (near the clock).\n\n"
+                "Start it automatically with Windows and add Desktop + Start Menu shortcuts?\n\n"
+                "You can change this any time in Settings → Automation & System → Startup & Shortcuts.",
+                "FluentVoice Pro — Portable setup",
+                0x04 | 0x20 | 0x10000 | 0x40000,
+            )
+            marker.touch()
+            if answer == 6:  # IDYES
+                shortcuts.set_startup(True)
+                shortcuts.create_shortcuts()
+                self.notify_user("FluentVoice Pro", "✓ Starts with Windows • Desktop & Start Menu shortcuts added")
+                logger.info("Portable setup: startup + shortcuts created")
+        except Exception as e:
+            logger.warning(f"Portable setup failed: {e}")
+
     def update_check_loop(self):
         """Quiet background check: shortly after start, then every few hours (updater self-throttles to 1/day)."""
         time.sleep(25)
@@ -575,6 +615,7 @@ class FluentVoiceTrayApp:
             threading.Thread(target=self.clipboard_monitor_loop, daemon=True, name="ClipboardWatcher").start()
             threading.Thread(target=self.hotkey_message_loop, daemon=True, name="HotkeyWatcher").start()
             threading.Thread(target=self.update_check_loop, daemon=True, name="UpdateWatcher").start()
+            threading.Thread(target=self.portable_setup, daemon=True, name="PortableSetup").start()
             logger.info("Background watcher threads started successfully")
             if not ok:
                 # Delayed failsafe: give the shell a moment, then offer Settings UI

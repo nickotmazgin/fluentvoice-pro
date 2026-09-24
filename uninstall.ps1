@@ -10,7 +10,7 @@ Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
 
 # 2. Remove Shortcuts
 $paths = @(
-    [System.IO.Path]::Combine($HOME, "Desktop", "FluentVoice Pro.lnk"),
+    [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "FluentVoice Pro.lnk"),  # OneDrive-safe
     [System.IO.Path]::Combine($env:APPDATA, "Microsoft\Windows\Start Menu\Programs\Startup", "FluentVoice Pro Tray.lnk"),
     [System.IO.Path]::Combine($env:APPDATA, "Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar", "FluentVoice Pro.lnk")
 )
@@ -22,7 +22,8 @@ if (Test-Path $sm) { Remove-Item $sm -Recurse -Force -ErrorAction SilentlyContin
 # 3. Remove Registry Context Menus
 $regPaths = @(
     "HKCU:\Software\Classes\DesktopBackground\Shell\FluentVoicePro",
-    "HKCU:\Software\Classes\Directory\Background\Shell\FluentVoicePro"
+    "HKCU:\Software\Classes\Directory\Background\Shell\FluentVoicePro",
+    "HKCU:\Software\Classes\DesktopBackground\Shell\FluentVoiceSettings"
 )
 foreach ($p in $regPaths) {
     if (Test-Path $p) { Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue }

@@ -1134,6 +1134,53 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(side="left")
         self.after(200, self._refresh_tray_status)
 
+        # --- Startup & Shortcuts (source install and portable EXE alike) ---
+        boot = self._section_card(scroll, "Startup & Shortcuts")
+        self.switch_startup = ctk.CTkSwitch(
+            boot,
+            text="Start FluentVoice Pro with Windows (tray icon at sign-in)",
+            font=ctk.CTkFont(size=13),
+            progress_color="#00D2FF",
+            command=self._on_toggle_startup
+        )
+        self.switch_startup.pack(anchor="w", padx=16, pady=(4, 6))
+        sc_row = ctk.CTkFrame(boot, fg_color="transparent")
+        sc_row.pack(fill="x", padx=16, pady=(0, 4))
+        self.btn_shortcuts = ctk.CTkButton(
+            sc_row,
+            text="Create Desktop & Start Menu Shortcuts",
+            width=270,
+            height=30,
+            fg_color="#1F2E45",
+            hover_color="#2A3B58",
+            border_width=1,
+            border_color="#00D2FF",
+            text_color="#00D2FF",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self._on_create_shortcuts
+        )
+        self.btn_shortcuts.pack(side="left", padx=(0, 8))
+        self.btn_remove_shortcuts = ctk.CTkButton(
+            sc_row,
+            text="Remove Shortcuts",
+            width=140,
+            height=30,
+            fg_color="#21262D",
+            hover_color="#30363D",
+            command=self._on_remove_shortcuts
+        )
+        self.btn_remove_shortcuts.pack(side="left")
+        self.shortcuts_status_lbl = ctk.CTkLabel(
+            boot,
+            text="",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E",
+            justify="left",
+            anchor="w"
+        )
+        self.shortcuts_status_lbl.pack(anchor="w", padx=16, pady=(2, 12))
+        self._refresh_shortcuts_status()
+
         # --- Updates (same engine as About & Developer → Updates) ---
         upd = self._section_card(scroll, "Updates")
         upd_row = ctk.CTkFrame(upd, fg_color="transparent")
@@ -1176,6 +1223,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             "• Footer Emergency Stop — always available on every Settings tab.\n"
             "• Start Menu → FluentVoice Pro — optional Stop / Restart Tray / Reader shortcuts.\n"
             "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
+            "• Start with Windows — Startup & Shortcuts card above (tray icon at every sign-in).\n"
             "• Explorer — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
         )
         ctk.CTkLabel(
@@ -1748,6 +1796,58 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         except Exception:
             pass
         self.after(2000, self._refresh_tray_status)
+
+    def _refresh_shortcuts_status(self, note: str = "", color: str = "#8B949E"):
+        from . import shortcuts
+        on = shortcuts.startup_enabled()
+        have = shortcuts.shortcuts_installed()
+        if on:
+            self.switch_startup.select()
+        else:
+            self.switch_startup.deselect()
+        self.btn_shortcuts.configure(
+            text="Recreate Desktop & Start Menu Shortcuts" if have else "Create Desktop & Start Menu Shortcuts"
+        )
+        kind = "Portable" if shortcuts.is_frozen() else "Installed"
+        where = str(shortcuts.app_dir())
+        home = str(Path.home())
+        if where.lower().startswith(home.lower()):
+            where = "%USERPROFILE%" + where[len(home):]  # no user name in shared screenshots
+        if not note:
+            note = (f"{kind} copy: {where}\n"
+                    f"Start with Windows: {'on' if on else 'off'} • Desktop & Start Menu shortcuts: "
+                    f"{'present' if have else 'not created'}")
+            if shortcuts.is_frozen():
+                note += "\nMoved this folder? Just run FluentVoicePro.exe once. Shortcuts follow it automatically."
+        self.shortcuts_status_lbl.configure(text=note, text_color=color)
+
+    def _on_toggle_startup(self):
+        from . import shortcuts
+        want = bool(self.switch_startup.get())
+        try:
+            shortcuts.set_startup(want)
+            self._refresh_shortcuts_status(
+                "✓ FluentVoice Pro will start with Windows" if want else "✓ Removed from Windows startup",
+                "#3FB950")
+        except Exception as e:
+            self._refresh_shortcuts_status(f"⚠ Could not change startup: {e}", "#F85149")
+
+    def _on_create_shortcuts(self):
+        from . import shortcuts
+        try:
+            made = shortcuts.create_shortcuts()
+            self._refresh_shortcuts_status(
+                f"✓ Created {len(made)} shortcuts (Desktop + Start Menu → FluentVoice Pro)", "#3FB950")
+        except Exception as e:
+            self._refresh_shortcuts_status(f"⚠ Could not create shortcuts: {e}", "#F85149")
+
+    def _on_remove_shortcuts(self):
+        from . import shortcuts
+        try:
+            shortcuts.remove_shortcuts()
+            self._refresh_shortcuts_status("✓ Desktop & Start Menu shortcuts removed", "#3FB950")
+        except Exception as e:
+            self._refresh_shortcuts_status(f"⚠ Could not remove shortcuts: {e}", "#F85149")
 
     def _on_ensure_tray(self):
         from .lifecycle import ensure_tray_running
