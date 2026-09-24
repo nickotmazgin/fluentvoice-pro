@@ -223,10 +223,22 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             return
         self.after(160, self._ensure_active_tab_visible)
 
+    def _select_tab(self, name):
+        """Switch tabs programmatically and re-grid once CTk's delayed forget settles."""
+        if name not in self._valid_tabs:
+            return
+        self._pending_initial_tab = name
+        self.tabview.set(name)
+        self.after(160, self._ensure_active_tab_visible)
+
     def _ensure_active_tab_visible(self):
         """Make sure the selected tab frame is gridded (CTk blank-tab race fix)."""
         try:
+            # A programmatic selection is honoured once, then cleared; afterwards the
+            # user's own tab click wins. Keeping it forever made every <Map> (maximize,
+            # restore, resize) snap the window back to the initial tab.
             wanted = getattr(self, "_pending_initial_tab", None) or self.tabview.get()
+            self._pending_initial_tab = None
             tv = self.tabview
             if wanted not in getattr(tv, "_tab_dict", {}):
                 return
@@ -375,7 +387,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         btn_clear = ctk.CTkButton(
             btn_bar,
-            text="🗑️ Clear",
+            text="🗑 Clear",
             fg_color="#1F2E45",
             hover_color="#2A3B58",
             width=90,
@@ -385,7 +397,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.btn_reader_speak = ctk.CTkButton(
             btn_bar,
-            text="▶️ Read Aloud",
+            text="▶  Read Aloud",
             fg_color="#00D2FF",
             hover_color="#33DCFF",
             text_color="#080C14",
@@ -396,7 +408,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.btn_reader_stop = ctk.CTkButton(
             btn_bar,
-            text="⏹️ Stop",
+            text="⏹ Stop",
             fg_color="#3B1D28",
             hover_color="#522434",
             border_width=1,
@@ -427,7 +439,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.reader_voice_lbl.configure(text=self._format_reader_voice_label())
 
     def _on_reader_goto_voice_tab(self):
-        self.tabview.set("Voice & Speech")
+        self._select_tab("Voice & Speech")
         if hasattr(self, "test_status_lbl"):
             self.test_status_lbl.configure(
                 text="Pick any voice below — it applies to Direct Text Reader, tray, and auto-read.",
@@ -450,16 +462,16 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         chars = len(txt)
         detected = core.detect_language(txt)
         lang_names = {
-            "hebrew": "Hebrew 🇮🇱",
-            "arabic": "Arabic 🇸🇦",
-            "cjk": "Japanese/CJK 🇯🇵",
-            "cyrillic": "Russian/Cyrillic 🇷🇺",
-            "english": "English 🇺🇸",
-            "spanish": "Spanish 🇪🇸",
-            "french": "French 🇫🇷",
-            "german": "German 🇩🇪",
-            "italian": "Italian 🇮🇹",
-            "portuguese": "Portuguese 🇧🇷",
+            "hebrew": "Hebrew",
+            "arabic": "Arabic",
+            "cjk": "Japanese/CJK",
+            "cyrillic": "Russian/Cyrillic",
+            "english": "English",
+            "spanish": "Spanish",
+            "french": "French",
+            "german": "German",
+            "italian": "Italian",
+            "portuguese": "Portuguese",
             "latin": "English/Latin 🌐",
         }
         lang_str = lang_names.get(detected, "Universal 🌐")
@@ -482,14 +494,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _on_reader_speak(self):
         txt = self.reader_textbox.get("1.0", "end-1c").strip()
         if not txt:
-            self.reader_status_lbl.configure(text="⚠️ Please type or paste text to read aloud", text_color="#F85149")
+            self.reader_status_lbl.configure(text="⚠ Please type or paste text to read aloud", text_color="#F85149")
             return
-        self._start_speech(txt, self.reader_status_lbl, self.btn_reader_speak, "▶️ Read Aloud")
+        self._start_speech(txt, self.reader_status_lbl, self.btn_reader_speak, "▶  Read Aloud")
 
     def _on_reader_stop(self):
         core.stop_all_playback()
         self._finish_speech_ui()
-        self.reader_status_lbl.configure(text="⏹️ Speech stopped immediately", text_color="#8B949E")
+        self.reader_status_lbl.configure(text="⏹ Speech stopped immediately", text_color="#8B949E")
 
     # ------------------------------------------------------------------
     # Live speech status (shared by Direct Text Reader + Voice test box)
@@ -569,13 +581,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if final is not None:
             status = final.get("status")
             if status == "success":
-                lbl.configure(text=f"✔️ Finished reading • {ui['voice'] or 'voice'} • {self._fmt_ms(elapsed * 1000)}", text_color="#3FB950")
+                lbl.configure(text=f"✔ Finished reading • {ui['voice'] or 'voice'} • {self._fmt_ms(elapsed * 1000)}", text_color="#3FB950")
             elif status == "fallback":
-                lbl.configure(text="ℹ️ Cloud voice unreachable → finished with Windows offline voice", text_color="#E3B341")
+                lbl.configure(text="ℹ Cloud voice unreachable → finished with Windows offline voice", text_color="#E3B341")
             elif status == "aborted":
-                lbl.configure(text="⏹️ Speech stopped", text_color="#8B949E")
+                lbl.configure(text="⏹ Speech stopped", text_color="#8B949E")
             else:
-                lbl.configure(text="⚠️ " + str(final.get("message", "Speech failed")), text_color="#F85149")
+                lbl.configure(text="⚠ " + str(final.get("message", "Speech failed")), text_color="#F85149")
             self._finish_speech_ui()
             return
 
@@ -599,7 +611,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             except Exception:
                 pass
         elif phase == "fallback":
-            lbl.configure(text="ℹ️ Cloud voice unreachable → reading with Windows offline voice…", text_color="#E3B341")
+            lbl.configure(text="ℹ Cloud voice unreachable → reading with Windows offline voice…", text_color="#E3B341")
 
         self.after(200, self._poll_speech_status, token)
 
@@ -838,7 +850,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.btn_speak = ctk.CTkButton(
             btn_row,
-            text="▶   Speak Test Text",
+            text="▶  Speak Test Text",
             fg_color="#00D2FF",
             hover_color="#33DCFF",
             text_color="#080C14",
@@ -1433,7 +1445,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 pending.unlink(missing_ok=True)
                 valid = ["Direct Text Reader", "Voice & Speech", "Automation & System", "About & Developer"]
                 if tab in valid:
-                    self.tabview.set(tab)
+                    self._select_tab(tab)
                     self.lift()
                     self.focus_force()
         except Exception:
@@ -1443,8 +1455,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             flag = config.APP_DIR / "pending_update_popup.txt"
             if flag.exists():
                 flag.unlink(missing_ok=True)
-                self.tabview.set("About & Developer")
-                self._pending_initial_tab = "About & Developer"
+                self._select_tab("About & Developer")
                 self._check_updates_async(force=True, popup=True)
         except Exception:
             pass
@@ -1562,7 +1573,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
         self._refresh_reader_voice_label()
-        core.trigger_notification("FluentVoice Pro", f"🗣️ Voice selected: {choice}")
+        core.trigger_notification("FluentVoice Pro", f"🗣 Voice selected: {choice}")
         self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
     def _on_open_windows_speech_settings(self):
@@ -1824,12 +1835,12 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         txt = self.test_entry.get().strip()
         if not txt:
             txt = "Testing voice synthesis with FluentVoice Pro."
-        self._start_speech(txt, self.test_status_lbl, self.btn_speak, "▶   Speak Test Text")
+        self._start_speech(txt, self.test_status_lbl, self.btn_speak, "▶  Speak Test Text")
 
     def _on_test_stop(self):
         core.stop_all_playback()
         self._finish_speech_ui()
-        self.test_status_lbl.configure(text="⏹️ Speech stopped immediately", text_color="#8B949E")
+        self.test_status_lbl.configure(text="⏹ Speech stopped immediately", text_color="#8B949E")
 
     # ------------------------------------------------------------------
     # Updates (GitHub Releases) — worker thread -> after() poll, no Tk off-thread
@@ -1894,7 +1905,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             if force:
                 self._set_update_status(f"✅ You're on the latest version (v{res.get('current')}).", "#3FB950")
         elif st == "error" and force:
-            self._set_update_status("⚠️ Couldn't reach GitHub (offline or rate-limited). Try again later.", "#E3B341")
+            self._set_update_status("⚠ Couldn't reach GitHub (offline or rate-limited). Try again later.", "#E3B341")
 
     def _show_update_popup(self, info):
         from fluentvoice import updater
@@ -1985,7 +1996,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         def install_now(path):
             from tkinter import messagebox
             if updater.is_git_checkout():
-                status.configure(text="ℹ️ This copy is a git checkout — update with `git pull`, then run install.ps1.",
+                status.configure(text="ℹ This copy is a git checkout — update with `git pull`, then run install.ps1.",
                                  text_color="#E3B341")
                 return
             if not messagebox.askyesno(
@@ -1998,7 +2009,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 return
             plan = updater.prepare_install(path, info)
             if not plan.get("ok"):
-                status.configure(text="⚠️ " + plan.get("message", "Install failed"), text_color="#F85149")
+                status.configure(text="⚠ " + plan.get("message", "Install failed"), text_color="#F85149")
                 return
             updater.launch_install(plan)
             status.configure(text=f"🚀 Installing… {plan.get('message')}", text_color="#3FB950")
@@ -2021,7 +2032,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     if updater.is_git_checkout():
                         status.configure(text=status.cget("text") + "\nGit checkout detected: update with `git pull`.")
             else:
-                status.configure(text="⚠️ " + res.get("message", "Download failed"), text_color="#F85149")
+                status.configure(text="⚠ " + res.get("message", "Download failed"), text_color="#F85149")
                 btn_dl.configure(state="normal", text="⬇ Retry Download")
 
         btn_dl = ctk.CTkButton(row, text="⬇ Download & Verify", fg_color="#238636", hover_color="#2EA043",

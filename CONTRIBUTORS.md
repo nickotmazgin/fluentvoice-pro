@@ -7,7 +7,7 @@ FluentVoice Pro is an open-source project created and maintained by **Nick Otmaz
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="33.33%">
+      <td align="center" valign="top" width="25%">
         <a href="https://github.com/nickotmazgin">
           <img src="https://avatars.githubusercontent.com/u/227995249?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Nick Otmazgin"/>
           <br />
@@ -18,7 +18,7 @@ FluentVoice Pro is an open-source project created and maintained by **Nick Otmaz
         <br />
         <sub>💻 🎨 📦 🚀 📖</sub>
       </td>
-      <td align="center" valign="top" width="33.33%">
+      <td align="center" valign="top" width="25%">
         <a href="https://github.com/cursoragent">
           <img src="https://avatars.githubusercontent.com/u/199161495?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Cursor Agent"/>
           <br />
@@ -29,7 +29,7 @@ FluentVoice Pro is an open-source project created and maintained by **Nick Otmaz
         <br />
         <sub>💻 ⚙️ 🎧 📝</sub>
       </td>
-      <td align="center" valign="top" width="33.33%">
+      <td align="center" valign="top" width="25%">
         <a href="https://github.com/google-antigravity">
           <img src="https://avatars.githubusercontent.com/u/242056456?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Google Antigravity"/>
           <br />
@@ -39,6 +39,17 @@ FluentVoice Pro is an open-source project created and maintained by **Nick Otmaz
         <sub>AI Autonomous Engineering Agent</sub>
         <br />
         <sub>🧪 🤖 🔄 🛡️</sub>
+      </td>
+      <td align="center" valign="top" width="25%">
+        <a href="https://github.com/claude">
+          <img src="https://avatars.githubusercontent.com/u/81847?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Claude"/>
+          <br />
+          <sub><b>Claude (Anthropic)</b></sub>
+        </a>
+        <br />
+        <sub>AI Coding Agent · Claude Code</sub>
+        <br />
+        <sub>💻 🐛 🚀 🎨</sub>
       </td>
     </tr>
   </tbody>
@@ -55,5 +66,6 @@ In keeping with transparent open-source engineering standards, recent components
 
 - **Cursor Agent** ([@cursoragent](https://github.com/cursoragent) • [Anysphere](https://cursor.com)) — Concurrency locking model, single-stream device playback architecture, cross-thread debounce, and documentation.
 - **Google Antigravity** ([@google-antigravity](https://github.com/google-antigravity)) — Local autonomous execution, integration testing, social media synchronization, and model cascade verification.
+- **Claude** ([@claude](https://github.com/claude) • [Anthropic](https://claude.com/claude-code)) — Streaming Direct Text Reader + live status, cross-process Stop, update checker, release pipeline hardening, UI fixes, and v1.4.18 screenshots / collage (via Claude Code).
 
 All AI contributions are verified, security-audited, and tested on real Windows hardware by the maintainer prior to release.

@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.17** — Direct Text Reader no longer "stuck on Synthesizing": streaming playback starts in ~1–2 s with live status; built-in **Check for Updates** (SHA-256 verified downloads); tray ↔ Settings true single-stream Stop; portable EXE Settings fix. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)**.
+> **Latest: v1.4.18** — Read Aloud / Clear buttons no longer show a wide gap after the icon; Settings stays on the tab you picked when you maximize or resize; no more stray "US"/"IL" letters where flag emoji can't render. Builds on v1.4.17 streaming Reader, **Check for Updates** (SHA-256 verified) and single-stream Stop. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -23,48 +23,52 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Screenshots
 
-*FluentVoice Pro **v1.4.16** — click any image to view it full size.*
+*FluentVoice Pro **v1.4.18** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.4.16 collage](screenshots/v1.4.16/collage-v1.4.16-2026.jpg)](screenshots/v1.4.16/collage-v1.4.16-2026.jpg)
+[![FluentVoice Pro v1.4.18 collage](screenshots/v1.4.18/collage-v1.4.18.jpg)](screenshots/v1.4.18/collage-v1.4.18.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.16/01-settings-reader.png"><img src="screenshots/v1.4.16/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.4.18/01-settings-reader.png"><img src="screenshots/v1.4.18/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.16/02-settings-voice.png"><img src="screenshots/v1.4.16/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.4.18/02-settings-voice.png"><img src="screenshots/v1.4.18/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.16/03-settings-automation.png"><img src="screenshots/v1.4.16/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <a href="screenshots/v1.4.18/03-settings-automation.png"><img src="screenshots/v1.4.18/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
       <b>03</b> — Automation &amp; System
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.16/04-settings-about.png"><img src="screenshots/v1.4.16/04-settings-about.png" width="260" alt="About &amp; Factory Reset"></a><br>
-      <b>04</b> — About · Factory Reset
+      <a href="screenshots/v1.4.18/04-settings-about-updates.png"><img src="screenshots/v1.4.18/04-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
+      <b>04</b> — About · Updates &amp; Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.16/06b-tray-menu-crop.png"><img src="screenshots/v1.4.16/06b-tray-menu-crop.png" width="260" alt="Tray right-click menu"></a><br>
+      <a href="screenshots/v1.4.18/05-tray-menu.png"><img src="screenshots/v1.4.18/05-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
       <b>05</b> — Tray right-click menu
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.16/00-desktop-icon-live.png"><img src="screenshots/v1.4.16/00-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
+      <a href="screenshots/v1.4.18/06-desktop-icon-live.png"><img src="screenshots/v1.4.18/06-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
       <b>06</b> — Desktop icon (live)
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.16/05c-tray-icon-closeup.png"><img src="screenshots/v1.4.16/05c-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
+      <a href="screenshots/v1.4.18/07-tray-icon-closeup.png"><img src="screenshots/v1.4.18/07-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
       <b>07</b> — Tray icon close-up
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.18/08-settings-automation-updates.png"><img src="screenshots/v1.4.18/08-settings-automation-updates.png" width="260" alt="Automation: tray daemon &amp; updates"></a><br>
+      <b>08</b> — Automation · Tray &amp; Updates
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.4.16-2026.jpg](screenshots/v1.4.16/collage-v1.4.16-2026.jpg)
+Full combined image (download): [collage-v1.4.18.jpg](screenshots/v1.4.18/collage-v1.4.18.jpg)
 
 ---
 
@@ -230,11 +234,12 @@ FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazg
 
 [![AI assisted — Cursor Agent](https://img.shields.io/badge/AI%20assisted-Cursor%20Agent-1A1A1A)](https://cursor.com)
 [![AI assisted — Google Antigravity](https://img.shields.io/badge/AI%20assisted-Google%20Antigravity-4285F4)](https://github.com/google-antigravity)
+[![AI assisted — Claude Code](https://img.shields.io/badge/AI%20assisted-Claude%20Code-D97757)](https://claude.com/claude-code)
 
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="33.33%">
+      <td align="center" valign="top" width="25%">
         <a href="https://github.com/nickotmazgin">
           <img src="https://avatars.githubusercontent.com/u/227995249?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Nick Otmazgin"/>
           <br />
@@ -245,7 +250,7 @@ FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazg
         <br />
         <sub>💻 🎨 📦 🚀 📖</sub>
       </td>
-      <td align="center" valign="top" width="33.33%">
+      <td align="center" valign="top" width="25%">
         <a href="https://github.com/cursoragent">
           <img src="https://avatars.githubusercontent.com/u/199161495?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Cursor Agent"/>
           <br />
@@ -256,7 +261,7 @@ FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazg
         <br />
         <sub>💻 ⚙️ 🎧 📝</sub>
       </td>
-      <td align="center" valign="top" width="33.33%">
+      <td align="center" valign="top" width="25%">
         <a href="https://github.com/google-antigravity">
           <img src="https://avatars.githubusercontent.com/u/242056456?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Google Antigravity"/>
           <br />
@@ -267,6 +272,17 @@ FluentVoice Pro is created, designed, maintained, and released by **[Nick Otmazg
         <br />
         <sub>🧪 🤖 🔄 🛡️</sub>
       </td>
+      <td align="center" valign="top" width="25%">
+        <a href="https://github.com/claude">
+          <img src="https://avatars.githubusercontent.com/u/81847?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Claude"/>
+          <br />
+          <sub><b>Claude (Anthropic)</b></sub>
+        </a>
+        <br />
+        <sub>AI Coding Agent · Claude Code</sub>
+        <br />
+        <sub>💻 🐛 🚀 🎨</sub>
+      </td>
     </tr>
   </tbody>
 </table>
@@ -275,6 +291,7 @@ Built with pair-programming assistance from AI co-pilots operated under the main
 
 - **Cursor Agent** ([@cursoragent](https://github.com/cursoragent)) — Audio engine architecture, concurrency design, UI automation, and packaging
 - **Google Antigravity** ([@google-antigravity](https://github.com/google-antigravity)) — System integration, Windows desktop testing, and performance profiling
+- **Claude** by Anthropic ([@claude](https://github.com/claude), via [Claude Code](https://claude.com/claude-code)) — Streaming Reader + live status, cross-process Stop, update checker, release pipeline, UI fixes, and screenshots / collage (v1.4.17–v1.4.18)
 
 ---
 

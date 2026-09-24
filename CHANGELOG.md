@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.18] - 2026-09-24
+
+### Fixed
+- **Read Aloud / Clear buttons showed a wide blank gap after the icon** — the ▶️ / 🗑️ emoji carried an invisible variation selector (U+FE0F) that Tk draws as a wide blank. Removed from every Settings label; icons now sit next to their text at any window size.
+- **Settings jumped back to "Voice & Speech" after maximize / restore / resize** — the startup tab was re-applied on every window map event. It is now honoured once; after that the tab you clicked stays selected. Programmatic switches (Change Voice →, tray "About", update popup) go through one helper.
+- **Stray "US" / "IL" letters** next to "Lang: English" in the Reader, before "Neural Voices (Hebrew HD)" in the tray menu, and in auto-route toasts — Windows has no flag-emoji glyphs, so regional-indicator pairs rendered as tiny letters. Replaced with plain text / 🎙 / 🌐.
+
+### Changed
+- README: new v1.4.18 screenshot gallery (01–08) and 4K collage; Claude (Anthropic, via Claude Code) added to Credits & CONTRIBUTORS.
+- `scripts/build_collage.py` — rebuilds the README collage (3840 wide), 1080×1080 social image and 1280×640 GitHub preview from `screenshots/v<version>/`.
+- `tests/conftest.py` — tests run against a temporary home folder and never touch the real `~/.fluentvoice`.
+
 ## [1.4.17] - 2026-09-24
 
 ### Added
