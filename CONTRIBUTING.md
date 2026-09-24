@@ -7,7 +7,7 @@ Thanks for helping improve FluentVoice Pro.
 1. **Bugs** — [Issues](https://github.com/nickotmazgin/fluentvoice-pro/issues) (use the bug template; search first)
 2. **Ideas / Q&A** — [Discussions](https://github.com/nickotmazgin/fluentvoice-pro/discussions)
 3. **Features** — discuss first, then a feature-request issue if needed
-4. **Docs / screenshots** — README, `docs/`, `screenshots/v1.4.3/`
+4. **Docs / screenshots** — README, `docs/`, `screenshots/v<version>/` (rebuild collages with `python scripts/build_collage.py`)
 5. **Code** — bug fixes, tests, packaging (keep PRs focused)
 
 ## Security

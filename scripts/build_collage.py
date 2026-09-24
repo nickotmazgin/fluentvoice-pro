@@ -177,11 +177,13 @@ def main() -> None:
     og = gradient_bg(1280, 640)
     accent_bar(og, 6)
     top = header(og, 0.5, 36, 22, compact=True)
+    # Two equal panels sized to the Settings window aspect, centred in the space left.
     m, gap, s = 28, 18, 0.5
-    ph = 640 - top - m
-    wide = int(29 * s) + round((ph - int(29 * s) - int(8 * s)) * 1920 / 1140) + 2 * int(8 * s)
-    panel(og, shots[PANELS[0][0]], PANELS[0][1], PANELS[0][2], m, top, wide, ph, s=s)
-    panel(og, shots[PANELS[4][0]], PANELS[4][1], PANELS[4][2], m + wide + gap, top, 1280 - 2 * m - wide - gap, ph, s=s)
+    pw = (1280 - 2 * m - gap) // 2
+    ph = int(29 * s) + round((pw - 2 * int(8 * s)) * 1140 / 1920) + int(8 * s)
+    y = top + max(0, (640 - top - m - ph) // 2)
+    for i, (f, n, label) in enumerate((PANELS[0], PANELS[4])):
+        panel(og, shots[f], n, label, m + i * (pw + gap), y, pw, ph, s=s)
     og_path = SRC / "social-preview-1280x640.jpg"
     og.save(og_path, "JPEG", quality=94, optimize=True, subsampling=0)
 
