@@ -3,10 +3,21 @@ Author: Nick Otmazgin
 """
 
 import os
-import sys
 import winreg
-import win32com.client
 from pathlib import Path
+
+from . import shortcuts
+
+
+def _remove_old(paths, what):
+    for p in paths:
+        if p.exists():
+            try:
+                p.unlink()
+                print(f"[CLEAN] Removed outdated {what}: {p.name}")
+            except Exception:
+                pass
+
 
 def install_all():
     print("=" * 65)
@@ -14,130 +25,48 @@ def install_all():
     print("                     Author: Nick Otmazgin                      ")
     print("=" * 65)
 
-    base_dir = Path(__file__).parent.parent.resolve()
-    assets_dir = base_dir / "assets"
-    ico_path = assets_dir / "icon.ico"
-    pythonw = Path(sys.executable).parent / "pythonw.exe"
-    
-    if not pythonw.exists():
-        pythonw = Path(sys.executable)
+    ico_path = shortcuts.icon_path()
+    desktop = shortcuts.special_folder("Desktop")
+    startup = shortcuts.special_folder("Startup")
 
-    shell = win32com.client.Dispatch("WScript.Shell")
-    desktop = Path.home() / "Desktop"
-
-    # Clean old obsolete shortcuts from Desktop (one desktop icon only: Settings)
-    old_desktop_shortcuts = [
+    # Clean old obsolete shortcuts (one desktop icon only: Settings)
+    _remove_old([
         desktop / "Read Aloud.lnk",
         desktop / "Natural Voice Reader.lnk",
         desktop / "FluentVoice Settings.lnk",
         desktop / "FluentVoice Emergency Stop.lnk",  # stop lives in Settings UI + Start Menu
-    ]
-    for old_s in old_desktop_shortcuts:
-        if old_s.exists():
-            try:
-                old_s.unlink()
-                print(f"[CLEAN] Removed outdated desktop shortcut: {old_s.name}")
-            except Exception:
-                pass
+    ], "desktop shortcut")
+    _remove_old([
+        startup / "Read Aloud.lnk",
+        startup / "Natural Voice Reader.lnk",
+        startup / "Natural Voice Reader Tray.lnk",
+    ], "startup shortcut")
 
-    # 1. Single Desktop icon → Settings & Control Center (Emergency Stop is in the UI footer)
-    desktop_lnk = desktop / "FluentVoice Pro.lnk"
-    sc = shell.CreateShortcut(str(desktop_lnk))
-    sc.TargetPath = str(pythonw)
-    sc.Arguments = '-m fluentvoice.cli --gui'
-    sc.WorkingDirectory = str(base_dir)
-    sc.IconLocation = f"{ico_path},0"
-    sc.Description = "FluentVoice Pro - Settings & Voice Control Center"
-    sc.Save()
-    print(f"[OK] Desktop Settings Shortcut: {desktop_lnk}")
-
-    # Start Menu extras (optional failsafes — not on Desktop)
-    programs = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs"))
-    sm_dir = programs / "FluentVoice Pro"
-    sm_dir.mkdir(parents=True, exist_ok=True)
-
-    def _write_sm(name, args, desc):
-        p = sm_dir / name
-        s = shell.CreateShortcut(str(p))
-        s.TargetPath = str(pythonw)
-        s.Arguments = args
-        s.WorkingDirectory = str(base_dir)
-        s.IconLocation = f"{ico_path},0"
-        s.Description = desc
-        s.Save()
-        print(f"[OK] Start Menu: {p.name}")
-
-    _write_sm("FluentVoice Settings.lnk", "-m fluentvoice.cli --gui", "Open Settings & Control Center")
-    _write_sm("FluentVoice Emergency Stop.lnk", "-m fluentvoice.cli --stop", "Stop speech immediately (Start Menu failsafe)")
-    _write_sm("FluentVoice Direct Text Reader.lnk", "-m fluentvoice.cli --reader", "Open Direct Text Reader")
-    _write_sm("Restart FluentVoice Tray.lnk", "-m fluentvoice.cli --restart-tray", "Restart the system tray daemon")
-    _write_sm("Toggle Speak Stop.lnk", "-m fluentvoice.cli --toggle", "Toggle Speak / Stop")
+    # 1. Desktop icon → Settings & Control Center, plus Start Menu failsafes
+    for p in shortcuts.create_shortcuts():
+        print(f"[OK] Shortcut: {p}")
 
     # 2. Taskbar Quick-Toggle Shortcut: "FluentVoice Pro.lnk" (1-Click Read / Stop)
     tb = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar"))
     if tb.exists():
-        # Clean any old Read Aloud
-        old_tb = tb / "Read Aloud.lnk"
-        if old_tb.exists():
-            try:
-                old_tb.unlink()
-            except Exception:
-                pass
-        tb_lnk = tb / "FluentVoice Pro.lnk"
-        sc_tb = shell.CreateShortcut(str(tb_lnk))
-        sc_tb.TargetPath = str(pythonw)
-        sc_tb.Arguments = '-m fluentvoice.cli --toggle'
-        sc_tb.WorkingDirectory = str(base_dir)
-        sc_tb.IconLocation = f"{ico_path},0"
-        sc_tb.Description = "FluentVoice Pro (1-Click Speak / Stop)"
-        sc_tb.Save()
+        _remove_old([tb / "Read Aloud.lnk"], "taskbar shortcut")
+        tb_lnk = shortcuts._write_lnk(tb / "FluentVoice Pro.lnk", ("--toggle",), "FluentVoice Pro (1-Click Speak / Stop)")
         print(f"[OK] Taskbar Quick-Toggle Shortcut: {tb_lnk}")
 
-    # 3. Startup Silent Launcher Shortcut
-    startup = Path(os.path.expandvars(r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"))
-    
-    # Clean old startup shortcuts
-    old_startups = [
-        startup / "Read Aloud.lnk",
-        startup / "Natural Voice Reader.lnk",
-        startup / "Natural Voice Reader Tray.lnk"
-    ]
-    for old_st in old_startups:
-        if old_st.exists():
-            try:
-                old_st.unlink()
-                print(f"[CLEAN] Removed outdated startup shortcut: {old_st.name}")
-            except Exception:
-                pass
-
-    vbs_path = base_dir / "start_fluentvoice_silent.vbs"
-    vbs_content = (
-        f'Set WshShell = CreateObject("WScript.Shell")\r\n'
-        f'WshShell.CurrentDirectory = "{base_dir}"\r\n'
-        f'WshShell.Run """{pythonw}"" -m fluentvoice.tray", 0, False\r\n'
-    )
-    with open(vbs_path, "w", encoding="utf-8") as f:
-        f.write(vbs_content)
-
-    tray_lnk = startup / "FluentVoice Pro Tray.lnk"
-    sc_tray = shell.CreateShortcut(str(tray_lnk))
-    sc_tray.TargetPath = "wscript.exe"
-    sc_tray.Arguments = f'"{vbs_path}"'
-    sc_tray.WorkingDirectory = str(base_dir)
-    sc_tray.IconLocation = f"{ico_path},0"
-    sc_tray.Description = "FluentVoice Pro System Tray Daemon"
-    sc_tray.Save()
-    print(f"[OK] Windows Startup Integration: {tray_lnk}")
+    # 3. Start with Windows (tray daemon; pythonw / portable EXE have no console window)
+    shortcuts.set_startup(True)
+    print(f"[OK] Windows Startup Integration: {shortcuts.startup_path()}")
 
     # 4. Windows Explorer Context Menus
-    def add_context_menu(key_path, name, cmd_args):
+    def add_context_menu(key_path, name, flag):
         try:
+            target, args = shortcuts.launch_command(flag)
             key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path)
             winreg.SetValue(key, "", winreg.REG_SZ, name)
             winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, str(ico_path))
-            
+
             cmd_key = winreg.CreateKey(key, "command")
-            winreg.SetValue(cmd_key, "", winreg.REG_SZ, f'"{pythonw}" -m fluentvoice.cli {cmd_args}')
+            winreg.SetValue(cmd_key, "", winreg.REG_SZ, f'"{target}" {args}')
             winreg.CloseKey(cmd_key)
             winreg.CloseKey(key)
             print(f"[OK] Context Menu: {name}")

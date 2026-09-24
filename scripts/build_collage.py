@@ -1,7 +1,7 @@
 """Build the README collage + social images from screenshots/v<version>/.
 
 Usage:  python scripts/build_collage.py            (version read from fluentvoice/__init__.py)
-Writes: screenshots/v<ver>/collage-v<ver>.jpg          3840 wide  README hero
+Writes: screenshots/v<ver>/collage-v<ver>.jpg          3840 wide  README hero (3x3, 01–09)
         screenshots/v<ver>/social-collage-1080.jpg     1080x1080  social posts
         screenshots/v<ver>/social-preview-1280x640.jpg 1280x640   GitHub OG preview
         + copies to screenshots/collage.jpg, screenshots/social-preview.jpg, .github/social-preview.{jpg,png}
@@ -20,7 +20,7 @@ SRC = ROOT / "screenshots" / f"v{VERSION}"
 
 TITLE = "FluentVoice Pro™"
 SUBTITLE = "Windows 11 / 10 text-to-speech & read-aloud tray suite"
-HIGHLIGHTS = "Streaming Direct Text Reader  •  Check for Updates (SHA-256 verified)  •  Single-stream Stop  •  Neural + offline voices"
+HIGHLIGHTS = "Start with Windows (portable too)  •  Streaming Direct Text Reader  •  Check for Updates (SHA-256 verified)  •  Neural + offline voices"
 FOOTER = "Nick Otmazgin  •  github.com/nickotmazgin/fluentvoice-pro  •  MIT License"
 
 PANELS = [  # (file, number, label) in reading order
@@ -29,7 +29,10 @@ PANELS = [  # (file, number, label) in reading order
     ("03-settings-automation.png", "03", "Automation & System"),
     ("04-settings-about-updates.png", "04", "About · Updates & Factory Reset"),
     ("05-tray-menu.png", "05", "Tray right-click menu"),
-    ("08-settings-automation-updates.png", "08", "Automation · Tray & Updates"),
+    ("06-desktop-icon-live.png", "06", "Desktop icon"),
+    ("07-tray-icon-closeup.png", "07", "Tray icon near the clock"),
+    ("08-settings-automation-updates.png", "08", "Automation · Startup & Shortcuts"),
+    ("09-portable-first-launch.png", "09", "Portable first launch"),
 ]
 
 CYAN = (0, 210, 255)
@@ -83,8 +86,8 @@ def rounded(im: Image.Image, r: int) -> Image.Image:
 
 
 def fit(im: Image.Image, box_w: int, box_h: int) -> Image.Image:
-    """Scale to fit the box; small captures (tray menu) may grow up to 1.4x."""
-    k = min(box_w / im.width, box_h / im.height, 1.4)
+    """Scale to fit the box; small captures (tray menu, dialog, icons) may grow up to 1.8x."""
+    k = min(box_w / im.width, box_h / im.height, 1.8)
     return im.resize((round(im.width * k), round(im.height * k)), Image.Resampling.LANCZOS)
 
 
@@ -143,7 +146,7 @@ def header(canvas: Image.Image, s: float, x: int, y: int, compact: bool = False)
 def main() -> None:
     shots = {f: Image.open(SRC / f) for f, _, _ in PANELS}
 
-    # README hero collage — 3x2 grid, 4K wide (matches the other repos' HD collages).
+    # README hero collage — 3x3 grid (01–09), 4K wide (matches the other repos' HD collages).
     # Panel height follows the Settings window aspect so screens fill their frames.
     s, W = 1.6, 3840
     m, gap = int(56 * s), int(36 * s)
@@ -152,7 +155,8 @@ def main() -> None:
     ph = head + round((pw - 2 * pad) * 1140 / 1920) + pad
     probe = gradient_bg(W, 10)
     top = header(probe, s, int(64 * s), int(40 * s))  # measure header height
-    H = top + 2 * ph + gap + m
+    rows = (len(PANELS) + 2) // 3
+    H = top + rows * ph + (rows - 1) * gap + m
     c = gradient_bg(W, H)
     accent_bar(c, int(10 * s))
     header(c, s, int(64 * s), int(40 * s))
@@ -166,7 +170,7 @@ def main() -> None:
     q = gradient_bg(S, S)
     accent_bar(q, 8)
     top = header(q, 0.62, 40, 30, compact=True)
-    picks = [PANELS[0], PANELS[3], PANELS[4], PANELS[5]]
+    picks = [PANELS[0], PANELS[7], PANELS[4], PANELS[8]]  # 01 Reader, 08 Startup, 05 tray, 09 portable prompt
     m, gap = 36, 24
     pw, ph = (S - 2 * m - gap) // 2, (S - top - m - gap) // 2
     for i, (f, n, label) in enumerate(picks):

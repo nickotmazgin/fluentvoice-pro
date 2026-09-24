@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.18** — Read Aloud / Clear buttons no longer show a wide gap after the icon; Settings stays on the tab you picked when you maximize or resize; no more stray "US"/"IL" letters where flag emoji can't render. Builds on v1.4.17 streaming Reader, **Check for Updates** (SHA-256 verified) and single-stream Stop. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
+> **Latest: v1.4.19** — **Start with Windows** for everyone, including the portable EXE: a one-time first-launch prompt plus a new **Startup & Shortcuts** card (switch, Create / Remove Desktop & Start Menu shortcuts). Portable shortcuts follow the folder if you move it. Uninstall now removes every right-click entry. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -23,52 +23,56 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Screenshots
 
-*FluentVoice Pro **v1.4.18** — click any image to view it full size.*
+*FluentVoice Pro **v1.4.19** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.4.18 collage](screenshots/v1.4.18/collage-v1.4.18.jpg)](screenshots/v1.4.18/collage-v1.4.18.jpg)
+[![FluentVoice Pro v1.4.19 collage](screenshots/v1.4.19/collage-v1.4.19.jpg)](screenshots/v1.4.19/collage-v1.4.19.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.18/01-settings-reader.png"><img src="screenshots/v1.4.18/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.4.19/01-settings-reader.png"><img src="screenshots/v1.4.19/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.18/02-settings-voice.png"><img src="screenshots/v1.4.18/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.4.19/02-settings-voice.png"><img src="screenshots/v1.4.19/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.18/03-settings-automation.png"><img src="screenshots/v1.4.18/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <a href="screenshots/v1.4.19/03-settings-automation.png"><img src="screenshots/v1.4.19/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
       <b>03</b> — Automation &amp; System
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.18/04-settings-about-updates.png"><img src="screenshots/v1.4.18/04-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
+      <a href="screenshots/v1.4.19/04-settings-about-updates.png"><img src="screenshots/v1.4.19/04-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
       <b>04</b> — About · Updates &amp; Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.18/05-tray-menu.png"><img src="screenshots/v1.4.18/05-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
+      <a href="screenshots/v1.4.19/05-tray-menu.png"><img src="screenshots/v1.4.19/05-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
       <b>05</b> — Tray right-click menu
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.18/06-desktop-icon-live.png"><img src="screenshots/v1.4.18/06-desktop-icon-live.png" width="260" alt="Desktop icon live"></a><br>
-      <b>06</b> — Desktop icon (live)
+      <a href="screenshots/v1.4.19/06-desktop-icon-live.png"><img src="screenshots/v1.4.19/06-desktop-icon-live.png" width="260" alt="Desktop icon"></a><br>
+      <b>06</b> — Desktop icon
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.18/07-tray-icon-closeup.png"><img src="screenshots/v1.4.18/07-tray-icon-closeup.png" width="260" alt="Tray icon closeup"></a><br>
-      <b>07</b> — Tray icon close-up
+      <a href="screenshots/v1.4.19/07-tray-icon-closeup.png"><img src="screenshots/v1.4.19/07-tray-icon-closeup.png" width="260" alt="Tray icon near the clock"></a><br>
+      <b>07</b> — Tray icon near the clock
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.18/08-settings-automation-updates.png"><img src="screenshots/v1.4.18/08-settings-automation-updates.png" width="260" alt="Automation: tray daemon &amp; updates"></a><br>
-      <b>08</b> — Automation · Tray &amp; Updates
+      <a href="screenshots/v1.4.19/08-settings-automation-updates.png"><img src="screenshots/v1.4.19/08-settings-automation-updates.png" width="260" alt="Automation: Startup &amp; Shortcuts"></a><br>
+      <b>08</b> — Automation · Startup &amp; Shortcuts
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.4.19/09-portable-first-launch.png"><img src="screenshots/v1.4.19/09-portable-first-launch.png" width="260" alt="Portable first launch prompt"></a><br>
+      <b>09</b> — Portable first launch
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.4.18.jpg](screenshots/v1.4.18/collage-v1.4.18.jpg)
+Full combined image (download): [collage-v1.4.19.jpg](screenshots/v1.4.19/collage-v1.4.19.jpg)
 
 ---
 
@@ -131,6 +135,8 @@ Requires **Python 3.10+** on PATH.
 1. Download **`FluentVoicePro-<ver>-portable-win64.zip`**.
 2. Extract anywhere.
 3. Unblock **`FluentVoicePro.exe`** if needed, then double-click to start the tray daemon.
+4. On first launch it asks once: **Start with Windows + add Desktop & Start Menu shortcuts?** Choose **Yes** and it comes back after every reboot, like the installed version.
+5. Change it any time in **Settings → Automation & System → Startup & Shortcuts** (Start with Windows switch, Create / Remove Shortcuts). If you move the folder, run `FluentVoicePro.exe` once from the new place and the shortcuts follow it.
 
 SmartScreen / App Control / firewall notes: [`docs/WINDOWS_TRUST.md`](docs/WINDOWS_TRUST.md).
 
