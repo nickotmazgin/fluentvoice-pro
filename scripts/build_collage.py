@@ -20,7 +20,7 @@ SRC = ROOT / "screenshots" / f"v{VERSION}"
 
 TITLE = "FluentVoice Pro™"
 SUBTITLE = "Windows 11 / 10 text-to-speech & read-aloud tray suite"
-HIGHLIGHTS = "Start with Windows (portable too)  •  Streaming Direct Text Reader  •  Check for Updates (SHA-256 verified)  •  Neural + offline voices"
+HIGHLIGHTS = "60 HD voices in 12 languages  •  Smart auto-route  •  Streaming Direct Text Reader  •  Start with Windows  •  SHA-256 verified updates"
 FOOTER = "Nick Otmazgin  •  github.com/nickotmazgin/fluentvoice-pro  •  MIT License"
 
 PANELS = [  # (file, number, label) in reading order
@@ -28,7 +28,7 @@ PANELS = [  # (file, number, label) in reading order
     ("02-settings-voice.png", "02", "Voice & Speech"),
     ("03-settings-automation.png", "03", "Automation & System"),
     ("04-settings-about-updates.png", "04", "About · Updates & Factory Reset"),
-    ("05-tray-menu.png", "05", "Tray right-click menu"),
+    ("05-tray-menu.png", "05", "Tray menu · voices per language"),
     ("06-desktop-icon-live.png", "06", "Desktop icon"),
     ("07-tray-icon-closeup.png", "07", "Tray icon near the clock"),
     ("08-settings-automation-updates.png", "08", "Automation · Startup & Shortcuts"),
