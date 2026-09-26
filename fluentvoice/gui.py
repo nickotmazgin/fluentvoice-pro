@@ -436,6 +436,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         chars = len(txt)
         detected = core.detect_language(txt)
         lang_str = voices.LANGUAGES.get(detected, "English/Latin")
+        # Hebrew / Arabic text reads right-aligned (the text box itself has no RTL layout).
+        tb = self.reader_textbox
+        tb.tag_config("rtl", justify="right")
+        if detected in voices.RTL_FAMILIES:
+            tb.tag_add("rtl", "1.0", "end")
+        else:
+            tb.tag_remove("rtl", "1.0", "end")
         self.reader_meta_lbl.configure(text=f"{words:,} words • {chars:,} chars • Lang: {lang_str}")
         self._refresh_reader_voice_label()
 
@@ -615,10 +622,36 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         curr_voice = self.cfg.get("voice", "en-US-AndrewMultilingualNeural")
         curr_label = self._label_for_voice(curr_voice, "Andrew Multilingual (US HD Male)")
 
+        # Language ▸ Voice: 12 languages, then only that language's voices (≤22, no scrolling).
+        pick_row = ctk.CTkFrame(voice_card, fg_color="transparent")
+        pick_row.pack(fill="x", padx=14, pady=(0, 6))
+        groups = self._voice_groups()
+        curr_group = self._group_of_label(curr_label)
+        self.lang_var = ctk.StringVar(value=curr_group)
+        self.lang_menu = ctk.CTkOptionMenu(
+            pick_row,
+            values=list(groups.keys()),
+            variable=self.lang_var,
+            command=self._on_voice_language_changed,
+            width=230,
+            height=36,
+            corner_radius=8,
+            fg_color="#1F2E45",
+            button_color="#00D2FF",
+            button_hover_color="#33DCFF",
+            text_color="#E6EDF3",
+            dropdown_fg_color="#121824",
+            dropdown_hover_color="#00D2FF",
+            dropdown_text_color="#E6EDF3",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            anchor="w",
+        )
+        self.lang_menu.pack(side="left", padx=(0, 8))
+
         self.voice_var = ctk.StringVar(value=curr_label)
         self.voice_menu = ctk.CTkOptionMenu(
-            voice_card,
-            values=list(self.voice_map.keys()),
+            pick_row,
+            values=groups.get(curr_group, [curr_label]),
             variable=self.voice_var,
             command=self._on_voice_changed,
             height=36,
@@ -633,7 +666,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=13, weight="bold"),
             anchor="w",
         )
-        self.voice_menu.pack(fill="x", padx=14, pady=(0, 6))
+        self.voice_menu.pack(side="left", fill="x", expand=True)
 
         self.offline_status_lbl = ctk.CTkLabel(
             voice_card,
@@ -810,6 +843,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         self.test_entry.pack(fill="x", padx=14, pady=(2, 8))
         self.test_entry.insert(0, voices.sample_text(self.cfg.get("voice", voices.DEFAULT_VOICE)))
+        self._align_test_entry(self.cfg.get("voice", voices.DEFAULT_VOICE))
 
         btn_row = ctk.CTkFrame(test_card, fg_color="transparent")
         btn_row.pack(fill="x", padx=14, pady=(0, 6))
@@ -1506,8 +1540,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     label = self._label_for_voice(want_voice)
                     self._syncing_from_disk = True
                     try:
-                        self.voice_var.set(label)
-                        self.voice_menu.set(label)
+                        self._show_voice(label)
                     finally:
                         self._syncing_from_disk = False
                     changed = True
@@ -1559,6 +1592,53 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.autosave_lbl.configure(text="✓ Settings Saved", text_color="#00D2FF")
         self.after(1600, lambda: self.autosave_lbl.configure(text="✓ All settings auto-saved", text_color="#8B949E"))
 
+    OFFLINE_GROUP = "Offline (Windows voices)"
+
+    def _voice_groups(self) -> dict:
+        """{'English': [labels…], …, 'Offline (Windows voices)': […]} in catalog order."""
+        groups = {name: [label for _, label in voices.voices_for(fam)] for fam, name in voices.LANGUAGES.items()}
+        catalog_labels = {label for _, label, _ in voices.CATALOG}
+        offline = [label for label in self.voice_map if label not in catalog_labels]
+        if offline:
+            groups[self.OFFLINE_GROUP] = offline
+        return groups
+
+    def _group_of_label(self, label: str) -> str:
+        for group, labels in self._voice_groups().items():
+            if label in labels:
+                return group
+        return voices.LANGUAGES["english"]
+
+    def _show_voice(self, label: str):
+        """Point both pickers at `label` without triggering a change."""
+        group = self._group_of_label(label)
+        self.lang_var.set(group)
+        self.voice_menu.configure(values=self._voice_groups().get(group, [label]))
+        self.voice_var.set(label)
+        self.voice_menu.set(label)
+
+    def _align_test_entry(self, voice_code: str):
+        rtl = voices.family_of(voice_code) in voices.RTL_FAMILIES
+        self.test_entry.configure(justify="right" if rtl else "left")
+
+    def _on_voice_language_changed(self, group):
+        labels = self._voice_groups().get(group, [])
+        if not labels:
+            return
+        current = self.voice_var.get()
+        if current in labels:
+            choice = current
+        else:  # the preferred voice for that language, else its first voice
+            fam = next((f for f, n in voices.LANGUAGES.items() if n == group), None)
+            pref = (self.cfg.get("preferred_voices") or {}).get(fam) if fam else None
+            pref_label = voices.label_for(pref) if pref else ""
+            choice = pref_label if pref_label in labels else labels[0]
+        self.voice_menu.configure(values=labels)
+        self.voice_var.set(choice)
+        self.voice_menu.set(choice)
+        if choice != current:
+            self._on_voice_changed(choice)
+
     def _on_voice_changed(self, choice):
         if self._syncing_from_disk:
             return
@@ -1577,6 +1657,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if not cur or cur in voices.SAMPLE_TEXT.values():
             self.test_entry.delete(0, "end")
             self.test_entry.insert(0, voices.sample_text(vcode))
+        self._align_test_entry(vcode)
         self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
     def _on_open_windows_speech_settings(self):
@@ -1614,7 +1695,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 try:
                     self.voice_map = build_full_voice_map()
                     if hasattr(self, "voice_menu"):
-                        self.voice_menu.configure(values=list(self.voice_map.keys()))
+                        self.lang_menu.configure(values=list(self._voice_groups().keys()))
+                        self._show_voice(self._label_for_voice(self.cfg.get("voice", voices.DEFAULT_VOICE)))
                 except Exception:
                     pass
 

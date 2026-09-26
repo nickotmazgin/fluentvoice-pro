@@ -45,7 +45,7 @@ Use after install or before cutting a release.
    - Portable EXE: tray → Settings / Reader / About open (not a second tray).
 
 9. **Voices & auto-route (v1.4.20+)**
-   - Voice & Speech: pick a non-English voice (e.g. Avri) → the test box switches to a Hebrew sample → **Speak Test Text** plays Avri.
+   - Voice & Speech: Language = Hebrew, Voice = Avri → the test box shows a right-aligned Hebrew sample → **Speak Test Text** plays Avri.
    - Direct Text Reader with Avri + English text → status shows `auto-routed for English text (your voice: Avri)`.
    - Ava Multilingual + a long Spanish paragraph → still Ava (no routing).
    - Automation & System → Preferred Voices lists 12 languages; tray → Neural Voices (World HD) has a submenu per language.
