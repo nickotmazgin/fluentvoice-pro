@@ -127,11 +127,16 @@ RETIRED = {
     "en-AU-WilliamNeural": "en-AU-WilliamMultilingualNeural",
 }
 
-# Default "Preview & Test Voice" sentence per language.
+# Right-to-left languages: Settings right-aligns their text.
+RTL_FAMILIES = {"hebrew", "arabic"}
+
+# Default "Preview & Test Voice" sentence per language. Hebrew/Arabic keep their
+# punctuation between RTL words and end without a period, so they also display
+# correctly in Tk's left-to-right text boxes.
 SAMPLE_TEXT = {
     "english": "Welcome to FluentVoice Pro! High-definition natural speech synthesis is active.",
-    "hebrew": "ברוכים הבאים ל-FluentVoice Pro! הקול הטבעי באיכות גבוהה פעיל.",
-    "arabic": "مرحبًا بك في FluentVoice Pro! الصوت الطبيعي عالي الجودة يعمل الآن.",
+    "hebrew": "ברוכים הבאים! הקול הטבעי של FluentVoice Pro פעיל באיכות גבוהה",
+    "arabic": "مرحبًا بك! الصوت الطبيعي من FluentVoice Pro يعمل بجودة عالية",
     "spanish": "¡Bienvenido a FluentVoice Pro! La voz natural en alta definición está activa.",
     "french": "Bienvenue dans FluentVoice Pro ! La voix naturelle haute définition est active.",
     "german": "Willkommen bei FluentVoice Pro! Die natürliche HD-Sprachausgabe ist aktiv.",

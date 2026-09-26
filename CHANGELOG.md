@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.21] - 2026-09-26
+
+### Changed
+- **Voice picker is now Language ▸ Voice.** The single 60-item dropdown only had tiny scroll arrows. Voice & Speech now has a Language menu (12 languages, plus your offline Windows voices) and a Voice menu listing only that language's voices; the longest, English, has 22 and fits on screen without scrolling. Switching language selects that language's Preferred Voice.
+
+### Fixed
+- **Hebrew and Arabic display right-to-left.** The test sentence for Hebrew/Arabic voices is right-aligned, and its wording now keeps punctuation where it displays correctly. The Direct Text Reader right-aligns text it detects as Hebrew or Arabic.
+
+New installs still start with **Andrew Multilingual** and the English test sentence. The test box follows the voice you choose.
+
 ## [1.4.20] - 2026-09-26
 
 ### Fixed

@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.20** — **60 HD voices in 12 languages** (male & female for each), smarter auto-route (Multilingual voices keep European languages, short snippets keep your voice, routing shown in the status), and the **voice test always plays the voice you pick**. Retired Microsoft voices migrate automatically. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
+> **Latest: v1.4.21** — **60 HD voices in 12 languages** with an easy **Language ▸ Voice** picker, smarter auto-route (routing shown in the status), a voice test that always plays the voice you pick, and proper right-to-left display for Hebrew & Arabic. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
