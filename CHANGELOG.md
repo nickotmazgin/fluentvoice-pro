@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.20] - 2026-09-26
+
+### Fixed
+- **"The test voice is always Andrew."** With a non-English voice selected (e.g. Avri) and English text, auto-route switched to the preferred English voice, so a non-English voice could never be heard in the test box. **Voice & Speech → Speak Test Text now always plays the voice you selected**, and the test sentence switches to that voice's language (Hebrew, Arabic, Russian, Japanese, …) unless you typed your own.
+- **Two voices Microsoft retired no longer fail silently.** *Davis* (US) and *William* (Australia) now fell back to the offline voice; saved settings move to *Christopher* and *William Multilingual* automatically.
+- **Korean text was treated as English** and **Chinese as Japanese**; both are now detected and routed correctly.
+- **Preferred Voices was missing languages** that the voice list and tray already had (Russian, Portuguese).
+
+### Changed
+- **Smarter auto-route:**
+  - A voice keeps its own language.
+  - **Multilingual** voices (Ava, Andrew, Brian, Emma, Vivienne, Remy, Florian, Seraphina, Giuseppe, Thalita, …) also keep English, Spanish, French, German, Italian and Portuguese.
+  - Latin-script snippets under 6 words keep your voice, because a language guess on a few words is unreliable.
+- **Routing is now visible:**
+  - The Reader status says `auto-routed for English text (your voice: Avri)`.
+  - The notification names both voices.
+  - `speech.log` records `routed_from=`.
+- **60 HD neural voices in 12 languages** (was 23 in 10), with a male and a female voice for every language. New: Christopher, Eric, Michelle, Thomas, Libby, Canadian, Irish and Indian English, Zariyah, Shakir, Salma, Elvira, Jorge, Denise, Remy, Vivienne, Antoine, Sylvie, Katja, Florian, Seraphina, Elsa, Giuseppe, Isabella, Francisca, Thalita, Duarte, Raquel, Svetlana, Nanami, Chinese (Yunxi, Xiaoxiao) and Korean (InJoon, Hyunsu, SunHi). All were verified to synthesize.
+- **Tray menu:** World HD voices are grouped per language.
+- **Preferred Voices card:** covers all 12 languages, with a clear explanation instead of the old "Avri vs Hila" tip.
+- **One voice catalog:** `fluentvoice/voices.py` is shared by Settings, the tray, auto-route and the voice test, so they can't drift apart again.
+- **Wording fixes:**
+  - "Markdown & PDF Text Cleaner" (it was labelled "AI"; the cleaner is rule-based).
+  - Factory Reset explains that Startup & Shortcuts aren't touched.
+  - "Ensure Tray Running" is named correctly in the tray status.
+  - The Explorer right-click entry is marked "installed version".
+  - "Local Windows Voices (Offline)" (was "Offline 0ms").
+  - The About projects list now matches the real repos.
+- **README:** RAM figure measured (~30–60 MB), and the "VBS launcher" and "0ms" wording removed.
+- Tests: 10 new (voice catalog, retired-voice migration, East-Asian detection, routing rules).
+
 ## [1.4.19] - 2026-09-24
 
 ### Added

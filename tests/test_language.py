@@ -56,4 +56,4 @@ def test_resolve_route_voice_uses_preferences():
     cfg["preferred_voices"]["hebrew"] = "he-IL-HilaNeural"
     voice, label = resolve_route_voice("hebrew", cfg)
     assert voice == "he-IL-HilaNeural"
-    assert "Hebrew" in label
+    assert label == "Hila"  # route label is the voice name now

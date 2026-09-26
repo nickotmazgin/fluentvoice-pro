@@ -19,8 +19,10 @@ from pathlib import Path
 
 try:
     from .config import APP_DIR, CACHE_DIR, load_config, save_config
+    from . import voices
 except (ImportError, ValueError):
     from config import APP_DIR, CACHE_DIR, load_config, save_config
+    import voices
 
 # ---------------------------------------------------------------------------
 # Speech diagnostics log (~/.fluentvoice/speech.log). Errors used to be swallowed
@@ -215,24 +217,35 @@ def stop_all_playback(*, notify: bool = True):
         trigger_notification("FluentVoice Pro", "⏹️ Speech stopped.", force=True)
 
 def detect_script(text: str) -> str:
-    """Script family from Unicode ranges: hebrew, arabic, cjk, cyrillic, or latin."""
+    """Script family from Unicode ranges: hebrew, arabic, cyrillic, cjk (Japanese),
+    chinese, korean, or latin."""
     if not text:
         return "latin"
 
-    counts = {"hebrew": 0, "arabic": 0, "cjk": 0, "cyrillic": 0, "latin": 0}
+    counts = {"hebrew": 0, "arabic": 0, "han": 0, "kana": 0, "korean": 0, "cyrillic": 0, "latin": 0}
     for ch in text:
         code = ord(ch)
         if 0x0590 <= code <= 0x05FF or 0xFB1D <= code <= 0xFB4F:
             counts["hebrew"] += 1
         elif 0x0600 <= code <= 0x06FF or 0x0750 <= code <= 0x077F:
             counts["arabic"] += 1
-        elif 0x4E00 <= code <= 0x9FFF or 0x3040 <= code <= 0x30FF:
-            counts["cjk"] += 1
+        elif 0x3040 <= code <= 0x30FF:
+            counts["kana"] += 1
+        elif 0x4E00 <= code <= 0x9FFF:
+            counts["han"] += 1
+        elif 0xAC00 <= code <= 0xD7AF or 0x1100 <= code <= 0x11FF or 0x3130 <= code <= 0x318F:
+            counts["korean"] += 1
         elif 0x0400 <= code <= 0x04FF:
             counts["cyrillic"] += 1
         elif (0x0041 <= code <= 0x005A) or (0x0061 <= code <= 0x007A) or (0x00C0 <= code <= 0x024F):
             counts["latin"] += 1
 
+    # Kanji + kana is Japanese; Han characters without kana are Chinese.
+    if counts["kana"]:
+        counts["cjk"] = counts.pop("kana") + counts.pop("han")
+    else:
+        counts.pop("kana")
+        counts["chinese"] = counts.pop("han")
     top_lang = max(counts, key=counts.get)
     if counts[top_lang] == 0:
         return "latin"
@@ -265,7 +278,8 @@ def _heuristic_latin_language(text: str) -> str:
 
 def detect_language(text: str) -> str:
     """Detect language for routing.
-    Returns: hebrew, arabic, cjk, cyrillic, english, spanish, french, german, italian.
+    Returns a voices.LANGUAGES key: english, hebrew, arabic, spanish, french, german,
+    italian, portuguese, cyrillic (Russian), cjk (Japanese), chinese or korean.
     """
     script = detect_script(text)
     if script != "latin":
@@ -289,8 +303,9 @@ def detect_language(text: str) -> str:
             "he": "hebrew",
             "ar": "arabic",
             "ja": "cjk",
-            "zh-cn": "cjk",
-            "zh-tw": "cjk",
+            "zh-cn": "chinese",
+            "zh-tw": "chinese",
+            "ko": "korean",
         }
         return mapping.get(code, "english")
     except Exception:
@@ -303,19 +318,31 @@ def resolve_route_voice(detected_lang: str, cfg: dict):
         "english" if detected_lang == "latin" else detected_lang
     )
     voice = prefs.get(key)
-    labels = {
-        "hebrew": "Hebrew HD",
-        "arabic": "Arabic HD",
-        "cjk": "Japanese/CJK HD",
-        "cyrillic": "Russian HD",
-        "spanish": "Spanish HD",
-        "french": "French HD",
-        "german": "German HD",
-        "italian": "Italian HD",
-        "portuguese": "Portuguese HD",
-        "english": "English HD",
-    }
-    return voice, labels.get(key, key)
+    return voice, (voices.short_name(voice) if voice else "")
+
+
+# Latin-script language guesses on a few words are unreliable ("Hola, OK" → Spanish?),
+# so switching between two Latin-script voices needs at least this many words.
+MIN_WORDS_TO_ROUTE_LATIN = 6
+
+
+def choose_voice(detected_lang: str, voice: str, cfg: dict, text: str):
+    """Auto-route decision. Returns (voice_to_use, routed: bool).
+
+    Keeps the chosen voice when it can read the language itself (same language, or a
+    Multilingual voice reading a Latin-script language) or when a short Latin-script
+    snippet can't be identified reliably. Otherwise uses the preferred voice for the
+    detected language.
+    """
+    if voices.can_read(voice, detected_lang):
+        return voice, False
+    if (detected_lang in voices.LATIN_FAMILIES and voices.family_of(voice) in voices.LATIN_FAMILIES
+            and len((text or "").split()) < MIN_WORDS_TO_ROUTE_LATIN):
+        return voice, False
+    route_voice, _ = resolve_route_voice(detected_lang, cfg)
+    if not route_voice or route_voice == voice:
+        return voice, False
+    return route_voice, True
 
 def clean_text_for_speech(text: str) -> str:
     """Advanced text sanitizer:
@@ -713,26 +740,7 @@ def _safe_remove(path):
 
 
 def _voice_family(voice: str) -> str:
-    v = (voice or "").lower()
-    if v.startswith("he-"):
-        return "hebrew"
-    if v.startswith("ar-"):
-        return "arabic"
-    if v.startswith(("ja-", "zh-", "ko-")):
-        return "cjk"
-    if v.startswith("ru-"):
-        return "cyrillic"
-    if v.startswith("es-"):
-        return "spanish"
-    if v.startswith("fr-"):
-        return "french"
-    if v.startswith("de-"):
-        return "german"
-    if v.startswith("it-"):
-        return "italian"
-    if v.startswith("pt-"):
-        return "portuguese"
-    return "english"
+    return voices.family_of(voice)
 
 def _emit(on_status, phase: str, **info):
     if on_status is None:
@@ -743,10 +751,14 @@ def _emit(on_status, phase: str, **info):
         pass
 
 
-def speak_text(raw_text: str, on_status=None) -> dict:
-    """Main thread-safe speech dispatcher. Returns status dictionary (see _speak_text_impl)."""
+def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None) -> dict:
+    """Main thread-safe speech dispatcher. Returns status dictionary (see _speak_text_impl).
+
+    auto_route=None follows the Settings switch; False plays exactly the chosen voice
+    (the Voice & Speech "Speak Test Text" button).
+    """
     try:
-        return _speak_text_impl(raw_text, on_status)
+        return _speak_text_impl(raw_text, on_status, auto_route)
     except Exception as e:
         _log.exception("speak_text crashed")
         _emit(on_status, "error", message=f"{type(e).__name__}: {e}")
@@ -755,11 +767,12 @@ def speak_text(raw_text: str, on_status=None) -> dict:
         _clear_heartbeat()
 
 
-def _speak_text_impl(raw_text: str, on_status=None) -> dict:
+def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | None = None) -> dict:
     """Speech pipeline.
 
     on_status(phase, info) is called (from this worker thread) as speech progresses:
-      "synthesizing" {voice, parts}           – contacting the neural engine
+      "synthesizing" {voice, parts, routed_from, lang} – contacting the neural engine
+                                               (routed_from = the chosen voice when auto-route switched it)
       "speaking"     {voice, mode, part, parts, pos_ms, len_ms}
       "fallback"     {reason}                 – cloud failed, switching to offline voice
       "done" / "aborted" / "error" {message}  – terminal states
@@ -787,40 +800,29 @@ def _speak_text_impl(raw_text: str, on_status=None) -> dict:
 
     # Smart Language Detection & Voice Routing
     detected_lang = detect_language(cleaned)
-    auto_route = cfg.get("auto_route_language", True)
+    auto_route = cfg.get("auto_route_language", True) if auto_route_override is None else auto_route_override
+    chosen_voice = voice
     routed = False
 
     if auto_route:
-        route_voice, route_label = resolve_route_voice(detected_lang, cfg)
-        active_family = _voice_family(voice)
-        if route_voice and detected_lang != active_family:
-            voice = route_voice
+        voice, routed = choose_voice(detected_lang, voice, cfg, cleaned)
+        if routed:
             engine = "neural"
-            routed = True
             trigger_notification(
                 "FluentVoice Pro",
-                f"🌐 {detected_lang.title()} detected: Auto-routed to {route_label}",
+                f"🌐 {voices.LANGUAGES.get(detected_lang, detected_lang.title())} text → reading with "
+                f"{voices.short_name(voice)} (your voice: {voices.short_name(chosen_voice)})",
             )
-    else:
+    elif auto_route_override is None:
         # Warn on script/voice mismatch when auto-routing is disabled
         voice_lang = _voice_family(voice)
         script = detect_script(cleaned)
-        non_latin = script in ("hebrew", "arabic", "cjk")
-        if non_latin and script != voice_lang:
-            names = {
-                "hebrew": "Hebrew",
-                "arabic": "Arabic",
-                "cjk": "Japanese/CJK",
-                "spanish": "Spanish",
-                "french": "French",
-                "german": "German",
-                "italian": "Italian",
-                "english": "English",
-                "latin": "English/Latin",
-            }
+        if script != "latin" and not voices.can_read(voice, script):
+            names = voices.LANGUAGES
             trigger_notification(
                 "FluentVoice Pro - Voice Notice",
-                f"ℹ️ {names.get(detected_lang, detected_lang)} text detected, but active voice is {names.get(voice_lang, voice_lang)}. Enable Smart Language Auto-Routing or switch voice."
+                f"ℹ️ {names.get(detected_lang, detected_lang)} text detected, but the active voice is "
+                f"{names.get(voice_lang, voice_lang)}. Turn on Smart Language Auto-Routing or switch voice."
             )
 
     with _engine_lock:
@@ -842,7 +844,8 @@ def _speak_text_impl(raw_text: str, on_status=None) -> dict:
         return {"status": "aborted", "mode": "superseded"}
 
     snippet = (cleaned[:45] + "...") if len(cleaned) > 45 else cleaned
-    _log.info("speak request gen=%d voice=%s engine=%s lang=%s chars=%d", my_gen, voice, engine, detected_lang, len(cleaned))
+    _log.info("speak request gen=%d voice=%s engine=%s lang=%s chars=%d%s", my_gen, voice, engine, detected_lang,
+              len(cleaned), f" routed_from={chosen_voice}" if routed else "")
 
     # Offline SAPI Mode (skip when auto-route forced a neural voice)
     if (not routed) and (engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower()):
@@ -869,7 +872,8 @@ def _speak_text_impl(raw_text: str, on_status=None) -> dict:
     # talking in ~1-2 s instead of waiting for the whole file (which looked "stuck").
     chunks = split_for_streaming(cleaned) or [cleaned]
     parts = len(chunks)
-    _emit(on_status, "synthesizing", voice=voice, parts=parts)
+    _emit(on_status, "synthesizing", voice=voice, parts=parts,
+          routed_from=chosen_voice if routed else "", lang=detected_lang)
 
     ready = queue.Queue(maxsize=2)
     tag = uuid.uuid4().hex[:8]
