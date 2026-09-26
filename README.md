@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.19** — **Start with Windows** for everyone, including the portable EXE: a one-time first-launch prompt plus a new **Startup & Shortcuts** card (switch, Create / Remove Desktop & Start Menu shortcuts). Portable shortcuts follow the folder if you move it. Uninstall now removes every right-click entry. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
+> **Latest: v1.4.20** — **60 HD voices in 12 languages** (male & female for each), smarter auto-route (Multilingual voices keep European languages, short snippets keep your voice, routing shown in the status), and the **voice test always plays the voice you pick**. Retired Microsoft voices migrate automatically. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -81,7 +81,7 @@ Full combined image (download): [collage-v1.4.19.jpg](screenshots/v1.4.19/collag
 FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System Tray Suite**.
 
 - **Not a browser extension:** It is not restricted to browser tabs. It works everywhere across Windows: Cursor, VS Code, Slack, PDF readers, Notepad, Office, File Explorer, and terminals.
-- **Not a bulky screen hog:** It runs quietly as an ultra-lean (<35 MB RAM) background daemon in your notification area next to the clock.
+- **Not a bulky screen hog:** It runs quietly as a light (~30–60 MB RAM) background daemon in your notification area next to the clock.
 - **Full Graphical Control Center:** When you want to tweak settings, adjust voice speed, or test voices, double-click the **FluentVoice Pro** desktop icon or right-click the tray to open the modern dark-themed Fluent Control Center.
 
 ---
@@ -90,19 +90,19 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
 - 📋 **Dedicated Direct Text Reader & Scratchpad:** Full-fledged scratchpad window in the Control Center to paste, review, and read long articles, PDFs, OCR texts, or code notes with live word/char counters and language tags.
-- 🌐 **Smart Language Auto-Routing:** Detects Hebrew, Arabic, Japanese/CJK, and Latin languages (Spanish, French, German, Italian, English) and switches to your preferred native HD voice (e.g. Avri vs Hila).
+- 🌐 **Smart Language Auto-Routing:** Detects 12 languages (English, Hebrew, Arabic, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean) and reads text in another language with your **Preferred Voice** for it (Automation & System). A voice always keeps its own language, **Multilingual** voices also keep English/Spanish/French/German/Italian/Portuguese, very short snippets keep your voice, and the **Voice & Speech test always plays the voice you picked**. The Reader status shows when a voice was auto-routed.
 - ⏳ **Streaming Playback & Live Status:** Long texts are synthesized in chunks, so audio starts in ~1–2 s while the rest is prepared. The Reader shows `Connecting… → 🔊 Speaking — voice • part 2/7 • 1:05 / 3:10 → ✔️ Finished`, with automatic offline fallback if the cloud voice stalls.
 - ⬆️ **Built-in Update Checker:** Tray menu **Check for Updates…**, Settings → **Automation & System → Updates** and **About & Developer → Updates**, a green header badge and a release-notes popup. Downloads come straight from GitHub Releases and are **SHA-256 verified**; then **🚀 Install Now** (you confirm) installs and restarts FluentVoice. Git clones are told to `git pull` instead. Once-a-day anonymous check, switchable off.
 - 🧹 **Advanced PDF, OCR & Niqqud Text Sanitizer:** Automatically repairs hyphenated line wraps from PDF copy-pastes, normalizes Unicode (NFKC), strips invisible zero-width and bidirectional markers, and cleans code blocks and markdown.
 - 🎛️ **Modern Fluent UI Control Center:** Dark Fluent UI with voices, pitch, **volume**, speed, preferred auto-route voices, tray ensure/restart, and automation.
 - ⌨️ **Global Hotkey:** Configurable chord (default `Ctrl+Shift+Space`) toggles speak/stop from any app.
 - 🔔 **Windows Toast & Popup Notifications:** Sleek native Windows notification popups for voice changes, auto-read toggle events, and active speech playback—fully configurable in settings.
-- 🗣️ **Ultra HD Multilingual Voices (English, Hebrew & World Languages):** Studio-grade Microsoft Neural voices (`Andrew`, `Ava`, `Jenny`, `Guy`, `Ryan`, `Sonia`, `Avri`, `Hila`, `Alvaro`, `Henri`, `Conrad`, `Diego`, `Hamed`, `Keita`) with lifelike inflections.
+- 🗣️ **60 HD Neural Voices in 12 Languages:** Microsoft Neural voices with a male *and* female option for every language — e.g. `Andrew`, `Ava`, `Christopher`, `Jenny`, `Sonia`, `Ryan`, `Avri`, `Hila`, `Hamed`, `Zariyah`, `Alvaro`, `Elvira`, `Henri`, `Denise`, `Conrad`, `Katja`, `Diego`, `Isabella`, `Antonio`, `Francisca`, `Dmitry`, `Svetlana`, `Keita`, `Nanami`, `Yunxi`, `Xiaoxiao`, `InJoon`, `SunHi` — including US, UK, Australian, Canadian, Irish and Indian English. The **Preview & Test Voice** box switches to a sample sentence in the selected voice's language.
 - ⚡ **Dynamic Offline Voice Discovery:** Automatically enumerates every SAPI5/OneCore voice installed on your system. Plus, a 1-click button to install more offline language packs via Windows Settings.
-- 📋 **Configurable Debounced Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an adjustable stability buffer (0.3s to 1.5s).
+- 📋 **Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an adjustable stability buffer (0.3s to 1.5s).
 - 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus and escaped Win32 menu accelerators.
 - 🖥️ **Single Unified Desktop Shortcut & Tray Revive:** Desktop launcher opens Control Center and **Close to Tray** / **Ensure Tray** bring the icon back after Exit.
-- 🚀 **Silent Headless Boot:** Auto-starts silently on Windows login through a background VBS launcher—zero flashing terminal windows.
+- 🚀 **Start with Windows:** Starts silently at sign-in (no console window) — the installer sets it up, the portable EXE asks once on first launch, and **Settings → Automation & System → Startup & Shortcuts** has the switch.
 - ✅ **Smoke checklist:** See [`docs/SMOKE_TEST.md`](docs/SMOKE_TEST.md) for a 2-minute release verification path.
 
 ---
@@ -190,7 +190,7 @@ python -m fluentvoice.installer
          ┌─────────┴─────────┐
          ▼                   ▼
   [ Neural Engine ]   [ Local SAPI/OneCore ]
-  (Edge HD, chunked    (Instant 0ms Offline)
+  (Edge HD, chunked    (Offline, no network) 
    streaming, 15s          │
    no-response timeout)    │
          │                   │

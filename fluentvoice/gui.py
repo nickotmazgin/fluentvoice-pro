@@ -13,7 +13,7 @@ import customtkinter as ctk
 
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from fluentvoice import config, core
+from fluentvoice import config, core, voices
 from fluentvoice import __version__ as APP_VERSION
 
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
@@ -21,41 +21,14 @@ GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
 GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
 
-BASE_VOICE_MAP = {
-    # English (US) HD Neural
-    "Andrew Multilingual (US HD Male)": "en-US-AndrewMultilingualNeural",
-    "Ava Multilingual (US HD Female)": "en-US-AvaMultilingualNeural",
-    "Brian Multilingual (US HD Casual)": "en-US-BrianMultilingualNeural",
-    "Emma Multilingual (US HD Expressive)": "en-US-EmmaMultilingualNeural",
-    "Jenny (US HD Studio Female)": "en-US-JennyNeural",
-    "Guy (US HD Studio Male)": "en-US-GuyNeural",
-    "Aria (US HD Friendly Female)": "en-US-AriaNeural",
-    "Davis (US HD Narration Male)": "en-US-DavisNeural",
-    # English (UK / AU) HD Neural
-    "Ryan (UK HD British Male)": "en-GB-RyanNeural",
-    "Sonia (UK HD British Female)": "en-GB-SoniaNeural",
-    "William (AU HD Australian Male)": "en-AU-WilliamNeural",
-    "Natasha (AU HD Australian Female)": "en-AU-NatashaNeural",
-    # Hebrew HD Neural
-    "Avri (Hebrew HD Male)": "he-IL-AvriNeural",
-    "Hila (Hebrew HD Female)": "he-IL-HilaNeural",
-    # World Languages HD Neural
-    "Alvaro (Spanish HD Spain)": "es-ES-AlvaroNeural",
-    "Dalia (Spanish HD Mexico)": "es-MX-DaliaNeural",
-    "Henri (French HD France)": "fr-FR-HenriNeural",
-    "Conrad (German HD Germany)": "de-DE-ConradNeural",
-    "Diego (Italian HD Italy)": "it-IT-DiegoNeural",
-    "Antonio (Portuguese HD Brazil)": "pt-BR-AntonioNeural",
-    "Dmitry (Russian HD Male)": "ru-RU-DmitryNeural",
-    "Hamed (Arabic HD Saudi Arabia)": "ar-SA-HamedNeural",
-    "Keita (Japanese HD Japan)": "ja-JP-KeitaNeural",
-}
+# Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
+BASE_VOICE_MAP = {label: vid for vid, label, _ in voices.CATALOG}
 
 def build_full_voice_map():
     vm = BASE_VOICE_MAP.copy()
     installed = core.get_installed_sapi_voices()
     for label, desc in installed:
-        vm[f"{label} (Offline 0ms)"] = desc
+        vm[f"{label} (Offline)"] = desc
     return vm
 
 def focus_existing_settings_window(preferred_tab: str | None = None) -> bool:
@@ -431,7 +404,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _format_reader_voice_label(self) -> str:
         curr_voice = config.load_config().get("voice", "en-US-AndrewMultilingualNeural")
         label = self._label_for_voice(curr_voice)
-        auto = " • Smart auto-route ON" if self.cfg.get("auto_route_language", True) else ""
+        auto = (" • Smart auto-route ON: other languages use your Preferred Voices"
+                if self.cfg.get("auto_route_language", True) else " • Auto-route OFF")
         return f"🎙 Active reading voice: {label}{auto}"
 
     def _refresh_reader_voice_label(self):
@@ -442,7 +416,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._select_tab("Voice & Speech")
         if hasattr(self, "test_status_lbl"):
             self.test_status_lbl.configure(
-                text="Pick any voice below — it applies to Direct Text Reader, tray, and auto-read.",
+                text="Pick a voice below. It is used by the Reader, tray and Auto-Read (other languages follow your Preferred Voices while auto-route is on).",
                 text_color="#00D2FF"
             )
 
@@ -461,20 +435,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         words = len(txt.split()) if txt else 0
         chars = len(txt)
         detected = core.detect_language(txt)
-        lang_names = {
-            "hebrew": "Hebrew",
-            "arabic": "Arabic",
-            "cjk": "Japanese/CJK",
-            "cyrillic": "Russian/Cyrillic",
-            "english": "English",
-            "spanish": "Spanish",
-            "french": "French",
-            "german": "German",
-            "italian": "Italian",
-            "portuguese": "Portuguese",
-            "latin": "English/Latin 🌐",
-        }
-        lang_str = lang_names.get(detected, "Universal 🌐")
+        lang_str = voices.LANGUAGES.get(detected, "English/Latin")
         self.reader_meta_lbl.configure(text=f"{words:,} words • {chars:,} chars • Lang: {lang_str}")
         self._refresh_reader_voice_label()
 
@@ -518,7 +479,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 return label.split(" (")[0]
         return voice_code
 
-    def _start_speech(self, txt, status_lbl, button, idle_text):
+    def _start_speech(self, txt, status_lbl, button, idle_text, auto_route=None):
         import queue as _queue
         self._finish_speech_ui()  # restore any previous button
         self._speech_token = getattr(self, "_speech_token", 0) + 1
@@ -526,7 +487,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._speech_ui = {
             "token": token, "lbl": status_lbl, "btn": button, "idle": idle_text,
             "queue": _queue.Queue(), "t0": __import__("time").time(), "phase": "synthesizing",
-            "voice": "", "parts": 1,
+            "voice": "", "parts": 1, "routed": "",
         }
         try:
             button.configure(text="⏳ Working…", state="disabled")
@@ -541,7 +502,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         def worker():
             try:
-                res = core.speak_text(txt, on_status=on_status)
+                res = core.speak_text(txt, on_status=on_status, auto_route=auto_route)
             except Exception as e:  # never leave the UI spinning
                 res = {"status": "error", "message": f"{type(e).__name__}: {e}"}
             q.put(("__result__", res if isinstance(res, dict) else {}))
@@ -568,6 +529,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             if phase == "synthesizing":
                 ui["voice"] = self._voice_short_label(info.get("voice", ""))
                 ui["parts"] = info.get("parts", 1)
+                if info.get("routed_from"):
+                    lang = voices.LANGUAGES.get(info.get("lang", ""), "other-language")
+                    ui["routed"] = f" • auto-routed for {lang} text (your voice: {voices.short_name(info['routed_from'])})"
             elif phase == "speaking":
                 ui["voice"] = self._voice_short_label(info.get("voice", "")) or ui["voice"]
                 ui["speak_info"] = info
@@ -581,7 +545,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if final is not None:
             status = final.get("status")
             if status == "success":
-                lbl.configure(text=f"✔ Finished reading • {ui['voice'] or 'voice'} • {self._fmt_ms(elapsed * 1000)}", text_color="#3FB950")
+                lbl.configure(text=f"✔ Finished reading • {ui['voice'] or 'voice'} • {self._fmt_ms(elapsed * 1000)}{ui['routed']}", text_color="#3FB950")
             elif status == "fallback":
                 lbl.configure(text="ℹ Cloud voice unreachable → finished with Windows offline voice", text_color="#E3B341")
             elif status == "aborted":
@@ -605,7 +569,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 pos = info.get("pos_ms", 0)
                 ln = info.get("len_ms", 0)
                 clock = f"{self._fmt_ms(pos)} / {self._fmt_ms(ln)}" if ln else self._fmt_ms(pos)
-                lbl.configure(text=f"🔊 Speaking — {ui['voice']} (HD neural){part} • {clock}", text_color="#3FB950")
+                lbl.configure(text=f"🔊 Speaking — {ui['voice']} (HD neural){part} • {clock}{ui['routed']}", text_color="#3FB950")
             try:
                 ui["btn"].configure(text="🔊 Speaking…")
             except Exception:
@@ -673,7 +637,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.offline_status_lbl = ctk.CTkLabel(
             voice_card,
-            text="Applies everywhere (Reader, tray, Auto-Read). Use the button below to install Windows offline speech packs.",
+            text="Used everywhere (Reader, tray, Auto-Read). With Smart Auto-Routing on, text in another "
+                 "language is read by that language's Preferred Voice (Automation & System). "
+                 "Multilingual voices read English, Spanish, French, German, Italian and Portuguese themselves.",
             font=ctk.CTkFont(size=12),
             text_color="#C9D1D9",
             wraplength=860,
@@ -843,7 +809,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             fg_color="#0D131D"
         )
         self.test_entry.pack(fill="x", padx=14, pady=(2, 8))
-        self.test_entry.insert(0, "Welcome to FluentVoice Pro! High-definition natural speech synthesis is active.")
+        self.test_entry.insert(0, voices.sample_text(self.cfg.get("voice", voices.DEFAULT_VOICE)))
 
         btn_row = ctk.CTkFrame(test_card, fg_color="transparent")
         btn_row.pack(fill="x", padx=14, pady=(0, 6))
@@ -946,7 +912,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         lang = self._section_card(scroll, "Language & Text Cleaning")
         self.switch_autoroute = ctk.CTkSwitch(
             lang,
-            text="Smart Language Auto-Routing (Hebrew, Arabic, Spanish, French, ...)",
+            text="Smart Language Auto-Routing (reads each language with its Preferred Voice below)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_autoroute
@@ -957,7 +923,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.switch_markdown = ctk.CTkSwitch(
             lang,
-            text="AI Markdown & PDF Cleaner (code blocks, URLs, OCR line breaks)",
+            text="Markdown & PDF Text Cleaner (code blocks, URLs, OCR line breaks)",
             font=ctk.CTkFont(size=13),
             progress_color="#00D2FF",
             command=self._on_toggle_markdown
@@ -1029,57 +995,36 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         pref = self._section_card(scroll, "Preferred Voices (Auto-Route)")
         ctk.CTkLabel(
             pref,
-            text="When a language is detected, use this voice instead of the active profile:",
+            text="When Smart Language Auto-Routing is on and the text is in another language than your "
+                 "active voice, FluentVoice reads it with the voice you pick here:",
             font=ctk.CTkFont(size=11),
-            text_color="#8B949E"
+            text_color="#8B949E",
+            wraplength=860,
+            justify="left",
         ).pack(anchor="w", padx=16, pady=(0, 6))
 
         self._pref_combos = {}
-        pref_choices = {
-            "hebrew": [("Avri (Hebrew HD Male)", "he-IL-AvriNeural"), ("Hila (Hebrew HD Female)", "he-IL-HilaNeural")],
-            "english": [
-                ("Andrew Multilingual", "en-US-AndrewMultilingualNeural"),
-                ("Ava Multilingual", "en-US-AvaMultilingualNeural"),
-                ("Jenny (Studio)", "en-US-JennyNeural"),
-                ("Guy (Studio)", "en-US-GuyNeural"),
-            ],
-            "spanish": [("Alvaro (Spain)", "es-ES-AlvaroNeural"), ("Dalia (Mexico)", "es-MX-DaliaNeural")],
-            "french": [("Henri (France)", "fr-FR-HenriNeural")],
-            "german": [("Conrad (Germany)", "de-DE-ConradNeural")],
-            "italian": [("Diego (Italy)", "it-IT-DiegoNeural")],
-            "arabic": [("Hamed (Saudi)", "ar-SA-HamedNeural")],
-            "cjk": [("Keita (Japanese)", "ja-JP-KeitaNeural")],
-        }
-        labels = {
-            "hebrew": "Hebrew",
-            "english": "English",
-            "spanish": "Spanish",
-            "french": "French",
-            "german": "German",
-            "italian": "Italian",
-            "arabic": "Arabic",
-            "cjk": "Japanese / CJK",
-        }
         prefs = self.cfg.get("preferred_voices") or {}
-        for lang_key, options in pref_choices.items():
+        for lang_key, lang_name in voices.LANGUAGES.items():
+            options = voices.voices_for(lang_key)  # [(voice id, label)]
             row = ctk.CTkFrame(pref, fg_color="transparent")
             row.pack(fill="x", padx=16, pady=2)
             ctk.CTkLabel(
                 row,
-                text=f"{labels[lang_key]}:",
+                text=f"{lang_name}:",
                 width=110,
                 anchor="w",
                 font=ctk.CTkFont(size=12),
                 text_color="#C9D1D9"
             ).pack(side="left")
-            display_names = [o[0] for o in options]
-            code_by_name = {o[0]: o[1] for o in options}
-            name_by_code = {o[1]: o[0] for o in options}
+            code_by_name = {label: vid for vid, label in options}
+            name_by_code = {vid: label for vid, label in options}
             combo = ctk.CTkComboBox(
                 row,
-                values=display_names,
-                width=280,
+                values=[label for _, label in options],
+                width=380,
                 height=28,
+                state="readonly",
                 font=ctk.CTkFont(size=12),
                 dropdown_font=ctk.CTkFont(size=12),
                 fg_color="#0D131D",
@@ -1090,15 +1035,19 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 dropdown_hover_color="#00D2FF",
                 command=lambda choice, k=lang_key, m=code_by_name: self._on_pref_voice(k, m.get(choice, ""))
             )
-            current_code = prefs.get(lang_key, options[0][1])
-            combo.set(name_by_code.get(current_code, options[0][0]))
+            current_code = voices.current_id(prefs.get(lang_key, voices.DEFAULT_PREFERRED[lang_key]))
+            combo.set(name_by_code.get(current_code, options[0][1]))
             combo.pack(side="left", padx=(4, 0))
             self._pref_combos[lang_key] = combo
         ctk.CTkLabel(
             pref,
-            text="Tip: Avri vs Hila, Alvaro vs Dalia — auto-route uses your pick.",
+            text="Tip: a voice reads its own language as-is. Multilingual voices also keep English, "
+                 "Spanish, French, German, Italian and Portuguese. Very short snippets keep your "
+                 "active voice. The Voice & Speech test always uses the voice you selected.",
             font=ctk.CTkFont(size=11),
-            text_color="#8B949E"
+            text_color="#8B949E",
+            wraplength=860,
+            justify="left",
         ).pack(anchor="w", padx=16, pady=(6, 12))
 
         # --- Tray daemon ---
@@ -1208,7 +1157,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.update_status_lbl_sys.pack(side="left", fill="x", expand=True)
         ctk.CTkLabel(
             upd,
-            text="Auto-check (daily) and Skip-version live in About & Developer → Updates.",
+            text="Daily auto-check and \"Skip This Version\" are in About & Developer → Updates.",
             font=ctk.CTkFont(size=11),
             text_color="#8B949E",
         ).pack(anchor="w", padx=16, pady=(0, 12))
@@ -1224,7 +1173,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             "• Start Menu → FluentVoice Pro — optional Stop / Restart Tray / Reader shortcuts.\n"
             "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
             "• Start with Windows — Startup & Shortcuts card above (tray icon at every sign-in).\n"
-            "• Explorer — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
+            "• Explorer (installed version) — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
         )
         ctk.CTkLabel(
             tips,
@@ -1271,9 +1220,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(anchor="w", padx=16, pady=(4, 2))
 
         projects = (
-            "• FluentVoice Pro™ — Native Windows 11 Text-to-Speech & Background Voice Suite\n"
-            "• ClipFlow Pro — Advanced Clipboard Synchronization Daemon\n"
-            "• Linux Desktop Infrastructure & Kernel Performance Tooling"
+            "• FluentVoice Pro™ — Windows 11/10 text-to-speech & read-aloud tray suite\n"
+            "• ClipFlow Pro — clipboard history manager for GNOME Shell\n"
+            "• Comfort Control (EaseHub) — GNOME Shell panel menu for power, screenshots & updates\n"
+            "• Linux Numeric Date & Clock — numeric date and 24-hour clock for the GNOME top bar"
         )
         ctk.CTkLabel(card, text=projects, font=ctk.CTkFont(size=12), text_color="#C9D1D9", justify="left").pack(anchor="w", padx=16, pady=(0, 10))
 
@@ -1622,6 +1572,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._trigger_autosave_indicator()
         self._refresh_reader_voice_label()
         core.trigger_notification("FluentVoice Pro", f"🗣 Voice selected: {choice}")
+        # Swap the preview sentence to the new voice's language unless the user typed their own.
+        cur = self.test_entry.get().strip()
+        if not cur or cur in voices.SAMPLE_TEXT.values():
+            self.test_entry.delete(0, "end")
+            self.test_entry.insert(0, voices.sample_text(vcode))
         self.test_status_lbl.configure(text=f"Selected voice: {choice}", text_color="#00D2FF")
 
     def _on_open_windows_speech_settings(self):
@@ -1718,7 +1673,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             "Restore Factory Settings",
             "Reset ALL FluentVoice Pro settings to factory defaults?\n\n"
             "This restores voice, speed, pitch, volume, hotkey, automation toggles,\n"
-            "notifications, debounce, and preferred language voices.\n\n"
+            "notifications, the Auto-Read stability buffer and Preferred Voices.\n"
+            "Start with Windows and your shortcuts are not changed.\n\n"
             "This cannot be undone.",
             parent=self,
         )
@@ -1790,7 +1746,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     )
                 else:
                     self.tray_status_lbl.configure(
-                        text="○ Tray is not running — use Ensure Tray or Close to Tray to revive it",
+                        text="○ Tray is not running — click Ensure Tray Running to start it",
                         text_color="#F85149"
                     )
         except Exception:
@@ -1934,8 +1890,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _on_test_speak(self):
         txt = self.test_entry.get().strip()
         if not txt:
-            txt = "Testing voice synthesis with FluentVoice Pro."
-        self._start_speech(txt, self.test_status_lbl, self.btn_speak, "▶  Speak Test Text")
+            txt = voices.sample_text(self.cfg.get("voice", ""))
+        # Always the selected voice: auto-route would swap it when the text's language differs.
+        self._start_speech(txt, self.test_status_lbl, self.btn_speak, "▶  Speak Test Text", auto_route=False)
 
     def _on_test_stop(self):
         core.stop_all_playback()

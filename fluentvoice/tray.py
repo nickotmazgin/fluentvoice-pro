@@ -19,7 +19,7 @@ import logging
 
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from fluentvoice import config, core
+from fluentvoice import config, core, voices
 from fluentvoice.config import load_config, save_config
 
 LOG_DIR = Path.home() / ".fluentvoice"
@@ -409,6 +409,13 @@ class FluentVoiceTrayApp:
             self.notify_user("FluentVoice Pro", f"🗣️ Voice selected: {label}")
         return _inner
 
+    def _voice_items(self, family):
+        """Tray menu items for one language, from the shared catalog (fluentvoice/voices.py)."""
+        return [
+            item(label, self.set_voice(vid, label), checked=self.is_voice_checked(vid))
+            for vid, label in voices.voices_for(family)
+        ]
+
     def is_voice_checked(self, voice_name):
         def _inner(item):
             return load_config().get("voice", "") == voice_name
@@ -658,36 +665,13 @@ class FluentVoiceTrayApp:
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
             item("🔔 Windows Notifications", self.toggle_notifications, checked=self.is_notifications_checked),
             pystray.Menu.SEPARATOR,
-            item("🗣 Neural Voices (English HD)", pystray.Menu(
-                item("Andrew Multilingual (US HD Male)", self.set_voice("en-US-AndrewMultilingualNeural", "Andrew Multilingual (US)"), checked=self.is_voice_checked("en-US-AndrewMultilingualNeural")),
-                item("Ava Multilingual (US HD Female)", self.set_voice("en-US-AvaMultilingualNeural", "Ava Multilingual (US)"), checked=self.is_voice_checked("en-US-AvaMultilingualNeural")),
-                item("Brian Multilingual (US HD Casual)", self.set_voice("en-US-BrianMultilingualNeural", "Brian Multilingual (US)"), checked=self.is_voice_checked("en-US-BrianMultilingualNeural")),
-                item("Emma Multilingual (US HD Expressive)", self.set_voice("en-US-EmmaMultilingualNeural", "Emma Multilingual (US)"), checked=self.is_voice_checked("en-US-EmmaMultilingualNeural")),
-                item("Aria (US HD Friendly Female)", self.set_voice("en-US-AriaNeural", "Aria (US)"), checked=self.is_voice_checked("en-US-AriaNeural")),
-                item("Davis (US HD Narration Male)", self.set_voice("en-US-DavisNeural", "Davis (US)"), checked=self.is_voice_checked("en-US-DavisNeural")),
-                item("Jenny (US Studio Professional Female)", self.set_voice("en-US-JennyNeural", "Jenny (US Studio)"), checked=self.is_voice_checked("en-US-JennyNeural")),
-                item("Guy (US Studio Professional Male)", self.set_voice("en-US-GuyNeural", "Guy (US Studio)"), checked=self.is_voice_checked("en-US-GuyNeural")),
-                item("Ryan (UK British Natural Male)", self.set_voice("en-GB-RyanNeural", "Ryan (UK)"), checked=self.is_voice_checked("en-GB-RyanNeural")),
-                item("Sonia (UK British Natural Female)", self.set_voice("en-GB-SoniaNeural", "Sonia (UK)"), checked=self.is_voice_checked("en-GB-SoniaNeural")),
-                item("William (AU Australian Male)", self.set_voice("en-AU-WilliamNeural", "William (AU)"), checked=self.is_voice_checked("en-AU-WilliamNeural")),
-                item("Natasha (AU Australian Female)", self.set_voice("en-AU-NatashaNeural", "Natasha (AU)"), checked=self.is_voice_checked("en-AU-NatashaNeural")),
-            )),
-            item("🎙 Neural Voices (Hebrew HD)", pystray.Menu(
-                item("Avri (Hebrew Natural Male)", self.set_voice("he-IL-AvriNeural", "Avri (Hebrew)"), checked=self.is_voice_checked("he-IL-AvriNeural")),
-                item("Hila (Hebrew Natural Female)", self.set_voice("he-IL-HilaNeural", "Hila (Hebrew)"), checked=self.is_voice_checked("he-IL-HilaNeural")),
-            )),
-            item("🌍 Neural Voices (World HD)", pystray.Menu(
-                item("Alvaro (Spanish Spain)", self.set_voice("es-ES-AlvaroNeural", "Alvaro (Spanish)"), checked=self.is_voice_checked("es-ES-AlvaroNeural")),
-                item("Dalia (Spanish Mexico)", self.set_voice("es-MX-DaliaNeural", "Dalia (Spanish Mexico)"), checked=self.is_voice_checked("es-MX-DaliaNeural")),
-                item("Henri (French France)", self.set_voice("fr-FR-HenriNeural", "Henri (French)"), checked=self.is_voice_checked("fr-FR-HenriNeural")),
-                item("Conrad (German Germany)", self.set_voice("de-DE-ConradNeural", "Conrad (German)"), checked=self.is_voice_checked("de-DE-ConradNeural")),
-                item("Diego (Italian Italy)", self.set_voice("it-IT-DiegoNeural", "Diego (Italian)"), checked=self.is_voice_checked("it-IT-DiegoNeural")),
-                item("Antonio (Portuguese Brazil)", self.set_voice("pt-BR-AntonioNeural", "Antonio (Portuguese BR)"), checked=self.is_voice_checked("pt-BR-AntonioNeural")),
-                item("Dmitry (Russian)", self.set_voice("ru-RU-DmitryNeural", "Dmitry (Russian)"), checked=self.is_voice_checked("ru-RU-DmitryNeural")),
-                item("Hamed (Arabic Saudi Arabia)", self.set_voice("ar-SA-HamedNeural", "Hamed (Arabic)"), checked=self.is_voice_checked("ar-SA-HamedNeural")),
-                item("Keita (Japanese Japan)", self.set_voice("ja-JP-KeitaNeural", "Keita (Japanese)"), checked=self.is_voice_checked("ja-JP-KeitaNeural")),
-            )),
-            item("💻 Local Windows Voices (Offline 0ms)", pystray.Menu(*offline_items)),
+            item("🗣 Neural Voices (English HD)", pystray.Menu(*self._voice_items("english"))),
+            item("🎙 Neural Voices (Hebrew HD)", pystray.Menu(*self._voice_items("hebrew"))),
+            item("🌍 Neural Voices (World HD)", pystray.Menu(*[
+                item(name, pystray.Menu(*self._voice_items(fam)))
+                for fam, name in voices.LANGUAGES.items() if fam not in ("english", "hebrew")
+            ])),
+            item("💻 Local Windows Voices (Offline)", pystray.Menu(*offline_items)),
             pystray.Menu.SEPARATOR,
             item("ℹ️ About && Credits (Nick Otmazgin)...", self.on_open_about),
             item("💖 Donate && Support (PayPal)...", self.on_open_paypal),

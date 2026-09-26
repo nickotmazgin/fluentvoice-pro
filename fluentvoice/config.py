@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from . import voices
+
 APP_DIR = Path.home() / ".fluentvoice"
 APP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -10,18 +12,7 @@ CONFIG_FILE = APP_DIR / "config.json"
 CACHE_DIR = APP_DIR / "cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-DEFAULT_PREFERRED_VOICES = {
-    "english": "en-US-AndrewMultilingualNeural",
-    "hebrew": "he-IL-AvriNeural",
-    "arabic": "ar-SA-HamedNeural",
-    "cjk": "ja-JP-KeitaNeural",
-    "cyrillic": "ru-RU-DmitryNeural",
-    "spanish": "es-ES-AlvaroNeural",
-    "french": "fr-FR-HenriNeural",
-    "german": "de-DE-ConradNeural",
-    "italian": "it-IT-DiegoNeural",
-    "portuguese": "pt-BR-AntonioNeural",
-}
+DEFAULT_PREFERRED_VOICES = dict(voices.DEFAULT_PREFERRED)
 
 DEFAULT_CONFIG = {
     "engine": "neural",  # 'neural' or 'offline'
@@ -59,6 +50,9 @@ def load_config() -> dict:
                     cfg["preferred_voices"] = merged
         except Exception:
             pass
+    # Voices Microsoft retired (e.g. Davis, William AU) → closest current voice.
+    cfg["voice"] = voices.current_id(cfg.get("voice", voices.DEFAULT_VOICE))
+    cfg["preferred_voices"] = {k: voices.current_id(v) for k, v in cfg["preferred_voices"].items()}
     return cfg
 
 def save_config(cfg: dict):
