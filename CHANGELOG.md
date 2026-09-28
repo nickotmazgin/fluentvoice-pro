@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.23] - 2026-09-28
+
+### Fixed
+- **Toasts could still say "Python" after installing v1.4.22.** The installer created the Start Menu shortcut **FluentVoice Pro** but could not write the app identity into it (the shortcut was opened read-only), and the error was silently ignored. It is now written correctly, and a failure is reported instead of hidden. Run the installer again (or use the portable EXE's setup) to fix an existing install.
+- New test: writes the identity onto a real shortcut and reads it back.
+
 ## [1.4.22] - 2026-09-28
 
 ### Fixed

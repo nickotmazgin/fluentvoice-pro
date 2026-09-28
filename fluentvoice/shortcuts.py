@@ -94,7 +94,7 @@ def _stamp_aumid(path: Path) -> None:
     pythoncom.CoInitialize()
     link = pythoncom.CoCreateInstance(shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
     persist = link.QueryInterface(pythoncom.IID_IPersistFile)
-    persist.Load(str(path))
+    persist.Load(str(path), 2)  # STGM_READWRITE: the default read-only load rejects SetValue
     store = link.QueryInterface(propsys.IID_IPropertyStore)
     store.SetValue(pscon.PKEY_AppUserModel_ID, propsys.PROPVARIANTType(AUMID, pythoncom.VT_LPWSTR))
     store.Commit()
@@ -187,8 +187,8 @@ def create_shortcuts() -> list[Path]:
         made.append(_write_lnk(sm / name, (flag,), desc))
     try:
         _stamp_aumid(sm / IDENTITY_LNK)
-    except Exception:
-        pass
+    except Exception as e:  # toasts fall back to the process name; everything else still works
+        print(f"[!] Could not set the notification identity on the Start Menu shortcut: {e}", file=sys.stderr)
     _notify_shell()
     return made
 

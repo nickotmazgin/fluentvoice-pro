@@ -124,3 +124,20 @@ def test_repair_leaves_source_install_links_alone(shell, portable):
 
 def test_repair_is_noop_for_source_install(shell):
     assert shortcuts.repair_moved_portable() == 0
+
+
+def test_stamp_aumid_on_a_real_shortcut(tmp_path):
+    """Real COM round-trip: the saved .lnk carries the AUMID Windows reads for toast name + icon."""
+    pythoncom = pytest.importorskip("pythoncom")
+    from win32com.propsys import propsys, pscon
+    from win32com.shell import shell as wshell
+
+    lnk = tmp_path / "FluentVoice Pro.lnk"
+    link = pythoncom.CoCreateInstance(wshell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, wshell.IID_IShellLink)
+    link.SetPath(sys.executable)
+    link.QueryInterface(pythoncom.IID_IPersistFile).Save(str(lnk), 0)
+
+    shortcuts._stamp_aumid(lnk)
+    store = propsys.SHGetPropertyStoreFromParsingName(str(lnk))
+    assert store.GetValue(pscon.PKEY_AppUserModel_ID).GetValue() == shortcuts.AUMID
+
