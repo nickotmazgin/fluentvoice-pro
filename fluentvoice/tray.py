@@ -61,34 +61,83 @@ def get_tray_icon_path():
         return str(fallback)
     return str(p)
 
-def load_tray_image():
-    """Load a crisp RGBA tray image (prefer multi-size ICO, fall back to PNG)."""
-    ico = Path(get_tray_icon_path())
-    png = ico.with_suffix(".png")
-    src = ico if ico.exists() else png
-    img = Image.open(src)
-    # Use the smallest available frame when multi-frame ICO — Windows picks size,
-    # but giving pystray a clean RGBA bitmap avoids blank/transparent draws.
+def tray_icon_px() -> int:
+    """Real notification-area icon size in pixels (16 at 100%, 20 at 125%, 24 at 150%...).
+
+    The tray process is not DPI-aware, so a plain GetSystemMetrics answers 16 on every
+    display; ask as a DPI-aware thread instead."""
     try:
-        if getattr(img, "n_frames", 1) > 1:
-            # Prefer ~32px frame for crisp taskbar at 100–150% DPI
-            best = None
-            best_score = 10**9
-            for i in range(img.n_frames):
-                img.seek(i)
-                w, h = img.size
-                score = abs(w - 32) + abs(h - 32)
-                if score < best_score:
-                    best_score = score
-                    best = img.copy().convert("RGBA")
-            if best is not None:
-                return best
+        u = ctypes.windll.user32
+        u.SetThreadDpiAwarenessContext.restype = ctypes.c_void_p
+        u.SetThreadDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+        old = u.SetThreadDpiAwarenessContext(ctypes.c_void_p(-4))  # PER_MONITOR_AWARE_V2
+        try:
+            return int(u.GetSystemMetricsForDpi(49, u.GetDpiForSystem())) or 16  # SM_CXSMICON
+        finally:
+            if old:
+                u.SetThreadDpiAwarenessContext(ctypes.c_void_p(old))
     except Exception:
-        pass
-    return img.convert("RGBA")
+        return 16
+
+
+def load_tray_image(size: int | None = None):
+    """The app tile, edge to edge, resampled from the 512 px master to the exact tray size.
+
+    Windows draws tray icons at 16/20/24 px. Handing it a 32 px image made it squeeze the
+    icon (blurry at 125%), and the tile's transparent margin made it look smaller than
+    the Wi-Fi / volume icons beside it."""
+    size = size or tray_icon_px()
+    master = Path(__file__).parent.parent / "assets" / "icon.png"
+    try:
+        img = Image.open(master).convert("RGBA")
+        img = img.crop(img.getchannel("A").getbbox())
+        return img.resize((size, size), Image.LANCZOS)
+    except Exception:
+        ico = Path(get_tray_icon_path())
+        return Image.open(ico if ico.exists() else ico.with_suffix(".png")).convert("RGBA").resize(
+            (size, size), Image.LANCZOS)
+
+
+class CrispTrayIcon(pystray.Icon):
+    """pystray icon that keeps the image at its own size.
+
+    pystray saves the image as an .ico with Pillow's default size list and loads it at the
+    *large* icon size (32 px), so Windows scales it twice. Load it at its exact size."""
+
+    def _assert_icon_handle(self):
+        if self._icon_handle or not sys.platform.startswith("win"):
+            return super()._assert_icon_handle()
+        import tempfile
+        from pystray._util import win32
+        n = self.icon.width
+        fd, path = tempfile.mkstemp(suffix=".ico")
+        os.close(fd)
+        try:
+            self.icon.save(path, format="ICO", sizes=[(n, n)])
+            self._icon_handle = win32.LoadImage(None, path, win32.IMAGE_ICON, n, n, win32.LR_LOADFROMFILE)
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+
+PROMOTED_MARKER = config.APP_DIR / "tray_icon_promoted"
+
+
+def _is_our_notify_entry(exe: str, tip: str) -> bool:
+    """Only FluentVoice's own entry: other Python apps also run as python(w).exe."""
+    return "fluentvoice" in tip.lower() or exe.lower().endswith("fluentvoicepro.exe")
+
 
 def promote_notify_icons():
-    """Force FluentVoice / pythonw notify icons to stay visible (not overflow-only)."""
+    """Show the FluentVoice icon next to the clock (not in the ^ overflow) on first run only.
+
+    Windows lets the user choose which icons stay visible. Earlier versions re-forced this on
+    every start (and for every Python tray app); now it happens once, then the user decides
+    (drag it into ^ or Settings > Personalization > Taskbar > Other system tray icons)."""
+    if PROMOTED_MARKER.exists():
+        return 0
     try:
         import winreg
         root = winreg.OpenKey(
@@ -120,20 +169,10 @@ def promote_notify_icons():
                     tip = winreg.QueryValueEx(sk, "Tooltip")[0] or ""
                 except OSError:
                     pass
-                exe_l = exe.lower()
-                tip_l = tip.lower()
-                match = (
-                    "pythonw.exe" in exe_l
-                    or "python.exe" in exe_l
-                    or "fluentvoice" in tip_l
-                    or "fluent voice" in tip_l
-                )
-                if not match:
+                if not _is_our_notify_entry(exe, tip):
                     winreg.CloseKey(sk)
                     continue
                 winreg.SetValueEx(sk, "IsPromoted", 0, winreg.REG_DWORD, 1)
-                if not tip.strip():
-                    winreg.SetValueEx(sk, "Tooltip", 0, winreg.REG_SZ, "FluentVoice Pro")
                 promoted += 1
                 winreg.CloseKey(sk)
             except Exception:
@@ -143,7 +182,12 @@ def promote_notify_icons():
                     pass
         winreg.CloseKey(root)
         if promoted:
-            logger.info("Promoted %s Windows notify-icon entr(y/ies) to always-show", promoted)
+            logger.info("Tray icon set to show next to the clock (first run; the user decides from now on)")
+            try:
+                PROMOTED_MARKER.parent.mkdir(parents=True, exist_ok=True)
+                PROMOTED_MARKER.write_text("1", encoding="utf-8")
+            except OSError:
+                pass
         return promoted
     except Exception as e:
         logger.debug("promote_notify_icons: %s", e)
@@ -699,7 +743,7 @@ class FluentVoiceTrayApp:
             item("❌ Exit FluentVoice Pro", self.on_exit)
         )
 
-        self.tray_icon = pystray.Icon("FluentVoice_Pro", img, TRAY_TOOLTIP, menu)
+        self.tray_icon = CrispTrayIcon("FluentVoice_Pro", img, TRAY_TOOLTIP, menu)
         logger.info("Running pystray tray_icon event loop...")
         self.tray_icon.run(setup=self._on_icon_ready)
 

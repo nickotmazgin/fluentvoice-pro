@@ -16,6 +16,39 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fluentvoice import config, core, voices
 from fluentvoice import __version__ as APP_VERSION
 
+
+class SmoothScrollableFrame(ctk.CTkScrollableFrame):
+    """CTkScrollableFrame that repaints between wheel steps.
+
+    A fast wheel or touchpad sends events faster than Tk repaints. CTk scrolls on every
+    event, so the window never gets the idle time it needs to redraw: moved cards leave
+    trails and stale strips behind. Here wheel deltas are summed and applied once per
+    frame, followed by an immediate repaint."""
+
+    FRAME_MS = 16
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._wheel_delta = 0
+        self._wheel_job = None
+
+    def _mouse_wheel_all(self, event):
+        if not sys.platform.startswith("win") or self._shift_pressed:
+            return super()._mouse_wheel_all(event)
+        if not self._check_if_valid_scroll(event.widget):
+            return
+        self._wheel_delta += event.delta
+        if self._wheel_job is None:
+            self._wheel_job = self.after(self.FRAME_MS, self._flush_wheel)
+
+    def _flush_wheel(self):
+        self._wheel_job = None
+        delta, self._wheel_delta = self._wheel_delta, 0
+        canvas = self._parent_canvas
+        if delta and canvas.yview() != (0.0, 1.0):
+            canvas.yview("scroll", -int(delta / 6), "units")
+            canvas.update_idletasks()
+
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
@@ -173,6 +206,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._populate_speech_tab()
         self._populate_options_tab()
         self._populate_about_tab()
+        self._fit_wide_labels()
 
         self._valid_tabs = [
             "Direct Text Reader",
@@ -601,7 +635,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _populate_speech_tab(self):
         tab = self.tab_speech
 
-        scroll = ctk.CTkScrollableFrame(
+        scroll = SmoothScrollableFrame(
             tab,
             fg_color="transparent",
             scrollbar_button_color="#30363D",
@@ -879,6 +913,31 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         self.test_status_lbl.pack(anchor="w", padx=14, pady=(2, 10))
 
+    def _fit_wide_labels(self):
+        """Wrap long hint labels to their card's real width.
+
+        They were created with wraplength=860, which CTk scales by the display scaling
+        (1075 px at 125%), so in a normal-size window the text ran past the card and was cut
+        off on both sides."""
+        stack = [self.tab_speech, self.tab_options]
+        while stack:
+            w = stack.pop()
+            stack.extend(w.winfo_children())
+            if isinstance(w, ctk.CTkLabel) and w.cget("wraplength") == 860:
+                self._wrap_to_parent(w)
+
+    @staticmethod
+    def _wrap_to_parent(label, pad: int = 44):
+        last = {"w": None}
+
+        def on_configure(event):
+            want = max(240, int(event.width / label._get_widget_scaling()) - pad)
+            if last["w"] is None or abs(want - last["w"]) > 4:
+                last["w"] = want
+                label.configure(wraplength=want)
+
+        label.master.bind("<Configure>", on_configure, add="+")
+
     def _section_card(self, parent, title: str):
         """Consistent dark section card with cyan title for Settings tabs."""
         card = ctk.CTkFrame(parent, fg_color="#182234", corner_radius=10)
@@ -894,7 +953,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _populate_options_tab(self):
         tab = self.tab_options
 
-        scroll = ctk.CTkScrollableFrame(
+        scroll = SmoothScrollableFrame(
             tab,
             fg_color="transparent",
             scrollbar_button_color="#30363D",
@@ -966,32 +1025,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         if self.cfg.get("clean_markdown", True):
             self.switch_markdown.select()
-        self.switch_markdown.pack(anchor="w", padx=16, pady=(0, 6))
+        self.switch_markdown.pack(anchor="w", padx=16, pady=(0, 12))
 
-        notify_row = ctk.CTkFrame(lang, fg_color="transparent")
-        notify_row.pack(fill="x", padx=16, pady=(2, 2))
-        ctk.CTkLabel(notify_row, text="Windows notifications:", font=ctk.CTkFont(size=13),
-                     text_color="#E6EDF3").pack(side="left", padx=(0, 10))
-        self._notify_names = {"important": "Important only", "all": "All", "off": "Off"}
-        self.seg_notify = ctk.CTkSegmentedButton(
-            notify_row,
-            values=list(self._notify_names.values()),
-            command=self._on_notification_level,
-            selected_color="#0E4A5C",
-            selected_hover_color="#13607A",
-            font=ctk.CTkFont(size=12, weight="bold"),
-        )
-        self.seg_notify.set(self._notify_names.get(self.cfg.get("notification_level", "important"), "Important only"))
-        self.seg_notify.pack(side="left")
-        ctk.CTkLabel(
-            lang,
-            text="Important only: voice & setting changes, updates and errors.  All: also a toast for every read "
-                 "and auto-route.  Also in the tray menu → Notifications.",
-            font=ctk.CTkFont(size=11),
-            text_color="#8B949E",
-            wraplength=860,
-            justify="left",
-        ).pack(anchor="w", padx=16, pady=(0, 12))
 
         # --- Hotkey ---
         hk = self._section_card(scroll, "Global Hotkey")
@@ -1039,6 +1074,34 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             text="Default: ctrl+shift+space  |  Win+Shift+S is reserved by Snipping Tool",
             font=ctk.CTkFont(size=11),
             text_color="#8B949E"
+        ).pack(anchor="w", padx=16, pady=(0, 12))
+
+        # --- Notifications ---
+        notif = self._section_card(scroll, "Notifications")
+        notify_row = ctk.CTkFrame(notif, fg_color="transparent")
+        notify_row.pack(fill="x", padx=16, pady=(2, 4))
+        ctk.CTkLabel(notify_row, text="Windows notifications:", font=ctk.CTkFont(size=13),
+                     text_color="#E6EDF3").pack(side="left", padx=(0, 10))
+        self._notify_names = {"important": "Important only", "all": "All", "off": "Off"}
+        self.seg_notify = ctk.CTkSegmentedButton(
+            notify_row,
+            values=list(self._notify_names.values()),
+            command=self._on_notification_level,
+            selected_color="#0E4A5C",
+            selected_hover_color="#13607A",
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        self.seg_notify.set(self._notify_names.get(self.cfg.get("notification_level", "important"), "Important only"))
+        self.seg_notify.pack(side="left")
+        ctk.CTkLabel(
+            notif,
+            text="Important only (recommended): voice & setting changes, updates and errors.  "
+                 "All: also one for every read and auto-route.  Off: none.  "
+                 "Also in the tray menu → Notifications.",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E",
+            wraplength=860,
+            justify="left",
         ).pack(anchor="w", padx=16, pady=(0, 12))
 
         # --- Preferred voices ---
@@ -1236,7 +1299,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _populate_about_tab(self):
         tab = self.tab_about
 
-        card = ctk.CTkScrollableFrame(
+        card = SmoothScrollableFrame(
             tab,
             fg_color="#182234",
             corner_radius=10,
@@ -1844,7 +1907,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         try:
             from .lifecycle import is_tray_running
             running = is_tray_running()
-            if hasattr(self, "tray_status_lbl"):
+            if hasattr(self, "tray_status_lbl") and running != getattr(self, "_tray_running_shown", None):
+                self._tray_running_shown = running
                 if running:
                     self.tray_status_lbl.configure(
                         text="● Tray daemon is running (icon should appear near the clock)",

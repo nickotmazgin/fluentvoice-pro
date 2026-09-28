@@ -27,6 +27,7 @@ python -m PyInstaller `
   --icon $Icon `
   --add-data "assets\icon.ico;assets" `
   --add-data "assets\tray_icon.ico;assets" `
+  --add-data "assets\icon.png;assets" `
   --hidden-import=fluentvoice `
   --hidden-import=fluentvoice.tray `
   --hidden-import=fluentvoice.cli `

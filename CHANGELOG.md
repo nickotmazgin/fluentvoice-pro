@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.24] - 2026-09-28
+
+### Fixed
+- **Settings smeared while scrolling.** With a fast mouse wheel or touchpad, the Settings tabs left trails, duplicated headings and half-drawn rows behind. Wheel steps are now combined and applied once per frame, followed by an immediate repaint. Measured on the Automation & System tab: from 2-5% of the page wrong on average (up to 12%) to about 0.1%.
+- **Hint text cut off on both sides.** Long hints (Notifications, Preferred Voices, Active Voice) had a fixed 860 px width, which Windows scaling enlarges (1075 px at 125%); they now wrap to their card.
+- **Tray icon looked small and soft.** It is now drawn at the exact tray size for your display (16 / 20 / 24 px...) and fills its slot, instead of a 32 px image Windows had to squeeze.
+- **The tray icon was forced to "always show" on every start, for every Python tray app.** Now FluentVoice shows its own icon next to the clock once, on first run; after that your choice wins (drag it into the ^ overflow, or Settings > Personalization > Taskbar > Other system tray icons).
+
+### Changed
+- **Notifications** have their own card in Automation & System (they were inside Language & Text Cleaning).
+- 13 new tests (tray icon size, exact-size icon handle, only-our-entry and first-run-only promotion).
+
 ## [1.4.23] - 2026-09-28
 
 ### Fixed
