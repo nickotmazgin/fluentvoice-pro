@@ -25,6 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.search(r'__version__\s*=\s*"([^"]+)"', (ROOT / "fluentvoice" / "__init__.py").read_text()).group(1)
 OUT = ROOT / "screenshots" / f"v{VERSION}"
+REAL_HOME = str(Path.home())  # read before the temporary profile replaces HOME / USERPROFILE
 TABS = [
     ("01-settings-reader.png", "Direct Text Reader"),
     ("02-settings-voice.png", "Voice & Speech"),
@@ -57,7 +58,20 @@ def capture(out: Path, tab: str, scroll_bottom: bool = False) -> None:
                 cv.yview_moveto(1.0)
             stack.extend(c.winfo_children())
 
+    def hide_real_home():
+        """Public screenshots never show the Windows user name: real home -> %USERPROFILE%."""
+        import customtkinter as ctk
+        stack = [w]
+        while stack:
+            c = stack.pop()
+            stack.extend(c.winfo_children())
+            if isinstance(c, ctk.CTkLabel) and REAL_HOME.lower() in str(c.cget("text")).lower():
+                text = str(c.cget("text"))
+                i = text.lower().index(REAL_HOME.lower())
+                c.configure(text=text[:i] + "%USERPROFILE%" + text[i + len(REAL_HOME):])
+
     def shot():
+        hide_real_home()
         w.lift()
         w.update()
         hwnd = ctypes.windll.user32.GetParent(w.winfo_id())

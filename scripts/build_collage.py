@@ -12,7 +12,7 @@ import re
 import shutil
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = re.search(r'__version__\s*=\s*"([^"]+)"', (ROOT / "fluentvoice" / "__init__.py").read_text()).group(1)
@@ -20,7 +20,7 @@ SRC = ROOT / "screenshots" / f"v{VERSION}"
 
 TITLE = "FluentVoice Pro™"
 SUBTITLE = "Windows 11 / 10 text-to-speech & read-aloud tray suite"
-HIGHLIGHTS = "60 HD voices in 12 languages  •  Smart auto-route  •  Streaming Direct Text Reader  •  Start with Windows  •  SHA-256 verified updates"
+HIGHLIGHTS = "60 HD voices in 12 languages  •  Every offline Windows voice  •  Smart auto-route  •  Direct Text Reader  •  SHA-256 verified updates"
 FOOTER = "Nick Otmazgin  •  github.com/nickotmazgin/fluentvoice-pro  •  MIT License"
 
 PANELS = [  # (file, number, label) in reading order
@@ -28,7 +28,7 @@ PANELS = [  # (file, number, label) in reading order
     ("02-settings-voice.png", "02", "Voice & Speech"),
     ("03-settings-automation.png", "03", "Automation & System"),
     ("04-settings-about-updates.png", "04", "About · Updates & Factory Reset"),
-    ("05-tray-menu.png", "05", "Tray menu · voices per language"),
+    ("05-tray-menu.png", "05", "Tray menu · notifications & voices"),
     ("06-desktop-icon-live.png", "06", "Desktop icon"),
     ("07-tray-icon-closeup.png", "07", "Tray icon near the clock"),
     ("08-settings-automation-updates.png", "08", "Automation · Startup & Shortcuts"),
@@ -80,6 +80,8 @@ def accent_bar(img: Image.Image, h: int) -> None:
 def rounded(im: Image.Image, r: int) -> Image.Image:
     mask = Image.new("L", im.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, im.width - 1, im.height - 1), r, fill=255)
+    if im.mode == "RGBA":  # keep a capture's own transparency (e.g. the tray menu cut-out)
+        mask = ImageChops.multiply(mask, im.getchannel("A"))
     out = Image.new("RGBA", im.size)
     out.paste(im.convert("RGB"), (0, 0), mask)
     return out
