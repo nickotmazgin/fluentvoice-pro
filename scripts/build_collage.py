@@ -30,7 +30,7 @@ PANELS = [  # (file, number, label) in reading order
     ("04-settings-about-updates.png", "04", "About · Updates & Factory Reset"),
     ("05-tray-menu.png", "05", "Tray menu · notifications & voices"),
     ("06-desktop-icon-live.png", "06", "Desktop icon"),
-    ("07-tray-icon-closeup.png", "07", "Tray icon near the clock"),
+    ("07-tray-icon-closeup.png", "07", "Tray icon · HD + live"),
     ("08-settings-automation-updates.png", "08", "Automation · Startup & Shortcuts"),
     ("09-portable-first-launch.png", "09", "Portable first launch"),
 ]

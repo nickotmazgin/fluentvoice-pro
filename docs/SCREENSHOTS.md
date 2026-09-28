@@ -15,7 +15,7 @@ HD captures for the README, the GitHub social preview, and social posts.
 | `screenshots/v1.4.24/04-settings-about-updates.png` | 04 About · Updates & Factory Reset |
 | `screenshots/v1.4.24/05-tray-menu.png` | 05 Tray right-click menu (🔔 Notifications submenu open) |
 | `screenshots/v1.4.24/06-desktop-icon-live.png` | 06 Desktop icon |
-| `screenshots/v1.4.24/07-tray-icon-closeup.png` | 07 Tray icon near the clock |
+| `screenshots/v1.4.24/07-tray-icon-closeup.png` | 07 Tray icon: HD (drawn by the tray code) + live 20 px capture from the taskbar |
 | `screenshots/v1.4.24/08-settings-automation-updates.png` | 08 Automation · Startup & Shortcuts, tray daemon, Updates |
 | `screenshots/v1.4.24/09-portable-first-launch.png` | 09 Portable EXE first-launch prompt (Start with Windows?) |
 

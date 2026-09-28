@@ -21,6 +21,14 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ---
 
+## Demo video
+
+*A 3-minute tour of v1.4.24 (real app, real voices; turn the sound on): Direct Text Reader, six languages, an offline Windows voice, smart auto-route with Hebrew right-to-left, Notifications, and the tray menu.*
+
+https://github.com/user-attachments/assets/8653e919-8f76-4632-ad2f-526d9e0ff00f
+
+---
+
 ## Screenshots
 
 *FluentVoice Pro **v1.4.24** — click any image to view it full size.*
@@ -58,8 +66,8 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.24/07-tray-icon-closeup.png"><img src="screenshots/v1.4.24/07-tray-icon-closeup.png" width="260" alt="Tray icon near the clock"></a><br>
-      <b>07</b> — Tray icon near the clock
+      <a href="screenshots/v1.4.24/07-tray-icon-closeup.png"><img src="screenshots/v1.4.24/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
+      <b>07</b> — Tray icon · HD + live
     </td>
     <td align="center">
       <a href="screenshots/v1.4.24/08-settings-automation-updates.png"><img src="screenshots/v1.4.24/08-settings-automation-updates.png" width="260" alt="Automation: Startup &amp; Shortcuts"></a><br>
