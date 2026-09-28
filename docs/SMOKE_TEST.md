@@ -49,3 +49,9 @@ Use after install or before cutting a release.
    - Direct Text Reader with Avri + English text → status shows `auto-routed for English text (your voice: Avri)`.
    - Ava Multilingual + a long Spanish paragraph → still Ava (no routing).
    - Automation & System → Preferred Voices lists 12 languages; tray → Neural Voices (World HD) has a submenu per language.
+
+10. **Notifications, offline voices, clicks (v1.4.22+)**
+   - Tray → Voice → pick a voice: the toast header says **FluentVoice Pro** with the app icon (not "Python").
+   - Settings → Automation & System → Windows notifications = Important only: reading text shows no "Speaking…" toast; switching to All shows it.
+   - Tray → Local Windows Voices (Offline) lists every installed voice (e.g. George / Susan / Hazel UK) and they speak.
+   - Double-click the tray icon: speech starts once (does not start-and-stop). Click again while it is preparing: it stops.

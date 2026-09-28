@@ -47,6 +47,7 @@ def shell(tmp_path, monkeypatch):
     fake = FakeShell(tmp_path)
     monkeypatch.setattr(shortcuts, "_shell", lambda: fake)
     monkeypatch.setattr(shortcuts, "_notify_shell", lambda: None)
+    monkeypatch.setattr(shortcuts, "_stamp_aumid", lambda p: None)  # real COM; tested manually
     return fake
 
 
@@ -90,6 +91,8 @@ def test_create_and_remove_shortcuts(shell, portable):
     assert len(made) == 1 + len(shortcuts.START_MENU_ITEMS)
     assert shortcuts.shortcuts_installed()
     assert read(shortcuts.desktop_path())["Arguments"] == "--gui"
+    ident = read(shortcuts.start_menu_dir() / shortcuts.IDENTITY_LNK)  # "FluentVoice Pro" = toast identity
+    assert ident["Arguments"] == "--gui"
     stop = read(shortcuts.start_menu_dir() / "FluentVoice Emergency Stop.lnk")
     assert stop["Arguments"] == "--stop"
     shortcuts.remove_shortcuts()

@@ -246,8 +246,10 @@ class FluentVoiceTrayApp:
         # Register notification bridge to core engine
         core.set_notify_callback(self.notify_user)
 
-    def notify_user(self, title: str, message: str):
-        if not load_config().get("show_notifications", True):
+    def notify_user(self, title: str, message: str, important: bool = True):
+        """Tray toasts are user-requested (voice / setting changes, updates) → important by default."""
+        level = load_config().get("notification_level", "important")
+        if level == "off" or (level == "important" and not important):
             return
         if self.tray_icon:
             try:
@@ -259,7 +261,17 @@ class FluentVoiceTrayApp:
         self.cfg["auto_read_copy"] = self.auto_read_enabled
         save_config(self.cfg)
 
+    TOGGLE_DEBOUNCE_SEC = 0.6
+
     def on_toggle_speech(self, icon=None, item=None):
+        """Left-click / hotkey: speak the clipboard, or stop if already speaking.
+
+        A double-click delivers two clicks (and a held hotkey repeats), so presses closer
+        than TOGGLE_DEBOUNCE_SEC count once instead of starting and instantly stopping."""
+        now = time.monotonic()
+        if now - getattr(self, "_last_toggle", -10.0) < self.TOGGLE_DEBOUNCE_SEC:
+            return
+        self._last_toggle = now
         threading.Thread(target=core.toggle_speak_or_stop, daemon=True).start()
 
     def on_stop(self, icon=None, item=None):
@@ -306,9 +318,9 @@ class FluentVoiceTrayApp:
                 self._set_update(res)
                 self._open_update_popup()
             elif st == "current":
-                self.notify_user("FluentVoice Pro", f"✅ You're up to date (v{res.get('current')}).")
+                self.notify_user("✅ Up to date", f"You have the latest version (v{res.get('current')}).")
             else:
-                self.notify_user("FluentVoice Pro", "⚠️ Could not check for updates (offline?). Try again later.")
+                self.notify_user("⚠ Update check failed", "Couldn't reach GitHub (offline?). Try again later.")
         threading.Thread(target=_run, daemon=True, name="UpdateCheck").start()
 
     def _open_update_popup(self):
@@ -361,7 +373,7 @@ class FluentVoiceTrayApp:
             if answer == 6:  # IDYES
                 shortcuts.set_startup(True)
                 shortcuts.create_shortcuts()
-                self.notify_user("FluentVoice Pro", "✓ Starts with Windows • Desktop & Start Menu shortcuts added")
+                self.notify_user("✓ Portable setup done", "Starts with Windows • Desktop & Start Menu shortcuts added")
                 logger.info("Portable setup: startup + shortcuts created")
         except Exception as e:
             logger.warning(f"Portable setup failed: {e}")
@@ -379,8 +391,8 @@ class FluentVoiceTrayApp:
                     if announced != res.get("latest"):
                         announced = res.get("latest")
                         self.notify_user(
-                            "FluentVoice Pro — Update available",
-                            f"⬆️ v{res.get('latest')} is out (you have v{res.get('current')}). "
+                            "⬆ Update available",
+                            f"v{res.get('latest')} is out (you have v{res.get('current')}). "
                             "Right-click the tray icon → Update Available.",
                         )
                         logger.info("Update available: %s", res.get("latest"))
@@ -406,7 +418,7 @@ class FluentVoiceTrayApp:
                 self.cfg["engine"] = "neural"
             save_config(self.cfg)
             label = display_label or voice_name
-            self.notify_user("FluentVoice Pro", f"🗣️ Voice selected: {label}")
+            self.notify_user("🗣 Voice selected", label)
         return _inner
 
     def _voice_items(self, family):
@@ -425,26 +437,28 @@ class FluentVoiceTrayApp:
         self.cfg = load_config()
         self.auto_read_enabled = not self.cfg.get("auto_read_copy", False)
         self.save_settings()
-        state = "Enabled" if self.auto_read_enabled else "Disabled"
-        self.notify_user("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state}")
+        state = "On — copied text is read aloud" if self.auto_read_enabled else "Off"
+        self.notify_user("⚡ Auto-Read on Copy", state)
 
     def is_auto_read_checked(self, item):
         return load_config().get("auto_read_copy", False)
 
-    def toggle_notifications(self, icon=None, item=None):
-        self.cfg = load_config()
-        curr = self.cfg.get("show_notifications", True)
-        self.cfg["show_notifications"] = not curr
-        save_config(self.cfg)
-        state = "Enabled" if not curr else "Disabled"
-        if self.tray_icon:
-            try:
-                self.tray_icon.notify(f"Windows Notifications: {state}", "FluentVoice Pro")
-            except Exception:
-                pass
+    NOTIFY_CHOICES = (("important", "Important only (recommended)"), ("all", "All — including every read"), ("off", "Off"))
 
-    def is_notifications_checked(self, item):
-        return load_config().get("show_notifications", True)
+    def set_notification_level(self, level):
+        def _inner(icon=None, item=None):
+            self.cfg = load_config()
+            self.cfg["notification_level"] = level
+            self.cfg["show_notifications"] = level != "off"
+            save_config(self.cfg)
+            if level != "off":
+                self.notify_user("🔔 Notifications", dict(self.NOTIFY_CHOICES)[level])
+        return _inner
+
+    def is_notification_level(self, level):
+        def _inner(item):
+            return load_config().get("notification_level", "important") == level
+        return _inner
 
     def clipboard_monitor_loop(self):
         user32 = ctypes.windll.user32
@@ -663,7 +677,10 @@ class FluentVoiceTrayApp:
             item("⏹ Stop Speech Immediately", self.on_stop),
             pystray.Menu.SEPARATOR,
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
-            item("🔔 Windows Notifications", self.toggle_notifications, checked=self.is_notifications_checked),
+            item("🔔 Notifications", pystray.Menu(*[
+                item(text, self.set_notification_level(lvl), checked=self.is_notification_level(lvl), radio=True)
+                for lvl, text in self.NOTIFY_CHOICES
+            ])),
             pystray.Menu.SEPARATOR,
             item("🗣 Neural Voices (English HD)", pystray.Menu(*self._voice_items("english"))),
             item("🎙 Neural Voices (Hebrew HD)", pystray.Menu(*self._voice_items("hebrew"))),
@@ -688,6 +705,8 @@ class FluentVoiceTrayApp:
 
 def main():
     try:
+        from fluentvoice import shortcuts
+        shortcuts.apply_app_identity()  # toasts titled "FluentVoice Pro" with its icon, not "Python"
         app = FluentVoiceTrayApp()
         app.run()
     except Exception as e:

@@ -67,6 +67,8 @@ def focus_existing_settings_window(preferred_tab: str | None = None) -> bool:
 
 class FluentVoiceSettingsWindow(ctk.CTk):
     def __init__(self, initial_tab="Voice & Speech"):
+        from fluentvoice import shortcuts
+        shortcuts.apply_app_identity()  # taskbar groups Settings under FluentVoice Pro, not Python
         super().__init__()
 
         self.title("FluentVoice Pro - Settings & Control Center")
@@ -966,16 +968,30 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.switch_markdown.select()
         self.switch_markdown.pack(anchor="w", padx=16, pady=(0, 6))
 
-        self.switch_notify = ctk.CTkSwitch(
-            lang,
-            text="Windows Notifications & Toasts",
-            font=ctk.CTkFont(size=13),
-            progress_color="#00D2FF",
-            command=self._on_toggle_notifications
+        notify_row = ctk.CTkFrame(lang, fg_color="transparent")
+        notify_row.pack(fill="x", padx=16, pady=(2, 2))
+        ctk.CTkLabel(notify_row, text="Windows notifications:", font=ctk.CTkFont(size=13),
+                     text_color="#E6EDF3").pack(side="left", padx=(0, 10))
+        self._notify_names = {"important": "Important only", "all": "All", "off": "Off"}
+        self.seg_notify = ctk.CTkSegmentedButton(
+            notify_row,
+            values=list(self._notify_names.values()),
+            command=self._on_notification_level,
+            selected_color="#0E4A5C",
+            selected_hover_color="#13607A",
+            font=ctk.CTkFont(size=12, weight="bold"),
         )
-        if self.cfg.get("show_notifications", True):
-            self.switch_notify.select()
-        self.switch_notify.pack(anchor="w", padx=16, pady=(0, 12))
+        self.seg_notify.set(self._notify_names.get(self.cfg.get("notification_level", "important"), "Important only"))
+        self.seg_notify.pack(side="left")
+        ctk.CTkLabel(
+            lang,
+            text="Important only: voice & setting changes, updates and errors.  All: also a toast for every read "
+                 "and auto-route.  Also in the tray menu → Notifications.",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E",
+            wraplength=860,
+            justify="left",
+        ).pack(anchor="w", padx=16, pady=(0, 12))
 
         # --- Hotkey ---
         hk = self._section_card(scroll, "Global Hotkey")
@@ -1517,7 +1533,15 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             apply_switch("switch_autoread", "auto_read_copy", False)
             apply_switch("switch_autoroute", "auto_route_language", True)
             apply_switch("switch_markdown", "clean_markdown", True)
-            apply_switch("switch_notify", "show_notifications", True)
+            if hasattr(self, "seg_notify"):
+                want = self._notify_names.get(fresh.get("notification_level", "important"), "Important only")
+                if self.seg_notify.get() != want:
+                    self._syncing_from_disk = True
+                    try:
+                        self.seg_notify.set(want)
+                    finally:
+                        self._syncing_from_disk = False
+                    changed = True
             apply_switch("switch_update_check", "check_updates", True)
 
             # Debounce slider
@@ -1962,10 +1986,12 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
 
-    def _on_toggle_notifications(self):
+    def _on_notification_level(self, name):
         if self._syncing_from_disk:
             return
-        self.cfg["show_notifications"] = self.switch_notify.get() == 1
+        level = next((k for k, v in self._notify_names.items() if v == name), "important")
+        self.cfg["notification_level"] = level
+        self.cfg["show_notifications"] = level != "off"
         config.save_config(self.cfg)
         self._trigger_autosave_indicator()
 

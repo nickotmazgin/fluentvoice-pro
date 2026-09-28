@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.21** — **60 HD voices in 12 languages** with an easy **Language ▸ Voice** picker, smarter auto-route (routing shown in the status), a voice test that always plays the voice you pick, and proper right-to-left display for Hebrew & Arabic. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
+> **Latest: v1.4.22** — Notifications now say **FluentVoice Pro** (not "Python") with *Important only / All / Off* levels, **every installed Windows offline voice** is available (language-pack voices included), and the tray icon handles double-clicks and clicks during speech correctly. Builds on v1.4.21's 60 voices in 12 languages. Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -96,9 +96,9 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 - 🧹 **Advanced PDF, OCR & Niqqud Text Sanitizer:** Automatically repairs hyphenated line wraps from PDF copy-pastes, normalizes Unicode (NFKC), strips invisible zero-width and bidirectional markers, and cleans code blocks and markdown.
 - 🎛️ **Modern Fluent UI Control Center:** Dark Fluent UI with voices, pitch, **volume**, speed, preferred auto-route voices, tray ensure/restart, and automation.
 - ⌨️ **Global Hotkey:** Configurable chord (default `Ctrl+Shift+Space`) toggles speak/stop from any app.
-- 🔔 **Windows Toast & Popup Notifications:** Sleek native Windows notification popups for voice changes, auto-read toggle events, and active speech playback—fully configurable in settings.
+- 🔔 **Windows Notifications, your level:** *Important only* (default: voice & setting changes, updates, errors), *All* (also every read and auto-route) or *Off*, from Settings or the tray menu. Toasts are titled **FluentVoice Pro** with the app icon, rate-limited and de-duplicated.
 - 🗣️ **60 HD Neural Voices in 12 Languages:** Microsoft Neural voices with a male *and* female option for every language — e.g. `Andrew`, `Ava`, `Christopher`, `Jenny`, `Sonia`, `Ryan`, `Avri`, `Hila`, `Hamed`, `Zariyah`, `Alvaro`, `Elvira`, `Henri`, `Denise`, `Conrad`, `Katja`, `Diego`, `Isabella`, `Antonio`, `Francisca`, `Dmitry`, `Svetlana`, `Keita`, `Nanami`, `Yunxi`, `Xiaoxiao`, `InJoon`, `SunHi` — including US, UK, Australian, Canadian, Irish and Indian English. The **Preview & Test Voice** box switches to a sample sentence in the selected voice's language.
-- ⚡ **Dynamic Offline Voice Discovery:** Automatically enumerates every SAPI5/OneCore voice installed on your system. Plus, a 1-click button to install more offline language packs via Windows Settings.
+- ⚡ **Every Offline Windows Voice:** Lists both classic SAPI5 voices and the modern OneCore voices that Windows language packs install (e.g. George, Susan, Hebrew or Russian packs). The *Install Windows Offline Voices…* button opens Windows Speech settings to add more.
 - 📋 **Auto-Read on Copy:** Optional mode that detects newly copied text and speaks it automatically after an adjustable stability buffer (0.3s to 1.5s).
 - 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus and escaped Win32 menu accelerators.
 - 🖥️ **Single Unified Desktop Shortcut & Tray Revive:** Desktop launcher opens Control Center and **Close to Tray** / **Ensure Tray** bring the icon back after Exit.

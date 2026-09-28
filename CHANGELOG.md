@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.22] - 2026-09-28
+
+### Fixed
+- **Notifications said "Python".** Windows titled every toast after the Python process. FluentVoice now has its own app identity: the Start Menu shortcut **FluentVoice Pro** carries it, so toasts show "FluentVoice Pro" with the app icon, and Settings groups under its own taskbar icon. The portable EXE also gets version info ("FluentVoice Pro", version, author), so Windows never shows a bare file name.
+- **Offline voices from Windows language packs were invisible.** Only the two classic SAPI voices (Zira, Hazel Desktop) were listed, but *Install Windows Offline Voices…* installs modern OneCore voices (e.g. George, Susan, or Hebrew / Russian packs). Both kinds are now listed and speak, labelled like "Windows George (English UK)", and each voice's language is recognised for auto-route.
+- **Double-clicking the tray icon started and immediately stopped speech.** A double-click delivers two clicks; clicks within 0.6 s now count once.
+- **A second click while the voice was being prepared restarted the reading instead of stopping it.** A read now counts as "speaking" from the moment it starts, across the tray, the hotkey and Settings.
+
+### Changed
+- **Notification levels:** *Important only* (new default), *All* and *Off*, in Settings → Automation & System and in the tray menu → **Notifications**. "Important only" keeps voice and setting changes, updates and errors, and drops the per-read "Speaking…", auto-route and "stopped" toasts that could pile up with Auto-Read on Copy. Existing settings carry over: if notifications were off, they stay off.
+- **Clearer toasts:** the title names the event (🗣 Voice selected, ⚡ Auto-Read on Copy, ✅ Up to date, 🌐 Offline voice in use…), since the header already shows FluentVoice Pro.
+- Start Menu: "FluentVoice Settings" is now **FluentVoice Pro** (opens Settings; also the notification identity).
+- 14 new tests (notification levels + migration, offline voice labels and languages, request-in-flight, tray double-click).
+
 ## [1.4.21] - 2026-09-26
 
 ### Changed

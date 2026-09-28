@@ -12,6 +12,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+AUMID = "NickOtmazgin.FluentVoicePro"  # app identity: toast header name/icon, taskbar grouping
+IDENTITY_LNK = "FluentVoice Pro.lnk"   # Start Menu shortcut that carries AUMID (Windows reads name + icon from it)
+LEGACY_START_MENU = ("FluentVoice Settings.lnk",)
 STARTUP_LNK = "FluentVoice Pro Tray.lnk"
 DESKTOP_LNK = "FluentVoice Pro.lnk"
 START_MENU_DIR = "FluentVoice Pro"
@@ -19,7 +22,7 @@ PORTABLE_EXE = "FluentVoicePro.exe"
 
 # (file name, CLI flag, description) — Start Menu failsafes
 START_MENU_ITEMS = [
-    ("FluentVoice Settings.lnk", "--gui", "Open Settings & Control Center"),
+    (IDENTITY_LNK, "--gui", "FluentVoice Pro - Settings & Control Center"),
     ("FluentVoice Direct Text Reader.lnk", "--reader", "Open Direct Text Reader"),
     ("FluentVoice Emergency Stop.lnk", "--stop", "Stop speech immediately (Start Menu failsafe)"),
     ("Restart FluentVoice Tray.lnk", "--restart-tray", "Restart the system tray daemon"),
@@ -82,6 +85,42 @@ def _write_lnk(path: Path, cli_args: tuple[str, ...], description: str) -> Path:
     return path
 
 
+def _stamp_aumid(path: Path) -> None:
+    """Give a saved shortcut the app's AppUserModelID (so toasts say 'FluentVoice Pro')."""
+    import pythoncom
+    from win32com.propsys import propsys, pscon
+    from win32com.shell import shell
+
+    pythoncom.CoInitialize()
+    link = pythoncom.CoCreateInstance(shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
+    persist = link.QueryInterface(pythoncom.IID_IPersistFile)
+    persist.Load(str(path))
+    store = link.QueryInterface(propsys.IID_IPropertyStore)
+    store.SetValue(pscon.PKEY_AppUserModel_ID, propsys.PROPVARIANTType(AUMID, pythoncom.VT_LPWSTR))
+    store.Commit()
+    persist.Save(str(path), 0)
+
+
+def identity_path() -> Path:
+    return start_menu_dir() / IDENTITY_LNK
+
+
+def apply_app_identity() -> bool:
+    """Adopt the app identity for this process when its Start Menu shortcut exists.
+
+    Without the shortcut Windows would show the raw ID, so we keep the default identity
+    (the portable EXE's version info names it 'FluentVoice Pro').
+    """
+    try:
+        if not identity_path().exists():
+            return False
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(ctypes.c_wchar_p(AUMID))
+        return True
+    except Exception:
+        return False
+
+
 def _lnk_target(path: Path) -> str:
     try:
         return str(_shell().CreateShortcut(str(path)).TargetPath)
@@ -142,8 +181,14 @@ def create_shortcuts() -> list[Path]:
     """Desktop icon (opens Settings) + Start Menu folder with the failsafe entries."""
     made = [_write_lnk(desktop_path(), ("--gui",), "FluentVoice Pro - Settings & Voice Control Center")]
     sm = start_menu_dir()
+    for legacy in LEGACY_START_MENU:  # replaced by the identity shortcut
+        (sm / legacy).unlink(missing_ok=True)
     for name, flag, desc in START_MENU_ITEMS:
         made.append(_write_lnk(sm / name, (flag,), desc))
+    try:
+        _stamp_aumid(sm / IDENTITY_LNK)
+    except Exception:
+        pass
     _notify_shell()
     return made
 

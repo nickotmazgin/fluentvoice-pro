@@ -14,12 +14,16 @@ $Icon = Join-Path $Root "assets\icon.ico"
 $Tray = Join-Path $Root "assets\tray_icon.ico"
 $Name = "FluentVoicePro"
 
+# Version resource: Windows shows "FluentVoice Pro" (not a file name) for the portable EXE.
+$VersionFile = (python scripts\make_version_info.py | Select-Object -Last 1).Trim()
+
 Write-Host "Building $Name (onedir)..."
 python -m PyInstaller `
   --noconfirm `
   --clean `
   --windowed `
   --name $Name `
+  --version-file $VersionFile `
   --icon $Icon `
   --add-data "assets\icon.ico;assets" `
   --add-data "assets\tray_icon.ico;assets" `
@@ -35,6 +39,8 @@ python -m PyInstaller `
   --hidden-import=fluentvoice.voices `
   --hidden-import=fluentvoice.installer `
   --hidden-import=win32com.client `
+  --hidden-import=win32com.propsys `
+  --hidden-import=win32com.shell `
   --hidden-import=edge_tts `
   --hidden-import=pystray `
   --hidden-import=customtkinter `

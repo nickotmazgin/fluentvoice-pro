@@ -57,6 +57,8 @@ _current_generation = 0
 _engine_lock = threading.Lock()
 _is_speaking = False
 _notify_callback = None
+_active_requests = 0  # speak requests in flight in this process (incl. synthesis)
+_requests_lock = threading.Lock()
 _sapi_voice = None  # shared SpVoice so purge hits the speaking instance
 _last_notify_key = None
 _last_notify_ts = 0.0
@@ -71,11 +73,15 @@ def set_notify_callback(cb):
     global _notify_callback
     _notify_callback = cb
 
-def trigger_notification(title: str, message: str, *, force: bool = False):
-    """Sends a notification if enabled — with tact (dedupe / rate-limit)."""
+def trigger_notification(title: str, message: str, *, force: bool = False, important: bool = False):
+    """Sends a notification with tact (dedupe / rate-limit), honouring the notification level.
+
+    important=True: errors and fallbacks, shown on "Important only" and "All".
+    important=False: routine per-read info (Speaking…, auto-route, stopped), shown only on "All".
+    """
     global _last_notify_key, _last_notify_ts
-    cfg = load_config()
-    if not cfg.get("show_notifications", True):
+    level = load_config().get("notification_level", "important")
+    if level == "off" or (level == "important" and not important):
         return
     if not _notify_callback:
         return
@@ -190,8 +196,8 @@ def _clear_heartbeat():
         pass
 
 def is_any_speaking() -> bool:
-    """True if this or another FluentVoice process is currently speaking."""
-    if _is_speaking:
+    """True if this or another FluentVoice process is speaking or preparing to speak."""
+    if _is_speaking or _active_requests > 0:
         return True
     try:
         pid_s, ts_s = SPEAKING_FILE.read_text(encoding="utf-8").split()[:2]
@@ -214,7 +220,7 @@ def stop_all_playback(*, notify: bool = True):
         pass
     _halt_audio_engines()
     if notify:
-        trigger_notification("FluentVoice Pro", "⏹️ Speech stopped.", force=True)
+        trigger_notification("⏹ Speech stopped", "All FluentVoice speech was stopped.", force=True)
 
 def detect_script(text: str) -> str:
     """Script family from Unicode ranges: hebrew, arabic, cyrillic, cjk (Japanese),
@@ -439,29 +445,57 @@ def get_clipboard_text() -> str:
                     pass
     return ""
 
-def get_installed_sapi_voices() -> list:
-    """Dynamically enumerates all Windows SAPI/OneCore voices installed on this PC."""
-    voices = []
+ONECORE_VOICES = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\Voices"
+
+
+def _offline_voice_tokens():
+    """[(description, SAPI token)] for classic SAPI5 voices and modern OneCore voices.
+
+    Windows language packs (Settings → Time & language → Speech) install OneCore voices,
+    which SAPI.SpVoice.GetVoices() doesn't list; they still speak fine through SpVoice.
+    """
+    import pythoncom
+    import win32com.client
+    pythoncom.CoInitialize()
+    out, seen = [], set()
+    sp = win32com.client.Dispatch("SAPI.SpVoice")
+    lists = [sp.GetVoices()]
     try:
-        try:
-            import pythoncom
-            pythoncom.CoInitialize()
-        except Exception:
-            pass
-        import win32com.client
-        sp = win32com.client.Dispatch("SAPI.SpVoice")
-        for i in range(sp.GetVoices().Count):
-            v = sp.GetVoices().Item(i)
-            desc = v.GetDescription()
-            label = desc.replace("Microsoft ", "Windows ").replace(" Desktop", "")
-            label = label.replace(" - English (United States)", " (English US)")
-            label = label.replace(" - English (Great Britain)", " (English UK)")
-            voices.append((label, desc))
+        cat = win32com.client.Dispatch("SAPI.SpObjectTokenCategory")
+        cat.SetId(ONECORE_VOICES, False)
+        lists.append(cat.EnumerateTokens())
     except Exception:
         pass
-    if not voices:
-        voices = [("Windows Zira (English US)", "Zira"), ("Windows Hazel (English UK)", "Hazel")]
-    return voices
+    for toks in lists:
+        for i in range(toks.Count):
+            tk = toks.Item(i)
+            desc = tk.GetDescription()
+            if desc not in seen:
+                seen.add(desc)
+                out.append((desc, tk))
+    return out
+
+
+_REGION = {"United States": "US", "United Kingdom": "UK", "Great Britain": "UK", "Australia": "AU",
+           "Canada": "CA", "India": "IN", "Ireland": "IE", "Israel": "IL"}
+
+
+def offline_voice_label(desc: str) -> str:
+    """'Microsoft George - English (United Kingdom)' → 'Windows George (English UK)'."""
+    m = re.match(r"Microsoft (.+?) - (.+?) \((.+)\)$", desc or "")
+    if not m:
+        return (desc or "").replace("Microsoft ", "Windows ")
+    name, lang, region = m.groups()
+    return f"Windows {name} ({lang} {_REGION.get(region, region)})"
+
+
+def get_installed_sapi_voices() -> list:
+    """[(label, description)] for every offline Windows voice (SAPI5 + OneCore)."""
+    try:
+        voices_ = [(offline_voice_label(d), d) for d, _ in _offline_voice_tokens()]
+    except Exception:
+        voices_ = []
+    return voices_ or [("Windows Zira (English US)", "Zira"), ("Windows Hazel (English UK)", "Hazel")]
 
 def speak_offline_sapi(
     text: str,
@@ -488,15 +522,16 @@ def speak_offline_sapi(
         if _sapi_voice is None:
             _sapi_voice = win32com.client.Dispatch("SAPI.SpVoice")
         sp = _sapi_voice
-        if sp.GetVoices().Count == 0:
+        tokens = _offline_voice_tokens()
+        if not tokens:
             return False
 
-        clean_pref = voice_pref.lower().replace("sapi-", "").replace("windows ", "")
-        for i in range(sp.GetVoices().Count):
-            v = sp.GetVoices().Item(i)
-            if clean_pref in v.GetDescription().lower():
-                sp.Voice = v
-                break
+        pref = (voice_pref or "").lower()
+        clean_pref = pref.replace("sapi-", "").replace("windows ", "")
+        chosen = next((tk for d, tk in tokens if d.lower() == pref), None) or \
+            next((tk for d, tk in tokens if clean_pref and clean_pref in d.lower()), None)
+        if chosen is not None:
+            sp.Voice = chosen
 
         sapi_rate = int(round((rate_mult - 1.0) * 8))
         sp.Rate = max(-10, min(10, sapi_rate))
@@ -757,6 +792,9 @@ def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None) ->
     auto_route=None follows the Settings switch; False plays exactly the chosen voice
     (the Voice & Speech "Speak Test Text" button).
     """
+    global _active_requests
+    with _requests_lock:
+        _active_requests += 1
     try:
         return _speak_text_impl(raw_text, on_status, auto_route)
     except Exception as e:
@@ -764,6 +802,8 @@ def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None) ->
         _emit(on_status, "error", message=f"{type(e).__name__}: {e}")
         return {"status": "error", "mode": "failed", "message": f"{type(e).__name__}: {e}"}
     finally:
+        with _requests_lock:
+            _active_requests -= 1
         _clear_heartbeat()
 
 
@@ -809,9 +849,9 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         if routed:
             engine = "neural"
             trigger_notification(
-                "FluentVoice Pro",
-                f"🌐 {voices.LANGUAGES.get(detected_lang, detected_lang.title())} text → reading with "
-                f"{voices.short_name(voice)} (your voice: {voices.short_name(chosen_voice)})",
+                "🌐 Auto-route",
+                f"{voices.LANGUAGES.get(detected_lang, detected_lang.title())} text → {voices.short_name(voice)} "
+                f"(your voice: {voices.short_name(chosen_voice)})",
             )
     elif auto_route_override is None:
         # Warn on script/voice mismatch when auto-routing is disabled
@@ -820,9 +860,10 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         if script != "latin" and not voices.can_read(voice, script):
             names = voices.LANGUAGES
             trigger_notification(
-                "FluentVoice Pro - Voice Notice",
+                "ℹ Voice notice",
                 f"ℹ️ {names.get(detected_lang, detected_lang)} text detected, but the active voice is "
-                f"{names.get(voice_lang, voice_lang)}. Turn on Smart Language Auto-Routing or switch voice."
+                f"{names.get(voice_lang, voice_lang)}. Turn on Smart Language Auto-Routing or switch voice.",
+                important=True,
             )
 
     with _engine_lock:
@@ -832,6 +873,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
     start_ts = time.time()
     # Single stream across processes: cut the tray / Settings window if it is talking.
     _broadcast_signal("claim")
+    _heartbeat(force=True)  # other FluentVoice processes see "speaking" while the voice is prepared
     # Halt prior audio without a second generation bump / "stopped" toast.
     _halt_audio_engines()
     _cleanup_stale_cache()
@@ -849,7 +891,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
 
     # Offline SAPI Mode (skip when auto-route forced a neural voice)
     if (not routed) and (engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower()):
-        trigger_notification("FluentVoice Pro", f"🔊 Speaking (Offline): \"{snippet}\"")
+        trigger_notification("🔊 Speaking (offline voice)", f"\"{snippet}\"")
         _emit(on_status, "speaking", voice=voice, mode="offline", part=1, parts=1, pos_ms=0, len_ms=0)
         ok = speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult, volume=volume,
                                 start_ts=start_ts, my_gen=my_gen)
@@ -858,9 +900,10 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         if not ok:
             msg = "No local Windows voices found."
             trigger_notification(
-                "FluentVoice Pro - Voice Alert",
-                "⚠️ No local Windows offline voices found. Open Settings -> 'Install Windows Offline Voices' to add one.",
+                "⚠ No offline voices",
+                "No Windows offline voices found. Settings → Voice & Speech → Install Windows Offline Voices.",
                 force=True,
+                important=True,
             )
             _emit(on_status, "error", message=msg)
             return {"status": "error", "mode": "offline", "message": msg}
@@ -937,7 +980,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
             failed_at, fail_reason = idx, err or "synthesis failed"
             break
         if not played_any:
-            trigger_notification("FluentVoice Pro", f"🔊 Speaking: \"{snippet}\"")
+            trigger_notification("🔊 Speaking", f"\"{snippet}\"")
         played_any = True
 
         def progress(pos_ms, len_ms, _idx=idx):
@@ -964,9 +1007,10 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
     remaining = " ".join(chunks[failed_at:])
     _log.warning("falling back to offline SAPI at part %d/%d: %s", failed_at + 1, parts, fail_reason)
     trigger_notification(
-        "FluentVoice Pro - Network Notice",
-        "🌐 Cloud voice unreachable. Automatically switching to offline Windows speech.",
+        "🌐 Offline voice in use",
+        "The cloud voice is unreachable, so FluentVoice switched to the offline Windows voice.",
         force=True,
+        important=True,
     )
     _emit(on_status, "fallback", reason=fail_reason)
     ok = speak_offline_sapi(remaining, voice_pref="Zira", rate_mult=rate_mult, volume=volume,
@@ -976,9 +1020,10 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
     if not ok:
         msg = f"Cloud voice failed ({fail_reason}) and no offline voice is available."
         trigger_notification(
-            "FluentVoice Pro - Speech Alert",
-            "⚠️ Speech synthesis failed. Check your internet connection or install local Windows voices.",
+            "⚠ Speech failed",
+            "Check your internet connection, or install Windows offline voices.",
             force=True,
+            important=True,
         )
         _emit(on_status, "error", message=msg)
         return {"status": "error", "mode": "failed", "message": msg}

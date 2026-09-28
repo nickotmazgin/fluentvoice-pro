@@ -19,7 +19,9 @@ DEFAULT_CONFIG = {
     "voice": "en-US-AndrewMultilingualNeural",
     "auto_read_copy": False,
     "clean_markdown": True,
-    "show_notifications": True,
+    "show_notifications": True,  # legacy on/off, kept in sync with notification_level
+    # "all" = every read, "important" = voice/setting changes, updates, errors, "off"
+    "notification_level": "important",
     "auto_route_language": True,
     "debounce_sec": 0.6,
     "rate_mult": 1.0,
@@ -35,6 +37,9 @@ DEFAULT_CONFIG = {
     "skipped_update_version": "",
 }
 
+NOTIFY_LEVELS = ("all", "important", "off")
+
+
 def load_config() -> dict:
     cfg = DEFAULT_CONFIG.copy()
     cfg["preferred_voices"] = DEFAULT_PREFERRED_VOICES.copy()
@@ -44,6 +49,8 @@ def load_config() -> dict:
                 saved = json.load(f)
                 prefs = saved.pop("preferred_voices", None)
                 cfg.update(saved)
+                if "notification_level" not in saved:  # pre-1.4.22 config: honour the old switch
+                    cfg["notification_level"] = "off" if saved.get("show_notifications") is False else "important"
                 if isinstance(prefs, dict):
                     merged = DEFAULT_PREFERRED_VOICES.copy()
                     merged.update(prefs)
@@ -51,6 +58,9 @@ def load_config() -> dict:
         except Exception:
             pass
     # Voices Microsoft retired (e.g. Davis, William AU) → closest current voice.
+    if cfg.get("notification_level") not in NOTIFY_LEVELS:
+        cfg["notification_level"] = "important"
+    cfg["show_notifications"] = cfg["notification_level"] != "off"
     cfg["voice"] = voices.current_id(cfg.get("voice", voices.DEFAULT_VOICE))
     cfg["preferred_voices"] = {k: voices.current_id(v) for k, v in cfg["preferred_voices"].items()}
     return cfg

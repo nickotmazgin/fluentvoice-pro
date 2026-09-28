@@ -171,11 +171,20 @@ def short_name(voice: str) -> str:
     return label_for(voice).split(" (")[0]
 
 
+_OFFLINE_LANG = {"English": "english", "Hebrew": "hebrew", "Arabic": "arabic", "Spanish": "spanish",
+                 "French": "french", "German": "german", "Italian": "italian", "Portuguese": "portuguese",
+                 "Russian": "cyrillic", "Japanese": "cjk", "Chinese": "chinese", "Korean": "korean"}
+
+
 def family_of(voice: str) -> str:
-    """Language family of a voice id (neural ids by locale prefix; others → english)."""
+    """Language family of a voice id (neural ids by locale prefix; Windows offline voices by
+    the language in their description, e.g. 'Microsoft Asaf - Hebrew (Israel)'; else english)."""
     v = current_id(voice or "")
     if v in _BY_ID:
         return _BY_ID[v][1]
+    for lang, fam in _OFFLINE_LANG.items():
+        if f" - {lang} (" in v:
+            return fam
     low = v.lower()
     for prefix, fam in _PREFIX_FAMILY.items():
         if low.startswith(prefix):
