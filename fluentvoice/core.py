@@ -312,7 +312,7 @@ def detect_language(text: str) -> str:
     """Detect language for routing.
     Returns a voices.LANGUAGES key (english, hebrew, arabic, spanish, french, german, italian,
     portuguese, cyrillic = Russian, cjk = Japanese, chinese, korean, hindi, marathi, bengali,
-    tamil, telugu, gujarati, kannada, malayalam, thai).
+    tamil, telugu, gujarati, kannada, malayalam, thai, icelandic).
     """
     script = detect_script(text)
     if script == "hindi":
@@ -329,6 +329,10 @@ def detect_language(text: str) -> str:
     sample = (text or "")[:4000].strip()
     if not sample:
         return "english"
+    # Icelandic: the language detector does not know it; þ and ð are (almost) unique to it.
+    thorn_eth = sum(sample.count(ch) for ch in "þÞðÐ")
+    if thorn_eth >= 2 or (thorn_eth == 1 and len(sample) < 40):
+        return "icelandic"
 
     try:
         from langdetect import detect, DetectorFactory
@@ -491,7 +495,7 @@ def get_clipboard_text() -> str:
 def clipboard_is_private() -> bool:
     """True when the app that copied asked clipboard tools to ignore it.
 
-    Password managers (Bitwarden, 1Password, KeePass…) and other apps mark secrets with
+    Password managers that support it (e.g. KeePass, KeePassXC) and other apps mark secrets with
     these formats; Windows clipboard history honours them, and so does Auto-Read on Copy,
     so a copied password is never read aloud."""
     try:
@@ -514,6 +518,47 @@ def clipboard_is_private() -> bool:
     except Exception:
         pass
     return False
+
+
+# Well-known API key / token shapes (GitHub, OpenAI-style, Slack, AWS, Google, JWT).
+_SECRET_TOKEN = re.compile(
+    r"^(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|(?:sk|pk|rk)-[A-Za-z0-9_-]{16,}"
+    r"|xox[abpors]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}"
+    r"|eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,})$"
+)
+_NOT_SECRET = re.compile(r"^(?:https?://|www\.|[A-Za-z]:\\|\\\\|~?/|\.{1,2}/)|^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$", re.I)
+
+
+def looks_like_secret(text: str) -> bool:
+    """True for clipboard text that looks like a password, API key or token.
+
+    Such text should neither be read aloud nor sent to the cloud voice service. Only a single
+    string without spaces counts: words, sentences, URLs, e-mail addresses and file paths are
+    never treated as secrets."""
+    s = (text or "").strip()
+    if not (8 <= len(s) <= 200) or any(ch.isspace() for ch in s) or _NOT_SECRET.match(s):
+        return False
+    if _SECRET_TOKEN.match(s):
+        return True
+    has_digit = any(ch.isdigit() for ch in s)
+    has_alpha = any(ch.isalpha() for ch in s)
+    mixed_case = any(ch.islower() for ch in s) and any(ch.isupper() for ch in s)
+    has_symbol = any(not ch.isalnum() for ch in s)
+    if len(s) <= 64 and has_digit and has_alpha and (mixed_case or has_symbol):
+        return True  # typical password: letters + digits + case mix or symbols
+    # long random-looking token (hex / base64) of 20+ characters
+    return len(s) >= 20 and has_digit and has_alpha and re.fullmatch(r"[A-Za-z0-9+/=_-]+", s) is not None
+
+
+PRIVATE_SKIP_MESSAGE = ("The clipboard looks like a password or key, so it was not read aloud or sent to the "
+                        "voice service. To read it anyway, paste it into the Direct Text Reader.")
+
+
+def clipboard_text_or_private():
+    """(text, private): the clipboard text, and whether it must not be read (marked private by a
+    password manager, or looks like a password / key)."""
+    text = get_clipboard_text()
+    return text, bool(text) and (clipboard_is_private() or looks_like_secret(text))
 
 
 ONECORE_VOICES = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\Voices"
@@ -1257,7 +1302,11 @@ def toggle_speak_or_stop(blocking: bool = False):
     if is_any_speaking():
         stop_all_playback(notify=True)
         return {"status": "stopped"}
-    text = get_clipboard_text()
+    text, private = clipboard_text_or_private()
+    if private:
+        _log.info("clipboard skipped: private or password-like content (%d chars, not logged)", len(text))
+        trigger_notification("🔒 Skipped private text", PRIVATE_SKIP_MESSAGE, force=True, important=True)
+        return {"status": "skipped", "reason": "private"}
     if blocking:
         return speak_text(text)
     threading.Thread(target=lambda: speak_text(text), daemon=True).start()

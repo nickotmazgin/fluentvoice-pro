@@ -551,8 +551,10 @@ class FluentVoiceTrayApp:
     def autoread_should_read(self, text: str) -> bool:
         """Auto-Read on Copy filter.
 
-        - Skips copies marked private (passwords from password managers), copies shorter than
-          2 characters and copies with no letters or digits (lone symbols, whitespace).
+        - Skips copies marked private by the copying app (e.g. KeePass, KeePassXC) and copies that
+          look like a password, API key or token: they are never read aloud nor sent to the cloud
+          voice service.
+        - Skips copies shorter than 2 characters and copies with no letters or digits.
         - The same text copied again is read again once the previous reading has finished
           (earlier versions ignored it for good, so after changing the voice, copying the
           same text stayed silent until FluentVoice was restarted).
@@ -561,7 +563,7 @@ class FluentVoiceTrayApp:
         """
         if len((text or "").strip()) < 2 or not any(ch.isalnum() for ch in text):
             return False
-        if core.clipboard_is_private():
+        if core.looks_like_secret(text) or core.clipboard_is_private():
             return False
         h = hash(text)
         if h == self.last_clipboard_hash:

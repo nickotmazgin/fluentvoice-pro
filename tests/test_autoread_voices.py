@@ -255,7 +255,7 @@ class _FakeClipboard:
 
 @pytest.mark.parametrize("formats,flag,private", [
     (set(), None, False),
-    ({"ExcludeClipboardContentFromMonitorProcessing"}, None, True),   # Bitwarden, 1Password, KeePass…
+    ({"ExcludeClipboardContentFromMonitorProcessing"}, None, True),   # e.g. KeePass, KeePassXC
     ({"Clipboard Viewer Ignore"}, None, True),
     ({"CanIncludeInClipboardHistory"}, (0).to_bytes(4, "little"), True),
     ({"CanIncludeInClipboardHistory"}, (1).to_bytes(4, "little"), False),

@@ -34,6 +34,7 @@ LANGUAGES = {
     "kannada": "Kannada",
     "malayalam": "Malayalam",
     "thai": "Thai",
+    "icelandic": "Icelandic",
 }
 
 # Languages written in Latin script: "Multilingual" voices read these natively,
@@ -137,6 +138,9 @@ CATALOG = [
     # Thai
     ("th-TH-NiwatNeural", "Niwat (Thai HD Male)", "thai"),
     ("th-TH-PremwadeeNeural", "Premwadee (Thai HD Female)", "thai"),
+    # Icelandic
+    ("is-IS-GunnarNeural", "Gunnar (Icelandic HD Male)", "icelandic"),
+    ("is-IS-GudrunNeural", "Gudrun (Icelandic HD Female)", "icelandic"),
 ]
 
 DEFAULT_VOICE = "en-US-AndrewMultilingualNeural"
@@ -163,6 +167,7 @@ DEFAULT_PREFERRED = {
     "kannada": "kn-IN-GaganNeural",
     "malayalam": "ml-IN-MidhunNeural",
     "thai": "th-TH-NiwatNeural",
+    "icelandic": "is-IS-GunnarNeural",
 }
 
 # Voices Microsoft retired → closest current voice (migrates saved settings).
@@ -199,6 +204,7 @@ SAMPLE_TEXT = {
     "kannada": "FluentVoice Pro ಗೆ ಸುಸ್ವಾಗತ! ಉತ್ತಮ ಗುಣಮಟ್ಟದ ಸಹಜ ಧ್ವನಿ ಸಕ್ರಿಯವಾಗಿದೆ.",
     "malayalam": "FluentVoice Pro-ലേക്ക് സ്വാഗതം! ഉയർന്ന നിലവാരമുള്ള സ്വാഭാവിക ശബ്ദം സജീവമാണ്.",
     "thai": "ยินดีต้อนรับสู่ FluentVoice Pro! เสียงพูดธรรมชาติคุณภาพสูงเปิดใช้งานแล้ว",
+    "icelandic": "Velkomin í FluentVoice Pro! Náttúrulega röddin er virk og hljóðgæðin eru frábær.",
 }
 
 _BY_ID = {v: (label, fam) for v, label, fam in CATALOG}
@@ -208,7 +214,7 @@ _PREFIX_FAMILY = {
     "de-": "german", "it-": "italian", "pt-": "portuguese", "ru-": "cyrillic", "ja-": "cjk",
     "zh-": "chinese", "ko-": "korean", "hi-": "hindi", "mr-": "marathi", "bn-": "bengali",
     "ta-": "tamil", "te-": "telugu", "gu-": "gujarati", "kn-": "kannada", "ml-": "malayalam",
-    "th-": "thai",
+    "th-": "thai", "is-": "icelandic",
 }
 
 
@@ -231,7 +237,7 @@ _OFFLINE_LANG = {"English": "english", "Hebrew": "hebrew", "Arabic": "arabic", "
                  "Russian": "cyrillic", "Japanese": "cjk", "Chinese": "chinese", "Korean": "korean",
                  "Hindi": "hindi", "Marathi": "marathi", "Bengali": "bengali", "Tamil": "tamil",
                  "Telugu": "telugu", "Gujarati": "gujarati", "Kannada": "kannada", "Malayalam": "malayalam",
-                 "Thai": "thai"}
+                 "Thai": "thai", "Icelandic": "icelandic"}
 
 
 def family_of(voice: str) -> str:

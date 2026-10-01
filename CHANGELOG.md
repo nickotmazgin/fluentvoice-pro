@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.28] - 2026-10-01
+
+### Privacy
+- **Passwords and keys on the clipboard are never read aloud, and never sent to the cloud voice service.** The HD voices are Microsoft's online voices, so any text they read leaves the PC; secrets must not.
+  - **Every way of reading the clipboard is guarded:** the tray click, the global hotkey, the command line (`--clip`) and Auto-Read on Copy. Before, only Auto-Read was.
+  - **Marked as private:** skipped when the copying app marks the clipboard as private (password managers that support it, e.g. KeePass, KeePassXC; the same marks Windows clipboard history honours).
+  - **Looks like a secret:** also skipped when the text *looks* like one, even if it is not marked: a single string without spaces mixing letters with digits and symbols or case (typical passwords), or a known key / token shape (GitHub, OpenAI-style, Slack, AWS, Google API keys, JWTs, long hex / random tokens). Words, sentences, URLs, e-mail addresses and file paths are never treated as secrets.
+  - The tray click and hotkey show "🔒 Skipped private text"; Auto-Read skips silently. To read such text on purpose, paste it into the Direct Text Reader.
+- Corrected the v1.4.25 notes: not every password manager marks copied passwords; which ones do varies.
+
+### Added
+- **Icelandic:** Gunnar (male) and Gudrun (female) HD voices, auto-route by the Icelandic letters þ and ð (the language detector does not know Icelandic). 80 voices in 22 languages.
+- Scottish (English or Gaelic) has no Microsoft voice yet, so it cannot be added.
+- 29 new tests.
+
 ## [1.4.27] - 2026-10-01
 
 ### Fixed
@@ -38,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **9 more languages, 18 voices (78 voices in 21 languages):** Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam and Thai, each with a male and a female HD voice, auto-routing by script, sample sentences and Preferred Voices. Hindi and Marathi (both Devanagari) are told apart by language detection.
 - **Flood guard:** very long texts are read up to 100,000 characters (~1.5 h); Auto-Read ignores clipboard copies with no letters or digits and duplicate clipboard updates.
-- **Copied passwords are never read aloud:** Auto-Read skips clipboard content that password managers (Bitwarden, 1Password, KeePass…) mark as private, the same marks Windows clipboard history honours.
+- **Copied passwords are never read aloud:** Auto-Read skips clipboard content that password managers mark as private (where supported, e.g. KeePass, KeePassXC), the same marks Windows clipboard history honours.
 - English accent voices are labelled clearly in Settings and the tray: "Indian English", "Irish English", "Australian English", "Canadian English".
 - 38 new tests.
 

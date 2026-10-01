@@ -48,7 +48,7 @@ Use after install or before cutting a release.
    - Voice & Speech: Language = Hebrew, Voice = Avri → the test box shows a right-aligned Hebrew sample → **Speak Test Text** plays Avri.
    - Direct Text Reader with Avri + English text → status shows `auto-routed for English text (your voice: Avri)`.
    - Ava Multilingual + a long Spanish paragraph → still Ava (no routing).
-   - Automation & System → Preferred Voices lists 21 languages; tray → Neural Voices (World HD) has a submenu per language.
+   - Automation & System → Preferred Voices lists 22 languages; tray → Neural Voices (World HD) has a submenu per language.
 
 10. **Notifications, offline voices, clicks (v1.4.22+)**
    - Tray → Voice → pick a voice: the toast header says **FluentVoice Pro** with the app icon (not "Python").
@@ -62,3 +62,8 @@ Use after install or before cutting a release.
    - Copy the same text again after it finished: it is read again. Copy it again while it is still being read: it is not restarted.
    - Pick an offline voice (e.g. Windows George): it reads in that voice, and Stop / a tray click stops it at once.
    - Voice & Speech → Language: Hindi, Thai, Tamil… show their voices; the test sentence displays correctly and is spoken in that language.
+
+12. **Private clipboard + Icelandic (v1.4.28+)**
+   - Copy a password-like string (e.g. `Tr0ub4dor&3`) and click the tray icon / press the hotkey: "🔒 Skipped private text", nothing is spoken. With Auto-Read on, copying it stays silent.
+   - Copy a normal sentence: it is read as usual.
+   - Voice & Speech → Language: Icelandic shows Gunnar and Gudrun; the test sentence is spoken in Icelandic.

@@ -64,7 +64,10 @@ def main():
         return
 
     if args.clip:
-        text = core.get_clipboard_text()
+        text, private = core.clipboard_text_or_private()
+        if private:
+            print(core.PRIVATE_SKIP_MESSAGE)
+            return
         core.speak_text(text)
         return
 
