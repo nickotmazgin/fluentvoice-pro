@@ -1,4 +1,4 @@
-# Screenshots (v1.4.27)
+# Screenshots (v1.4.28)
 
 HD captures for the README, the GitHub social preview, and social posts.
 
@@ -6,18 +6,18 @@ HD captures for the README, the GitHub social preview, and social posts.
 
 | File | Purpose |
 |------|---------|
-| `screenshots/v1.4.27/collage-v1.4.27.jpg` | README hero collage (3840 wide, 3×3: 01–09) |
-| `screenshots/v1.4.27/social-preview-1280x640.jpg` | GitHub OG / link preview (also `.github/social-preview.{jpg,png}`) |
-| `screenshots/v1.4.27/social-collage-1080.jpg` | Square social post |
-| `screenshots/v1.4.27/01-settings-reader.png` | 01 Direct Text Reader |
-| `screenshots/v1.4.27/02-settings-voice.png` | 02 Voice & Speech |
-| `screenshots/v1.4.27/03-settings-automation.png` | 03 Automation & System (Auto-Read, language, hotkey) |
-| `screenshots/v1.4.27/04-settings-about-updates.png` | 04 About · Updates & Factory Reset |
-| `screenshots/v1.4.27/05-tray-menu.png` | 05 Tray right-click menu (🔔 Notifications submenu open) |
-| `screenshots/v1.4.27/06-desktop-icon-live.png` | 06 Desktop icon |
-| `screenshots/v1.4.27/07-tray-icon-closeup.png` | 07 Tray icon: HD (drawn by the tray code) + live 20 px capture from the taskbar |
-| `screenshots/v1.4.27/08-settings-automation-updates.png` | 08 Automation · Startup & Shortcuts, tray daemon, Updates |
-| `screenshots/v1.4.27/09-portable-first-launch.png` | 09 Portable EXE first-launch prompt (Start with Windows?) |
+| `screenshots/v1.4.28/collage-v1.4.28.jpg` | README hero collage (3840 wide, 3×3: 01–09) |
+| `screenshots/v1.4.28/social-preview-1280x640.jpg` | GitHub OG / link preview (also `.github/social-preview.{jpg,png}`) |
+| `screenshots/v1.4.28/social-collage-1080.jpg` | Square social post |
+| `screenshots/v1.4.28/01-settings-reader.png` | 01 Direct Text Reader |
+| `screenshots/v1.4.28/02-settings-voice.png` | 02 Voice & Speech |
+| `screenshots/v1.4.28/03-settings-automation.png` | 03 Automation & System (Auto-Read, language, hotkey) |
+| `screenshots/v1.4.28/04-settings-about-updates.png` | 04 About · Updates & Factory Reset |
+| `screenshots/v1.4.28/05-tray-menu.png` | 05 Tray right-click menu (🔔 Notifications submenu open) |
+| `screenshots/v1.4.28/06-desktop-icon-live.png` | 06 Desktop icon |
+| `screenshots/v1.4.28/07-tray-icon-closeup.png` | 07 Tray icon: HD (drawn by the tray code) + live 20 px capture from the taskbar |
+| `screenshots/v1.4.28/08-settings-automation-updates.png` | 08 Automation · Startup & Shortcuts, tray daemon, Updates |
+| `screenshots/v1.4.28/09-portable-first-launch.png` | 09 Portable EXE first-launch prompt (Start with Windows?) |
 
 ## Recapture + rebuild
 

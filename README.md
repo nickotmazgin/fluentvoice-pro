@@ -31,56 +31,56 @@ https://github.com/user-attachments/assets/dcd964fb-0cce-4372-9250-01529f837d3a
 
 ## Screenshots
 
-*FluentVoice Pro **v1.4.27** — click any image to view it full size.*
+*FluentVoice Pro **v1.4.28** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.4.27 collage](screenshots/v1.4.27/collage-v1.4.27.jpg)](screenshots/v1.4.27/collage-v1.4.27.jpg)
+[![FluentVoice Pro v1.4.28 collage](screenshots/v1.4.28/collage-v1.4.28.jpg)](screenshots/v1.4.28/collage-v1.4.28.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.27/01-settings-reader.png"><img src="screenshots/v1.4.27/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.4.28/01-settings-reader.png"><img src="screenshots/v1.4.28/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.27/02-settings-voice.png"><img src="screenshots/v1.4.27/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.4.28/02-settings-voice.png"><img src="screenshots/v1.4.28/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.27/03-settings-automation.png"><img src="screenshots/v1.4.27/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <a href="screenshots/v1.4.28/03-settings-automation.png"><img src="screenshots/v1.4.28/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
       <b>03</b> — Automation &amp; System
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.27/04-settings-about-updates.png"><img src="screenshots/v1.4.27/04-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
+      <a href="screenshots/v1.4.28/04-settings-about-updates.png"><img src="screenshots/v1.4.28/04-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
       <b>04</b> — About · Updates &amp; Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.27/05-tray-menu.png"><img src="screenshots/v1.4.27/05-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
+      <a href="screenshots/v1.4.28/05-tray-menu.png"><img src="screenshots/v1.4.28/05-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
       <b>05</b> — Tray menu · notifications &amp; voices
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.27/06-desktop-icon-live.png"><img src="screenshots/v1.4.27/06-desktop-icon-live.png" width="260" alt="Desktop icon"></a><br>
+      <a href="screenshots/v1.4.28/06-desktop-icon-live.png"><img src="screenshots/v1.4.28/06-desktop-icon-live.png" width="260" alt="Desktop icon"></a><br>
       <b>06</b> — Desktop icon
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.27/07-tray-icon-closeup.png"><img src="screenshots/v1.4.27/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
+      <a href="screenshots/v1.4.28/07-tray-icon-closeup.png"><img src="screenshots/v1.4.28/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
       <b>07</b> — Tray icon · HD + live
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.27/08-settings-automation-updates.png"><img src="screenshots/v1.4.27/08-settings-automation-updates.png" width="260" alt="Automation: Startup &amp; Shortcuts"></a><br>
+      <a href="screenshots/v1.4.28/08-settings-automation-updates.png"><img src="screenshots/v1.4.28/08-settings-automation-updates.png" width="260" alt="Automation: Startup &amp; Shortcuts"></a><br>
       <b>08</b> — Automation · Startup &amp; Shortcuts
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.27/09-portable-first-launch.png"><img src="screenshots/v1.4.27/09-portable-first-launch.png" width="260" alt="Portable first launch prompt"></a><br>
+      <a href="screenshots/v1.4.28/09-portable-first-launch.png"><img src="screenshots/v1.4.28/09-portable-first-launch.png" width="260" alt="Portable first launch prompt"></a><br>
       <b>09</b> — Portable first launch
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.4.27.jpg](screenshots/v1.4.27/collage-v1.4.27.jpg)
+Full combined image (download): [collage-v1.4.28.jpg](screenshots/v1.4.28/collage-v1.4.28.jpg)
 
 ---
 
