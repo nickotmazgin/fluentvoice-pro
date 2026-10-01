@@ -20,7 +20,7 @@ SRC = ROOT / "screenshots" / f"v{VERSION}"
 
 TITLE = "FluentVoice Pro™"
 SUBTITLE = "Windows 11 / 10 text-to-speech & read-aloud tray suite"
-HIGHLIGHTS = "60 HD voices in 12 languages  •  Every offline Windows voice  •  Smart auto-route  •  Direct Text Reader  •  SHA-256 verified updates"
+HIGHLIGHTS = "78 HD voices in 21 languages  •  Every offline Windows voice  •  Smart auto-route  •  Direct Text Reader  •  SHA-256 verified updates"
 FOOTER = "Nick Otmazgin  •  github.com/nickotmazgin/fluentvoice-pro  •  MIT License"
 
 PANELS = [  # (file, number, label) in reading order

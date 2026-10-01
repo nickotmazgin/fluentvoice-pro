@@ -68,14 +68,14 @@ def _patch_engine(monkeypatch, synth_ok=lambda idx: True, play_ok=True):
         "clean_markdown": True, "preferred_voices": {"english": "en-US-AndrewMultilingualNeural"}})
 
     def fake_synth(text, voice, out, **kw):
-        idx = len(calls["synth"])
+        idx = int(out.rsplit("_", 1)[1].split(".")[0])  # chunk index (chunks are prepared in parallel)
         calls["synth"].append(text)
         if synth_ok(idx):
             open(out, "wb").write(b"ID3")
             return True, ""
         return False, "boom"
 
-    def fake_play(path, gen, volume=100, start_ts=None, on_progress=None):
+    def fake_play(path, gen, volume=100, start_ts=None, on_progress=None, **kw):
         calls["play"].append(path)
         if on_progress:
             on_progress(500, 1000)

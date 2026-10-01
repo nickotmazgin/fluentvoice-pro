@@ -8,6 +8,8 @@ the structure.
 
 from __future__ import annotations
 
+import re
+
 # family key → display name. Keys are also the preferred_voices / auto-route keys
 # ("cjk" is Japanese and "cyrillic" is Russian, kept for existing config files).
 LANGUAGES = {
@@ -23,11 +25,24 @@ LANGUAGES = {
     "cjk": "Japanese",
     "chinese": "Chinese",
     "korean": "Korean",
+    "hindi": "Hindi",
+    "marathi": "Marathi",
+    "bengali": "Bengali",
+    "tamil": "Tamil",
+    "telugu": "Telugu",
+    "gujarati": "Gujarati",
+    "kannada": "Kannada",
+    "malayalam": "Malayalam",
+    "thai": "Thai",
 }
 
 # Languages written in Latin script: "Multilingual" voices read these natively,
 # so auto-routing leaves them alone.
 LATIN_FAMILIES = {"english", "spanish", "french", "german", "italian", "portuguese"}
+
+# Languages that share a script: auto-route can only see the script (Devanagari), so text
+# it detects as Hindi is left to a Marathi voice the user picked, and vice versa.
+SAME_SCRIPT = {"marathi": "hindi", "hindi": "marathi"}
 
 # (voice id, Settings / tray label, family)
 CATALOG = [
@@ -47,14 +62,14 @@ CATALOG = [
     ("en-GB-ThomasNeural", "Thomas (UK HD Male)", "english"),
     ("en-GB-SoniaNeural", "Sonia (UK HD Female)", "english"),
     ("en-GB-LibbyNeural", "Libby (UK HD Female)", "english"),
-    ("en-AU-WilliamMultilingualNeural", "William Multilingual (Australia HD Male)", "english"),
-    ("en-AU-NatashaNeural", "Natasha (Australia HD Female)", "english"),
-    ("en-CA-LiamNeural", "Liam (Canada HD Male)", "english"),
-    ("en-CA-ClaraNeural", "Clara (Canada HD Female)", "english"),
-    ("en-IE-ConnorNeural", "Connor (Ireland HD Male)", "english"),
-    ("en-IE-EmilyNeural", "Emily (Ireland HD Female)", "english"),
-    ("en-IN-PrabhatNeural", "Prabhat (India HD Male)", "english"),
-    ("en-IN-NeerjaNeural", "Neerja (India HD Female)", "english"),
+    ("en-AU-WilliamMultilingualNeural", "William Multilingual (Australian English HD Male)", "english"),
+    ("en-AU-NatashaNeural", "Natasha (Australian English HD Female)", "english"),
+    ("en-CA-LiamNeural", "Liam (Canadian English HD Male)", "english"),
+    ("en-CA-ClaraNeural", "Clara (Canadian English HD Female)", "english"),
+    ("en-IE-ConnorNeural", "Connor (Irish English HD Male)", "english"),
+    ("en-IE-EmilyNeural", "Emily (Irish English HD Female)", "english"),
+    ("en-IN-PrabhatNeural", "Prabhat (Indian English HD Male)", "english"),
+    ("en-IN-NeerjaNeural", "Neerja (Indian English HD Female)", "english"),
     # Hebrew
     ("he-IL-AvriNeural", "Avri (Hebrew HD Male)", "hebrew"),
     ("he-IL-HilaNeural", "Hila (Hebrew HD Female)", "hebrew"),
@@ -102,6 +117,26 @@ CATALOG = [
     ("ko-KR-InJoonNeural", "InJoon (Korean HD Male)", "korean"),
     ("ko-KR-HyunsuMultilingualNeural", "Hyunsu Multilingual (Korean HD Male)", "korean"),
     ("ko-KR-SunHiNeural", "SunHi (Korean HD Female)", "korean"),
+    # Indian languages
+    ("hi-IN-MadhurNeural", "Madhur (Hindi HD Male)", "hindi"),
+    ("hi-IN-SwaraNeural", "Swara (Hindi HD Female)", "hindi"),
+    ("mr-IN-ManoharNeural", "Manohar (Marathi HD Male)", "marathi"),
+    ("mr-IN-AarohiNeural", "Aarohi (Marathi HD Female)", "marathi"),
+    ("bn-IN-BashkarNeural", "Bashkar (Bengali HD Male, India)", "bengali"),
+    ("bn-IN-TanishaaNeural", "Tanishaa (Bengali HD Female, India)", "bengali"),
+    ("ta-IN-ValluvarNeural", "Valluvar (Tamil HD Male)", "tamil"),
+    ("ta-IN-PallaviNeural", "Pallavi (Tamil HD Female)", "tamil"),
+    ("te-IN-MohanNeural", "Mohan (Telugu HD Male)", "telugu"),
+    ("te-IN-ShrutiNeural", "Shruti (Telugu HD Female)", "telugu"),
+    ("gu-IN-NiranjanNeural", "Niranjan (Gujarati HD Male)", "gujarati"),
+    ("gu-IN-DhwaniNeural", "Dhwani (Gujarati HD Female)", "gujarati"),
+    ("kn-IN-GaganNeural", "Gagan (Kannada HD Male)", "kannada"),
+    ("kn-IN-SapnaNeural", "Sapna (Kannada HD Female)", "kannada"),
+    ("ml-IN-MidhunNeural", "Midhun (Malayalam HD Male)", "malayalam"),
+    ("ml-IN-SobhanaNeural", "Sobhana (Malayalam HD Female)", "malayalam"),
+    # Thai
+    ("th-TH-NiwatNeural", "Niwat (Thai HD Male)", "thai"),
+    ("th-TH-PremwadeeNeural", "Premwadee (Thai HD Female)", "thai"),
 ]
 
 DEFAULT_VOICE = "en-US-AndrewMultilingualNeural"
@@ -119,6 +154,15 @@ DEFAULT_PREFERRED = {
     "cjk": "ja-JP-KeitaNeural",
     "chinese": "zh-CN-YunxiNeural",
     "korean": "ko-KR-InJoonNeural",
+    "hindi": "hi-IN-MadhurNeural",
+    "marathi": "mr-IN-ManoharNeural",
+    "bengali": "bn-IN-BashkarNeural",
+    "tamil": "ta-IN-ValluvarNeural",
+    "telugu": "te-IN-MohanNeural",
+    "gujarati": "gu-IN-NiranjanNeural",
+    "kannada": "kn-IN-GaganNeural",
+    "malayalam": "ml-IN-MidhunNeural",
+    "thai": "th-TH-NiwatNeural",
 }
 
 # Voices Microsoft retired → closest current voice (migrates saved settings).
@@ -146,6 +190,15 @@ SAMPLE_TEXT = {
     "cjk": "FluentVoice Pro へようこそ！高品質な自然音声が有効です。",
     "chinese": "欢迎使用 FluentVoice Pro！高清自然语音已启用。",
     "korean": "FluentVoice Pro에 오신 것을 환영합니다! 고품질 자연 음성이 켜져 있습니다.",
+    "hindi": "FluentVoice Pro में आपका स्वागत है! उच्च गुणवत्ता वाली प्राकृतिक आवाज़ सक्रिय है।",
+    "marathi": "FluentVoice Pro मध्ये आपले स्वागत आहे! उच्च दर्जाचा नैसर्गिक आवाज सक्रिय आहे.",
+    "bengali": "FluentVoice Pro-তে আপনাকে স্বাগতম! উচ্চমানের স্বাভাবিক কণ্ঠস্বর চালু আছে।",
+    "tamil": "FluentVoice Pro-க்கு வரவேற்கிறோம்! உயர்தர இயல்பான குரல் இயக்கத்தில் உள்ளது.",
+    "telugu": "FluentVoice Pro కు స్వాగతం! అధిక నాణ్యత గల సహజ స్వరం సక్రియంగా ఉంది.",
+    "gujarati": "FluentVoice Pro માં આપનું સ્વાગત છે! ઉચ્ચ ગુણવત્તાવાળો કુદરતી અવાજ સક્રિય છે.",
+    "kannada": "FluentVoice Pro ಗೆ ಸುಸ್ವಾಗತ! ಉತ್ತಮ ಗುಣಮಟ್ಟದ ಸಹಜ ಧ್ವನಿ ಸಕ್ರಿಯವಾಗಿದೆ.",
+    "malayalam": "FluentVoice Pro-ലേക്ക് സ്വാഗതം! ഉയർന്ന നിലവാരമുള്ള സ്വാഭാവിക ശബ്ദം സജീവമാണ്.",
+    "thai": "ยินดีต้อนรับสู่ FluentVoice Pro! เสียงพูดธรรมชาติคุณภาพสูงเปิดใช้งานแล้ว",
 }
 
 _BY_ID = {v: (label, fam) for v, label, fam in CATALOG}
@@ -153,7 +206,9 @@ _BY_ID = {v: (label, fam) for v, label, fam in CATALOG}
 _PREFIX_FAMILY = {
     "en-": "english", "he-": "hebrew", "ar-": "arabic", "es-": "spanish", "fr-": "french",
     "de-": "german", "it-": "italian", "pt-": "portuguese", "ru-": "cyrillic", "ja-": "cjk",
-    "zh-": "chinese", "ko-": "korean",
+    "zh-": "chinese", "ko-": "korean", "hi-": "hindi", "mr-": "marathi", "bn-": "bengali",
+    "ta-": "tamil", "te-": "telugu", "gu-": "gujarati", "kn-": "kannada", "ml-": "malayalam",
+    "th-": "thai",
 }
 
 
@@ -173,7 +228,10 @@ def short_name(voice: str) -> str:
 
 _OFFLINE_LANG = {"English": "english", "Hebrew": "hebrew", "Arabic": "arabic", "Spanish": "spanish",
                  "French": "french", "German": "german", "Italian": "italian", "Portuguese": "portuguese",
-                 "Russian": "cyrillic", "Japanese": "cjk", "Chinese": "chinese", "Korean": "korean"}
+                 "Russian": "cyrillic", "Japanese": "cjk", "Chinese": "chinese", "Korean": "korean",
+                 "Hindi": "hindi", "Marathi": "marathi", "Bengali": "bengali", "Tamil": "tamil",
+                 "Telugu": "telugu", "Gujarati": "gujarati", "Kannada": "kannada", "Malayalam": "malayalam",
+                 "Thai": "thai"}
 
 
 def family_of(voice: str) -> str:
@@ -192,6 +250,17 @@ def family_of(voice: str) -> str:
     return "english"
 
 
+_NEURAL_ID = re.compile(r"^[a-z]{2,3}-[A-Z]{2,4}-\w+Neural$")
+
+
+def is_offline(voice: str) -> bool:
+    """True for Windows offline voices (SAPI5 / OneCore, e.g. 'Microsoft George - English
+    (United Kingdom)' or legacy 'Zira'); False for Microsoft neural (cloud) voice ids.
+    Earlier versions only treated names containing "Desktop"/"SAPI" as offline, so OneCore
+    voices were sent to the cloud service, failed, and fell back to Zira."""
+    return not _NEURAL_ID.match(current_id(voice or ""))
+
+
 def is_multilingual(voice: str) -> bool:
     return "multilingual" in (voice or "").lower()
 
@@ -199,7 +268,7 @@ def is_multilingual(voice: str) -> bool:
 def can_read(voice: str, language: str) -> bool:
     """True when this voice reads `language` natively, so auto-routing should keep it."""
     fam = family_of(voice)
-    if fam == language:
+    if fam == language or SAME_SCRIPT.get(fam) == language:
         return True
     return is_multilingual(voice) and language in LATIN_FAMILIES and fam in LATIN_FAMILIES
 

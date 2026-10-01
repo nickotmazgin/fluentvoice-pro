@@ -12,16 +12,18 @@ import threading
 import ctypes
 import unicodedata
 import uuid
-import queue
 import logging
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 try:
     from .config import APP_DIR, CACHE_DIR, load_config, save_config
+    from . import config as _config
     from . import voices
 except (ImportError, ValueError):
     from config import APP_DIR, CACHE_DIR, load_config, save_config
+    import config as _config
     import voices
 
 # ---------------------------------------------------------------------------
@@ -47,8 +49,12 @@ _signal_cache = {"pid": 0, "ts": 0.0, "kind": ""}
 
 # Neural synthesis tuning
 SYNTH_IDLE_TIMEOUT_SEC = 15.0     # max silence from the TTS service (connect / between chunks)
-FIRST_CHUNK_CHARS = 280           # small first chunk => first audio in ~1-2 s even for long texts
-CHUNK_CHARS = 1800
+FIRST_CHUNK_CHARS = 200           # small first chunk => speech starts as soon as possible
+SECOND_CHUNK_CHARS = 450
+CHUNK_CHARS = 700                 # later chunks; several are prepared in parallel ahead of playback
+PREFETCH_WORKERS = 3              # chunks synthesized at the same time
+PREFETCH_AHEAD = 4                # never prepare more than this many chunks ahead of the one playing
+MAX_SPEAK_CHARS = 100_000         # ~1.5 h of speech; longer texts are read up to here (flood guard)
 PLAYBACK_STALL_SEC = 8.0          # MCI "playing" but position frozen => treat as stalled
 CACHE_MAX_AGE_SEC = 15 * 60
 
@@ -222,16 +228,36 @@ def stop_all_playback(*, notify: bool = True):
     if notify:
         trigger_notification("⏹ Speech stopped", "All FluentVoice speech was stopped.", force=True)
 
+# Unicode blocks of scripts that belong to one language family here.
+_SCRIPT_BLOCKS = (
+    (0x0900, 0x097F, "hindi"),      # Devanagari (Hindi; Marathi voices share it)
+    (0x0980, 0x09FF, "bengali"),
+    (0x0A80, 0x0AFF, "gujarati"),
+    (0x0B80, 0x0BFF, "tamil"),
+    (0x0C00, 0x0C7F, "telugu"),
+    (0x0C80, 0x0CFF, "kannada"),
+    (0x0D00, 0x0D7F, "malayalam"),
+    (0x0E00, 0x0E7F, "thai"),
+)
+
+
 def detect_script(text: str) -> str:
-    """Script family from Unicode ranges: hebrew, arabic, cyrillic, cjk (Japanese),
-    chinese, korean, or latin."""
+    """Script family from Unicode ranges: hebrew, arabic, cyrillic, cjk (Japanese), chinese,
+    korean, hindi (Devanagari), bengali, gujarati, tamil, telugu, kannada, malayalam, thai,
+    or latin."""
     if not text:
         return "latin"
 
     counts = {"hebrew": 0, "arabic": 0, "han": 0, "kana": 0, "korean": 0, "cyrillic": 0, "latin": 0}
+    counts.update({fam: 0 for _, _, fam in _SCRIPT_BLOCKS})
     for ch in text:
         code = ord(ch)
-        if 0x0590 <= code <= 0x05FF or 0xFB1D <= code <= 0xFB4F:
+        if 0x0900 <= code <= 0x0E7F:
+            for lo, hi, fam in _SCRIPT_BLOCKS:
+                if lo <= code <= hi:
+                    counts[fam] += 1
+                    break
+        elif 0x0590 <= code <= 0x05FF or 0xFB1D <= code <= 0xFB4F:
             counts["hebrew"] += 1
         elif 0x0600 <= code <= 0x06FF or 0x0750 <= code <= 0x077F:
             counts["arabic"] += 1
@@ -284,10 +310,19 @@ def _heuristic_latin_language(text: str) -> str:
 
 def detect_language(text: str) -> str:
     """Detect language for routing.
-    Returns a voices.LANGUAGES key: english, hebrew, arabic, spanish, french, german,
-    italian, portuguese, cyrillic (Russian), cjk (Japanese), chinese or korean.
+    Returns a voices.LANGUAGES key (english, hebrew, arabic, spanish, french, german, italian,
+    portuguese, cyrillic = Russian, cjk = Japanese, chinese, korean, hindi, marathi, bengali,
+    tamil, telugu, gujarati, kannada, malayalam, thai).
     """
     script = detect_script(text)
+    if script == "hindi":
+        # Hindi and Marathi share Devanagari; the language detector tells them apart.
+        try:
+            from langdetect import detect, DetectorFactory
+            DetectorFactory.seed = 0
+            return "marathi" if detect((text or "")[:4000]) == "mr" else "hindi"
+        except Exception:
+            return "hindi"
     if script != "latin":
         return script
 
@@ -296,7 +331,8 @@ def detect_language(text: str) -> str:
         return "english"
 
     try:
-        from langdetect import detect
+        from langdetect import detect, DetectorFactory
+        DetectorFactory.seed = 0  # repeatable results for short texts
         code = detect(sample)
         mapping = {
             "en": "english",
@@ -312,6 +348,8 @@ def detect_language(text: str) -> str:
             "zh-cn": "chinese",
             "zh-tw": "chinese",
             "ko": "korean",
+            "hi": "hindi", "mr": "marathi", "bn": "bengali", "ta": "tamil", "te": "telugu",
+            "gu": "gujarati", "kn": "kannada", "ml": "malayalam", "th": "thai",
         }
         return mapping.get(code, "english")
     except Exception:
@@ -392,9 +430,14 @@ def clean_text_for_speech(text: str) -> str:
     # 9. Collapse repeated decorative punctuation like '====', '----', '****'
     text = re.sub(r"[-=_*~#]{3,}", " ", text)
 
-    # 10. Markdown syntax symbols
-    text = re.sub(r"#+\s*", "", text)
-    text = text.replace("*", "").replace("_", "")
+    # 10. Markdown syntax only: headings, list markers, emphasis, quotes, hashtags.
+    #     Symbols inside words and maths stay (snake_case, C#, 2*3, a_b).
+    text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*[*+]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"(\*\*|__)(?=\S)(.+?)(?<=\S)\1", r"\2", text)
+    text = re.sub(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])", r"\1", text)
+    text = re.sub(r"(?<![\w_])_(?=\S)([^_\n]+?)(?<=\S)_(?![\w_])", r"\1", text)
+    text = re.sub(r"(?<![\w#])#(?=[^\W\d_])", "", text)
     text = re.sub(r"^\s*>\s*", "", text, flags=re.MULTILINE)
 
     # 11. Soft line break merge (PDF wrapping): replace single \n with space, keep double \n
@@ -444,6 +487,34 @@ def get_clipboard_text() -> str:
                 except Exception:
                     pass
     return ""
+
+def clipboard_is_private() -> bool:
+    """True when the app that copied asked clipboard tools to ignore it.
+
+    Password managers (Bitwarden, 1Password, KeePass…) and other apps mark secrets with
+    these formats; Windows clipboard history honours them, and so does Auto-Read on Copy,
+    so a copied password is never read aloud."""
+    try:
+        import win32clipboard
+    except ImportError:
+        return False
+    try:
+        for name in ("ExcludeClipboardContentFromMonitorProcessing", "Clipboard Viewer Ignore"):
+            if win32clipboard.IsClipboardFormatAvailable(win32clipboard.RegisterClipboardFormat(name)):
+                return True
+        fmt = win32clipboard.RegisterClipboardFormat("CanIncludeInClipboardHistory")
+        if win32clipboard.IsClipboardFormatAvailable(fmt):
+            win32clipboard.OpenClipboard()
+            try:
+                data = win32clipboard.GetClipboardData(fmt)
+            finally:
+                win32clipboard.CloseClipboard()
+            if isinstance(data, (bytes, bytearray)) and len(data) >= 4 and int.from_bytes(data[:4], "little") == 0:
+                return True
+    except Exception:
+        pass
+    return False
+
 
 ONECORE_VOICES = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\Voices"
 
@@ -505,8 +576,13 @@ def speak_offline_sapi(
     *,
     start_ts=None,
     my_gen=None,
+    interrupt=None,
+    progress=None,
 ) -> bool:
-    """Zero-latency offline speech using Windows OneCore / SAPI5. Returns True on success."""
+    """Zero-latency offline speech using Windows OneCore / SAPI5. Returns True on success.
+
+    interrupt() → stop early (settings changed); progress["pos"] then holds the character
+    offset of the sentence being spoken, so the caller can resume from there."""
     global _is_speaking, _sapi_voice
     if my_gen is None:
         my_gen = _current_generation
@@ -536,17 +612,30 @@ def speak_offline_sapi(
         sapi_rate = int(round((rate_mult - 1.0) * 8))
         sp.Rate = max(-10, min(10, sapi_rate))
         sp.Volume = max(0, min(100, int(volume)))
-        # Async + pump wait so Stop / Emergency Stop can purge mid-utterance.
+        # Async + short waits so Stop / Emergency Stop can purge mid-utterance. WaitUntilDone
+        # is used rather than Status.RunningState, which reads "not speaking" for ~0.2 s after
+        # an async Speak: the old loop returned at once while the voice kept talking unseen.
         sp.Speak(text, 1)  # SVSFlagsAsync
-        while sp.Status.RunningState == 2:  # SPRS_IS_SPEAKING
+        while not sp.WaitUntilDone(80):
             _heartbeat()
+            if interrupt is not None and interrupt():
+                if progress is not None:
+                    try:
+                        progress["pos"] = int(sp.Status.InputSentencePosition)
+                    except Exception:
+                        progress["pos"] = 0
+                    progress["interrupted"] = True
+                try:
+                    sp.Speak("", _SVSF_PURGE_ASYNC)
+                except Exception:
+                    pass
+                return False
             if _should_abort(my_gen, start_ts):
                 try:
                     sp.Speak("", _SVSF_PURGE_ASYNC)
                 except Exception:
                     pass
                 return False
-            time.sleep(0.05)
         return not _should_abort(my_gen, start_ts)
     except Exception as e:
         _log.error("offline SAPI error: %s", e)
@@ -571,11 +660,14 @@ def play_audio_file(
     *,
     start_ts=None,
     on_progress=None,
+    interrupt=None,
+    live_volume=None,
 ) -> bool:
     """Plays audio through a single dedicated MCI device with instant generation abort.
 
     Returns True when the file played to the end. Returns False on abort, MCI error,
-    or a playback stall (MCI reports 'playing' but the position never advances).
+    a playback stall (MCI reports 'playing' but the position never advances), or when
+    interrupt() returns True (settings changed mid-read). live_volume() → current volume.
     """
     global _is_speaking
     if _should_abort(generation_id, start_ts):
@@ -616,10 +708,20 @@ def play_audio_file(
     finished = True
     last_pos = -1
     last_move = time.time()
+    cur_vol = int(volume)
     while True:
         if _should_abort(generation_id, start_ts):
             finished = False
             break
+        if interrupt is not None and interrupt():
+            finished = False
+            break
+        if live_volume is not None:
+            v = live_volume()
+            if v != cur_vol:
+                cur_vol = v
+                winmm.mciSendStringW(f"setaudio {MCI_DEVICE_ALIAS} volume to {max(0, min(1000, v * 10))}",
+                                     None, 0, None)
 
         winmm.mciSendStringW(f"status {MCI_DEVICE_ALIAS} mode", buf, 128, None)
         mode = buf.value
@@ -654,11 +756,16 @@ def play_audio_file(
     return finished
 
 
-def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = CHUNK_CHARS) -> list:
+_SENTENCE_END = re.compile(r"[.!?…:;׃۔。！？।॥](?:[\"'”’)\]]*)\s")
+
+
+def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = CHUNK_CHARS,
+                        second: int = SECOND_CHUNK_CHARS) -> list:
     """Split text into speakable chunks at sentence boundaries.
 
-    The first chunk is short so audio starts almost immediately; later chunks are
-    synthesized in the background while earlier ones play.
+    Chunks grow (first → second → rest) so speech starts quickly, and every chunk is small
+    enough to be synthesized while the ones before it play: one 1,800-character chunk used
+    to take ~50 s to prepare and left a long silence after the first sentence or two.
     """
     text = (text or "").strip()
     if not text:
@@ -671,7 +778,7 @@ def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = C
             break
         window = text[:limit]
         cut = -1
-        for m in re.finditer(r"[.!?…:;׃۔。！？](?:[\"'”’)\]]*)\s", window):
+        for m in _SENTENCE_END.finditer(window):
             cut = m.end()
         if cut < limit * 0.4:
             comma = max(window.rfind(", "), window.rfind("، "), window.rfind("、"))
@@ -684,8 +791,17 @@ def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = C
         if piece:
             chunks.append(piece)
         text = text[cut:].strip()
-        limit = rest
+        limit = second if len(chunks) == 1 else rest
     return chunks
+
+
+def sentence_start_before(text: str, offset: int) -> int:
+    """Index where the sentence containing `offset` begins (0 if none): used to resume after
+    a voice change from the sentence that was being spoken, not from the chunk start."""
+    best = 0
+    for m in _SENTENCE_END.finditer(text[:max(0, offset)]):
+        best = m.end()
+    return best
 
 
 async def _synthesize_edge(
@@ -807,6 +923,48 @@ def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None) ->
         _clear_heartbeat()
 
 
+class _SettingsWatch:
+    """Notices changes made in Settings or the tray while a text is being read."""
+
+    def __init__(self):
+        self._mtime = self._stat()
+        self._next = 0.0
+
+    @staticmethod
+    def _stat():
+        try:
+            return _config.CONFIG_FILE.stat().st_mtime_ns
+        except Exception:
+            return 0
+
+    def poll(self):
+        """Fresh settings if config.json changed since the last poll (checked ≤ 4×/s), else None."""
+        now = time.time()
+        if now < self._next:
+            return None
+        self._next = now + 0.25
+        m = self._stat()
+        if m == self._mtime:
+            return None
+        self._mtime = m
+        return load_config()
+
+
+def _speech_plan(cfg: dict, text: str, detected_lang: str, auto_route_override) -> dict:
+    """Voice and prosody for `text` under the given settings (auto-route applied)."""
+    chosen = cfg.get("voice", voices.DEFAULT_VOICE)
+    auto_route = cfg.get("auto_route_language", True) if auto_route_override is None else auto_route_override
+    voice, routed = choose_voice(detected_lang, chosen, cfg, text) if auto_route else (chosen, False)
+    rate_mult = float(cfg.get("rate_mult", 1.0))
+    pct = int(round((rate_mult - 1.0) * 100))
+    pitch_hz = int(cfg.get("pitch_hz", 0))
+    return {
+        "voice": voice, "chosen": chosen, "routed": routed, "auto_route": auto_route,
+        "rate_mult": rate_mult, "rate": f"{pct:+d}%", "pitch": f"{pitch_hz:+d}Hz",
+        "volume": int(cfg.get("volume", 100)),
+    }
+
+
 def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | None = None) -> dict:
     """Speech pipeline.
 
@@ -816,6 +974,10 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
       "speaking"     {voice, mode, part, parts, pos_ms, len_ms}
       "fallback"     {reason}                 – cloud failed, switching to offline voice
       "done" / "aborted" / "error" {message}  – terminal states
+
+    Changing the voice, speed or pitch while a text is being read takes effect at once: the
+    reading continues from the current sentence with the new settings. Volume changes apply
+    to the audio that is playing.
     """
     global _current_generation, _is_speaking
 
@@ -826,38 +988,26 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         cleaned = (raw_text or "").strip()
     if not cleaned:
         cleaned = "Nothing to read. Copy text or click to speak."
+    if len(cleaned) > MAX_SPEAK_CHARS:
+        cut = sentence_start_before(cleaned, MAX_SPEAK_CHARS) or MAX_SPEAK_CHARS
+        _log.warning("text of %d chars trimmed to the first %d", len(cleaned), cut)
+        cleaned = cleaned[:cut]
+        trigger_notification("📄 Long text", f"Reading the first {MAX_SPEAK_CHARS:,} characters (about 1.5 hours).",
+                             force=True, important=True)
 
-    voice = cfg.get("voice", "en-US-AndrewMultilingualNeural")
-    engine = cfg.get("engine", "neural")
-
-    rate_mult = cfg.get("rate_mult", 1.0)
-    pct = int(round((rate_mult - 1.0) * 100))
-    rate_str = f"{pct:+d}%" if pct != 0 else "+0%"
-
-    pitch_hz = int(cfg.get("pitch_hz", 0))
-    pitch_str = f"{pitch_hz:+d}Hz" if pitch_hz != 0 else "+0Hz"
-    volume = int(cfg.get("volume", 100))
-
-    # Smart Language Detection & Voice Routing
     detected_lang = detect_language(cleaned)
-    auto_route = cfg.get("auto_route_language", True) if auto_route_override is None else auto_route_override
-    chosen_voice = voice
-    routed = False
-
-    if auto_route:
-        voice, routed = choose_voice(detected_lang, voice, cfg, cleaned)
-        if routed:
-            engine = "neural"
-            trigger_notification(
-                "🌐 Auto-route",
-                f"{voices.LANGUAGES.get(detected_lang, detected_lang.title())} text → {voices.short_name(voice)} "
-                f"(your voice: {voices.short_name(chosen_voice)})",
-            )
-    elif auto_route_override is None:
+    plan = _speech_plan(cfg, cleaned, detected_lang, auto_route_override)
+    if plan["routed"]:
+        trigger_notification(
+            "🌐 Auto-route",
+            f"{voices.LANGUAGES.get(detected_lang, detected_lang.title())} text → {voices.short_name(plan['voice'])} "
+            f"(your voice: {voices.short_name(plan['chosen'])})",
+        )
+    elif auto_route_override is None and not plan["auto_route"]:
         # Warn on script/voice mismatch when auto-routing is disabled
-        voice_lang = _voice_family(voice)
+        voice_lang = _voice_family(plan["voice"])
         script = detect_script(cleaned)
-        if script != "latin" and not voices.can_read(voice, script):
+        if script != "latin" and not voices.can_read(plan["voice"], script):
             names = voices.LANGUAGES
             trigger_notification(
                 "ℹ Voice notice",
@@ -885,126 +1035,84 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         _emit(on_status, "aborted", message="Stopped")
         return {"status": "aborted", "mode": "superseded"}
 
+    state = {"plan": plan}
+    watch = _SettingsWatch()
+
+    def settings_changed() -> bool:
+        """True when the voice / speed / pitch changed; volume is applied live instead."""
+        fresh = watch.poll()
+        if fresh is None:
+            return False
+        new = _speech_plan(fresh, cleaned, detected_lang, auto_route_override)
+        cur = state["plan"]
+        cur["volume"] = new["volume"]
+        if (new["voice"], new["rate"], new["pitch"]) != (cur["voice"], cur["rate"], cur["pitch"]):
+            state["next"] = new
+            return True
+        return False
+
+    def live_volume() -> int:
+        return state["plan"]["volume"]
+
     snippet = (cleaned[:45] + "...") if len(cleaned) > 45 else cleaned
-    _log.info("speak request gen=%d voice=%s engine=%s lang=%s chars=%d%s", my_gen, voice, engine, detected_lang,
-              len(cleaned), f" routed_from={chosen_voice}" if routed else "")
-
-    # Offline SAPI Mode (skip when auto-route forced a neural voice)
-    if (not routed) and (engine == "offline" or "sapi" in voice.lower() or "desktop" in voice.lower()):
-        trigger_notification("🔊 Speaking (offline voice)", f"\"{snippet}\"")
-        _emit(on_status, "speaking", voice=voice, mode="offline", part=1, parts=1, pos_ms=0, len_ms=0)
-        ok = speak_offline_sapi(cleaned, voice_pref=voice, rate_mult=rate_mult, volume=volume,
-                                start_ts=start_ts, my_gen=my_gen)
-        if aborted():
-            return aborted_result()
-        if not ok:
-            msg = "No local Windows voices found."
-            trigger_notification(
-                "⚠ No offline voices",
-                "No Windows offline voices found. Settings → Voice & Speech → Install Windows Offline Voices.",
-                force=True,
-                important=True,
-            )
-            _emit(on_status, "error", message=msg)
-            return {"status": "error", "mode": "offline", "message": msg}
-        _emit(on_status, "done", mode="offline")
-        return {"status": "success", "mode": "offline", "message": "Played via Windows offline SAPI"}
-
-    # ---- Neural: chunked streaming pipeline -------------------------------------------
-    # Producer synthesizes chunk N+1 while chunk N plays, so a 3,000+ char text starts
-    # talking in ~1-2 s instead of waiting for the whole file (which looked "stuck").
-    chunks = split_for_streaming(cleaned) or [cleaned]
-    parts = len(chunks)
-    _emit(on_status, "synthesizing", voice=voice, parts=parts,
-          routed_from=chosen_voice if routed else "", lang=detected_lang)
-
-    ready = queue.Queue(maxsize=2)
-    tag = uuid.uuid4().hex[:8]
-
-    def producer():
-        for idx, chunk in enumerate(chunks):
-            if aborted():
-                break
-            out = str(CACHE_DIR / f"speech_{_PID}_{my_gen}_{tag}_{idx}.mp3")
-            ok, err = _synthesize_to_file(chunk, voice, out, rate=rate_str, pitch=pitch_str,
-                                          volume=volume, abort_check=aborted)
-            item = (idx, out if ok else None, err)
-            while not aborted():
-                try:
-                    ready.put(item, timeout=0.2)
-                    break
-                except queue.Full:
-                    continue
-            else:
-                _safe_remove(out)
-                return
-            if not ok:
-                return
-        while not aborted():
-            try:
-                ready.put(None, timeout=0.2)
-                break
-            except queue.Full:
-                continue
-
-    threading.Thread(target=producer, name="fv-synth", daemon=True).start()
-
-    def drain_and_abort():
-        while True:
-            try:
-                it = ready.get_nowait()
-            except queue.Empty:
-                break
-            if it and it[1]:
-                _safe_remove(it[1])
-        return aborted_result()
-
-    played_any = False
-    failed_at = None
-    fail_reason = ""
+    text_left = cleaned
+    first_round = True
     while True:
-        item = None
-        while item is None:
+        plan = state["plan"]
+        voice = plan["voice"]
+        offline = voices.is_offline(voice)
+        _log.info("speak request gen=%d voice=%s engine=%s lang=%s chars=%d%s%s", my_gen, voice,
+                  "offline" if offline else "neural", detected_lang, len(text_left),
+                  f" routed_from={plan['chosen']}" if plan["routed"] else "",
+                  "" if first_round else " (settings changed mid-read)")
+        first_round = False
+
+        if offline:
+            trigger_notification("🔊 Speaking (offline voice)", f"\"{snippet}\"")
+            _emit(on_status, "speaking", voice=voice, mode="offline", part=1, parts=1, pos_ms=0, len_ms=0)
+            prog = {}
+            ok = speak_offline_sapi(text_left, voice_pref=voice, rate_mult=plan["rate_mult"], volume=plan["volume"],
+                                    start_ts=start_ts, my_gen=my_gen, interrupt=settings_changed, progress=prog)
             if aborted():
-                return drain_and_abort()
-            try:
-                item = ready.get(timeout=0.2)
-            except queue.Empty:
+                return aborted_result()
+            if prog.get("interrupted") and "next" in state:
+                text_left = text_left[prog.get("pos", 0):].strip()
+                state["plan"] = state.pop("next")
+                if text_left:
+                    continue
+                ok = True
+            if not ok:
+                msg = "No local Windows voices found."
+                trigger_notification(
+                    "⚠ No offline voices",
+                    "No Windows offline voices found. Settings → Voice & Speech → Install Windows Offline Voices.",
+                    force=True,
+                    important=True,
+                )
+                _emit(on_status, "error", message=msg)
+                return {"status": "error", "mode": "offline", "message": msg}
+            _emit(on_status, "done", mode="offline")
+            return {"status": "success", "mode": "offline", "message": "Played via Windows offline SAPI"}
+
+        result = _speak_neural(text_left, plan, my_gen=my_gen, start_ts=start_ts, on_status=on_status,
+                               aborted=aborted, interrupt=settings_changed, live_volume=live_volume,
+                               snippet=snippet, lang=detected_lang)
+        kind = result[0]
+        if kind == "aborted" or aborted():
+            return aborted_result()
+        if kind == "changed" and "next" in state:
+            text_left = result[1]
+            state["plan"] = state.pop("next")
+            if text_left:
                 continue
-            if item is None:  # end sentinel
-                break
-        if item is None:
-            break
-        idx, path, err = item
-        if path is None:
-            failed_at, fail_reason = idx, err or "synthesis failed"
-            break
-        if not played_any:
-            trigger_notification("🔊 Speaking", f"\"{snippet}\"")
-        played_any = True
-
-        def progress(pos_ms, len_ms, _idx=idx):
-            _emit(on_status, "speaking", voice=voice, mode="neural", part=_idx + 1, parts=parts,
-                  pos_ms=pos_ms, len_ms=len_ms)
-
-        progress(0, 0)
-        ok = play_audio_file(path, my_gen, volume=volume, start_ts=start_ts, on_progress=progress)
-        _safe_remove(path)
-        if aborted():
-            return drain_and_abort()
-        if not ok:
-            failed_at, fail_reason = idx, "Audio playback failed or stalled (see speech.log)"
-            break
-
-    if aborted():
-        return drain_and_abort()
-
-    if failed_at is None:
-        _emit(on_status, "done", mode="neural", voice=voice)
-        return {"status": "success", "mode": "neural", "voice": voice}
+            kind = "done"
+        if kind == "done":
+            _emit(on_status, "done", mode="neural", voice=voice)
+            return {"status": "success", "mode": "neural", "voice": voice}
+        break
 
     # ---- Fallback to local SAPI for whatever has not been spoken yet -------------------
-    remaining = " ".join(chunks[failed_at:])
+    _, remaining, fail_reason, failed_at, parts = result
     _log.warning("falling back to offline SAPI at part %d/%d: %s", failed_at + 1, parts, fail_reason)
     trigger_notification(
         "🌐 Offline voice in use",
@@ -1013,7 +1121,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         important=True,
     )
     _emit(on_status, "fallback", reason=fail_reason)
-    ok = speak_offline_sapi(remaining, voice_pref="Zira", rate_mult=rate_mult, volume=volume,
+    ok = speak_offline_sapi(remaining, voice_pref="Zira", rate_mult=plan["rate_mult"], volume=plan["volume"],
                             start_ts=start_ts, my_gen=my_gen)
     if aborted():
         return aborted_result()
@@ -1029,6 +1137,117 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         return {"status": "error", "mode": "failed", "message": msg}
     _emit(on_status, "done", mode="offline")
     return {"status": "fallback", "mode": "offline", "message": f"Cloud failed ({fail_reason}), fell back to offline."}
+
+
+def _speak_neural(text, plan, *, my_gen, start_ts=None, on_status=None, aborted, interrupt,
+                  live_volume, snippet, lang):
+    """Chunked neural streaming. Several chunks are synthesized in parallel ahead of the one
+    playing, so long texts read without gaps.
+
+    Returns ("done",) | ("aborted",) | ("changed", text_still_to_read)
+          | ("failed", text_still_to_read, reason, chunk_index, chunk_count)
+    """
+    voice = plan["voice"]
+    chunks = split_for_streaming(text) or [text]
+    parts = len(chunks)
+    _emit(on_status, "synthesizing", voice=voice, parts=parts,
+          routed_from=plan["chosen"] if plan["routed"] else "", lang=lang)
+
+    tag = uuid.uuid4().hex[:8]
+    cancel = threading.Event()
+
+    def stop_synth() -> bool:
+        return cancel.is_set() or aborted()
+
+    def synth(idx):
+        if stop_synth():
+            return None, "aborted"
+        out = str(CACHE_DIR / f"speech_{_PID}_{my_gen}_{tag}_{idx}.mp3")
+        # Synthesized at full level: volume is applied once, at playback (and can change live).
+        ok, err = _synthesize_to_file(chunks[idx], voice, out, rate=plan["rate"], pitch=plan["pitch"],
+                                      volume=100, abort_check=stop_synth)
+        return (out if ok else None), err
+
+    pool = ThreadPoolExecutor(max_workers=PREFETCH_WORKERS, thread_name_prefix="fv-synth")
+    futures = {}
+
+    def submit_from(i):
+        for j in range(i, min(parts, i + PREFETCH_AHEAD)):
+            if j not in futures:
+                futures[j] = pool.submit(synth, j)
+
+    def cleanup():
+        cancel.set()
+        pending = list(futures.values())
+        for f in pending:
+            f.cancel()
+        pool.shutdown(wait=False, cancel_futures=True)
+
+        def remove_outputs():
+            for f in pending:
+                if f.cancelled():
+                    continue
+                try:
+                    path, _ = f.result(timeout=SYNTH_IDLE_TIMEOUT_SEC + 5)
+                except Exception:
+                    continue
+                _safe_remove(path)
+        threading.Thread(target=remove_outputs, name="fv-cleanup", daemon=True).start()
+
+    played_any = False
+    try:
+        for i in range(parts):
+            submit_from(i)
+            fut = futures[i]
+            while True:
+                if aborted():
+                    return ("aborted",)
+                if interrupt():  # settings changed while this chunk was still being prepared
+                    return ("changed", " ".join(chunks[i:]))
+                try:
+                    path, err = fut.result(timeout=0.2)
+                    break
+                except FutureTimeout:
+                    _heartbeat()
+            if path is None:
+                if aborted():
+                    return ("aborted",)
+                return ("failed", " ".join(chunks[i:]), err or "synthesis failed", i, parts)
+            if not played_any:
+                trigger_notification("🔊 Speaking", f"\"{snippet}\"")
+                played_any = True
+
+            pos = {"ms": 0, "len": 0}
+
+            def progress(pos_ms, len_ms, _idx=i):
+                pos["ms"], pos["len"] = pos_ms, len_ms
+                _emit(on_status, "speaking", voice=voice, mode="neural", part=_idx + 1, parts=parts,
+                      pos_ms=pos_ms, len_ms=len_ms)
+
+            changed = {"flag": False}
+
+            def intr():
+                if interrupt():
+                    changed["flag"] = True
+                    return True
+                return False
+
+            progress(0, 0)
+            ok = play_audio_file(path, my_gen, volume=live_volume(), start_ts=start_ts, on_progress=progress,
+                                 interrupt=intr, live_volume=live_volume)
+            _safe_remove(path)
+            if aborted():
+                return ("aborted",)
+            if changed["flag"]:
+                frac = pos["ms"] / pos["len"] if pos["len"] else 0.0
+                cur = chunks[i]
+                off = sentence_start_before(cur, int(len(cur) * frac))
+                return ("changed", (cur[off:] + " " + " ".join(chunks[i + 1:])).strip())
+            if not ok:
+                return ("failed", " ".join(chunks[i:]), "Audio playback failed or stalled (see speech.log)", i, parts)
+        return ("done",)
+    finally:
+        cleanup()
 
 
 def toggle_speak_or_stop(blocking: bool = False):

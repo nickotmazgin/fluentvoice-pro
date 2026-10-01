@@ -48,10 +48,17 @@ Use after install or before cutting a release.
    - Voice & Speech: Language = Hebrew, Voice = Avri → the test box shows a right-aligned Hebrew sample → **Speak Test Text** plays Avri.
    - Direct Text Reader with Avri + English text → status shows `auto-routed for English text (your voice: Avri)`.
    - Ava Multilingual + a long Spanish paragraph → still Ava (no routing).
-   - Automation & System → Preferred Voices lists 12 languages; tray → Neural Voices (World HD) has a submenu per language.
+   - Automation & System → Preferred Voices lists 21 languages; tray → Neural Voices (World HD) has a submenu per language.
 
 10. **Notifications, offline voices, clicks (v1.4.22+)**
    - Tray → Voice → pick a voice: the toast header says **FluentVoice Pro** with the app icon (not "Python").
    - Settings → Automation & System → Windows notifications = Important only: reading text shows no "Speaking…" toast; switching to All shows it.
    - Tray → Local Windows Voices (Offline) lists every installed voice (e.g. George / Susan / Hazel UK) and they speak.
    - Double-click the tray icon: speech starts once (does not start-and-stop). Click again while it is preparing: it stops.
+
+11. **Long reads, Auto-Read, mid-read changes (v1.4.25+)**
+   - Turn on Auto-Read on Copy and copy a long article (2,000+ characters): it reads straight through with no long pauses.
+   - While it reads, pick another voice in the tray: it continues from the current sentence in the new voice. Change the volume in Settings: the playing audio follows.
+   - Copy the same text again after it finished: it is read again. Copy it again while it is still being read: it is not restarted.
+   - Pick an offline voice (e.g. Windows George): it reads in that voice, and Stop / a tray click stops it at once.
+   - Voice & Speech → Language: Hindi, Thai, Tamil… show their voices; the test sentence displays correctly and is spoken in that language.

@@ -88,6 +88,18 @@ def save_config(cfg: dict):
             pass
 
 
+def update_config(changes: dict) -> dict:
+    """Apply `changes` to the settings currently on disk and save them; returns the result.
+
+    The tray and the Settings window are separate processes. Saving a whole cached copy
+    overwrote changes the other one had made since (e.g. picking a voice in the tray could
+    switch Auto-Read back off), so every save now writes only the keys that changed."""
+    cfg = load_config()
+    cfg.update(changes)
+    save_config(cfg)
+    return cfg
+
+
 def factory_reset_config() -> dict:
     """Restore all settings to factory defaults and persist to disk."""
     cfg = DEFAULT_CONFIG.copy()

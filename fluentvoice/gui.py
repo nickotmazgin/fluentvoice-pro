@@ -9,6 +9,8 @@ import webbrowser
 import threading
 import subprocess
 from pathlib import Path
+import copy
+
 import customtkinter as ctk
 
 # Ensure package imports work
@@ -116,6 +118,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._enable_windows_dark_titlebar()
 
         self.cfg = config.load_config()
+        self._cfg_base = copy.deepcopy(self.cfg)
         self.voice_map = build_full_voice_map()
         self._syncing_from_disk = False
 
@@ -1666,6 +1669,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     changed = True
 
             self.cfg = fresh
+            self._cfg_base = copy.deepcopy(fresh)
             if changed:
                 self._refresh_reader_voice_label()
                 self.autosave_lbl.configure(text="✓ Synced from tray / live config", text_color="#00D2FF")
@@ -1726,16 +1730,21 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if choice != current:
             self._on_voice_changed(choice)
 
+    def _persist_cfg(self):
+        """Save only the settings changed in this window, on top of the file on disk, so a
+        change made in the tray meanwhile is never overwritten."""
+        changes = {k: v for k, v in self.cfg.items() if self._cfg_base.get(k) != v}
+        if changes:
+            self.cfg = config.update_config(changes)
+            self._cfg_base = copy.deepcopy(self.cfg)
+
     def _on_voice_changed(self, choice):
         if self._syncing_from_disk:
             return
         vcode = self.voice_map.get(choice, "en-US-AndrewMultilingualNeural")
         self.cfg["voice"] = vcode
-        if "sapi" in vcode.lower() or "desktop" in vcode.lower():
-            self.cfg["engine"] = "offline"
-        else:
-            self.cfg["engine"] = "neural"
-        config.save_config(self.cfg)
+        self.cfg["engine"] = "offline" if voices.is_offline(vcode) else "neural"
+        self._persist_cfg()
         self._trigger_autosave_indicator()
         self._refresh_reader_voice_label()
         core.trigger_notification("FluentVoice Pro", f"🗣 Voice selected: {choice}")
@@ -1796,7 +1805,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             return
         self.rate_val_lbl.configure(text=f"{val:.1f}x")
         self.cfg["rate_mult"] = round(val, 1)
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_pitch_slider(self, val):
@@ -1806,7 +1815,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         txt = f"{pitch_int:+d}Hz (Default)" if pitch_int == 0 else f"{pitch_int:+d}Hz"
         self.pitch_val_lbl.configure(text=txt)
         self.cfg["pitch_hz"] = pitch_int
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_volume_slider(self, val):
@@ -1815,7 +1824,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         vol = int(round(val))
         self.vol_val_lbl.configure(text=f"{vol}%")
         self.cfg["volume"] = vol
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_reset_speech_modulation(self):
@@ -1830,7 +1839,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.cfg["pitch_hz"] = 0
         self.cfg["volume"] = 100
         self.cfg["rate"] = "+0%"  # keep legacy rate string in sync
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
         self.test_status_lbl.configure(text="Speed, pitch & volume reset (1.0x, +0Hz, 100%)", text_color="#8B949E")
 
@@ -1853,7 +1862,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             current_tab = self.tabview.get()
         except Exception:
             current_tab = "About & Developer"
-        config.factory_reset_config()
+        self.cfg = config.factory_reset_config()
+        self._cfg_base = copy.deepcopy(self.cfg)
         # Soft-nudge tray to reload config on next poll
         try:
             from .lifecycle import ensure_tray_running
@@ -1867,7 +1877,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if self._syncing_from_disk:
             return
         self.cfg["hotkey_enabled"] = self.switch_hotkey.get() == 1
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_hotkey_commit(self):
@@ -1891,7 +1901,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 text_color="#F85149")
             return
         self.cfg["hotkey"] = raw
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_pref_voice(self, lang_key: str, voice_code: str):
@@ -1900,7 +1910,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         prefs = dict(self.cfg.get("preferred_voices") or {})
         prefs[lang_key] = voice_code
         self.cfg["preferred_voices"] = prefs
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _refresh_tray_status(self):
@@ -2021,7 +2031,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             return
         enabled = self.switch_autoread.get() == 1
         self.cfg["auto_read_copy"] = enabled
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
         state_str = "Enabled" if enabled else "Disabled"
         core.trigger_notification("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state_str}")
@@ -2032,14 +2042,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         buf = round(val, 1)
         self.buf_val_lbl.configure(text=f"{buf:.1f}s")
         self.cfg["debounce_sec"] = buf
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_toggle_autoroute(self):
         if self._syncing_from_disk:
             return
         self.cfg["auto_route_language"] = self.switch_autoroute.get() == 1
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
         self._refresh_reader_voice_label()
 
@@ -2047,7 +2057,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if self._syncing_from_disk:
             return
         self.cfg["clean_markdown"] = self.switch_markdown.get() == 1
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_notification_level(self, name):
@@ -2056,7 +2066,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         level = next((k for k, v in self._notify_names.items() if v == name), "important")
         self.cfg["notification_level"] = level
         self.cfg["show_notifications"] = level != "off"
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _on_test_speak(self):
@@ -2078,7 +2088,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if self._syncing_from_disk:
             return
         self.cfg["check_updates"] = self.switch_update_check.get() == 1
-        config.save_config(self.cfg)
+        self._persist_cfg()
         self._trigger_autosave_indicator()
 
     def _check_updates_async(self, force: bool = False, popup: bool = None):

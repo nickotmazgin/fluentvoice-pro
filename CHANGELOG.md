@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.25] - 2026-10-01
+
+### Fixed
+- **Auto-Read (and every long reading) went silent after the first few sentences**, then carried on by itself 20–40 s later. After a short first part, the next part was up to 1,800 characters, which the voice service needs ~50 s to prepare while the first part played for only ~18 s. Parts are now smaller (200 → 450 → 700 characters) and up to three are prepared in parallel ahead of playback. Measured on a 4,000-character text: 0.2–0.3 s between parts (was ~30 s).
+- **Changing the voice did nothing until FluentVoice was restarted.** Copying the same text again was ignored for good, so the new voice was never heard. Now the same text is read again once the previous reading has finished (and is not restarted while it is still being read).
+- **Changing voice, speed or pitch mid-read now applies at once**: the reading continues from the current sentence with the new settings. Volume changes apply to the audio that is playing.
+- **Picking a voice in the tray could undo changes made in Settings** (e.g. switch Auto-Read back off): the tray saved an old copy of all settings. The tray and Settings now save only what they changed.
+- **Offline voices from Windows language packs (e.g. George, Susan) were sent to the cloud service**, failed, and the offline fallback read with Zira instead. Every offline voice is now recognised as offline.
+- **Offline voices reported "finished" instantly** while still talking, so Stop, the speaking state and the tray click did not see them. Fixed.
+- **Volume was applied twice** (in the audio and at playback): 50% sounded like 25%.
+- The text cleaner no longer removes `_`, `*` and `#` inside words and maths (`snake_case`, `C#`, `2*3` are read as written); Markdown headings, lists, bold/italic and hashtags are still cleaned.
+
+### Added
+- **9 more languages, 18 voices (78 voices in 21 languages):** Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam and Thai, each with a male and a female HD voice, auto-routing by script, sample sentences and Preferred Voices. Hindi and Marathi (both Devanagari) are told apart by language detection.
+- **Flood guard:** very long texts are read up to 100,000 characters (~1.5 h); Auto-Read ignores clipboard copies with no letters or digits and duplicate clipboard updates.
+- **Copied passwords are never read aloud:** Auto-Read skips clipboard content that password managers (Bitwarden, 1Password, KeePass…) mark as private, the same marks Windows clipboard history honours.
+- English accent voices are labelled clearly in Settings and the tray: "Indian English", "Irish English", "Australian English", "Canadian English".
+- 38 new tests.
+
 ## [1.4.24] - 2026-09-28
 
 ### Fixed

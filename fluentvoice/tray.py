@@ -20,7 +20,7 @@ import logging
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from fluentvoice import config, core, voices
-from fluentvoice.config import load_config, save_config
+from fluentvoice.config import load_config
 
 LOG_DIR = Path.home() / ".fluentvoice"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -281,6 +281,7 @@ class FluentVoiceTrayApp:
         self.cfg = load_config()
         self.auto_read_enabled = self.cfg.get("auto_read_copy", False)
         self.last_clipboard_hash = None
+        self._last_autoread_ts = 0.0
         self.tray_icon = None
         self._hotkey_id = 1
         self._hotkey_registered = None  # (mods, vk) currently registered
@@ -302,8 +303,7 @@ class FluentVoiceTrayApp:
                 pass
 
     def save_settings(self):
-        self.cfg["auto_read_copy"] = self.auto_read_enabled
-        save_config(self.cfg)
+        self.cfg = config.update_config({"auto_read_copy": self.auto_read_enabled})
 
     TOGGLE_DEBOUNCE_SEC = 0.6
 
@@ -455,12 +455,11 @@ class FluentVoiceTrayApp:
 
     def set_voice(self, voice_name, display_label=None):
         def _inner(icon, item):
-            self.cfg["voice"] = voice_name
-            if "sapi" in voice_name.lower() or "desktop" in voice_name.lower():
-                self.cfg["engine"] = "offline"
-            else:
-                self.cfg["engine"] = "neural"
-            save_config(self.cfg)
+            # Only the voice changes; a reading in progress switches to it at once (core).
+            self.cfg = config.update_config({
+                "voice": voice_name,
+                "engine": "offline" if voices.is_offline(voice_name) else "neural",
+            })
             label = display_label or voice_name
             self.notify_user("🗣 Voice selected", label)
         return _inner
@@ -491,10 +490,7 @@ class FluentVoiceTrayApp:
 
     def set_notification_level(self, level):
         def _inner(icon=None, item=None):
-            self.cfg = load_config()
-            self.cfg["notification_level"] = level
-            self.cfg["show_notifications"] = level != "off"
-            save_config(self.cfg)
+            self.cfg = config.update_config({"notification_level": level, "show_notifications": level != "off"})
             if level != "off":
                 self.notify_user("🔔 Notifications", dict(self.NOTIFY_CHOICES)[level])
         return _inner
@@ -535,14 +531,12 @@ class FluentVoiceTrayApp:
                 elif curr_seq != last_seq:
                     last_seq = curr_seq
                     current = core.get_clipboard_text()
-                    current_h = hash(current)
-                    if current_h != self.last_clipboard_hash and len(current.strip()) > 4:
-                        self.last_clipboard_hash = current_h
-                        debounce = float(cfg_cached.get("debounce_sec", 0.6))
-                        time.sleep(debounce)
+                    if self.autoread_should_read(current):
+                        time.sleep(float(cfg_cached.get("debounce_sec", 0.6)))
                         fresh = core.get_clipboard_text()
-                        if fresh == current:
-                            threading.Thread(target=core.speak_text, args=(fresh,), daemon=True).start()
+                        if fresh == current:  # unchanged after the stability buffer
+                            last_seq = user32.GetClipboardSequenceNumber()
+                            self.autoread_start(fresh)
 
                 # Re-apply dark menus occasionally (hover theme can regress)
                 self._dark_refresh_ticks += 1
@@ -551,6 +545,36 @@ class FluentVoiceTrayApp:
             except Exception:
                 pass
             time.sleep(0.5)
+
+    AUTOREAD_DUPLICATE_SEC = 1.5  # apps that put the same text on the clipboard twice in a row
+
+    def autoread_should_read(self, text: str) -> bool:
+        """Auto-Read on Copy filter.
+
+        - Skips copies marked private (passwords from password managers), copies shorter than
+          2 characters and copies with no letters or digits (lone symbols, whitespace).
+        - The same text copied again is read again once the previous reading has finished
+          (earlier versions ignored it for good, so after changing the voice, copying the
+          same text stayed silent until FluentVoice was restarted).
+        - While that same text is still being read, copying it again does not restart it.
+        - Duplicate clipboard updates within AUTOREAD_DUPLICATE_SEC are ignored.
+        """
+        if len((text or "").strip()) < 2 or not any(ch.isalnum() for ch in text):
+            return False
+        if core.clipboard_is_private():
+            return False
+        h = hash(text)
+        if h == self.last_clipboard_hash:
+            if time.time() - self._last_autoread_ts < self.AUTOREAD_DUPLICATE_SEC:
+                return False
+            if core.is_any_speaking():
+                return False
+        return True
+
+    def autoread_start(self, text: str):
+        self.last_clipboard_hash = hash(text)
+        self._last_autoread_ts = time.time()
+        threading.Thread(target=core.speak_text, args=(text,), daemon=True, name="fv-autoread").start()
 
     def sync_hotkey_from_config(self):
         """Register or update the global Win32 hotkey from config."""
