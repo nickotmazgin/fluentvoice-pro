@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.28** — Passwords and keys on the clipboard are never read aloud (or sent to the cloud voice), on every path: tray, hotkey, command line and Auto-Read. New: Icelandic (80 voices, 22 languages). v1.4.27: Hebrew & Arabic lines (also mixed with English) display in correct right-to-left order in the Preview box and the Direct Text Reader. v1.4.25: Long texts and Auto-Read on Copy now read **without pauses** (the next parts are prepared in parallel), **voice, speed and pitch changes apply mid-read**, every Windows offline voice reads in its own voice, and **9 new languages**: Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam and Thai (78 HD voices in 21 languages). Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
+> **Latest: v1.4.28** — Copied passwords and keys are never read aloud or sent to the cloud voice, and **Icelandic** is new (80 HD voices in 22 languages). Recent releases also brought gap-free Auto-Read, voice changes that apply mid-read, Hindi, Thai and 7 more Indian languages, and correct Hebrew / Arabic right-to-left display. Attested ZIP + portable EXE + `SHA256SUMS.txt`: see [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); full history in [CHANGELOG.md](CHANGELOG.md).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -23,9 +23,9 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Demo video
 
-*A 3-minute tour of v1.4.27 (real app, real voices; turn the sound on): Direct Text Reader, a language-and-voice tour including Hindi, Thai and Arabic, a Windows offline voice (George), smart auto-route with Hebrew right-to-left, Notifications, and the tray menu.*
+*A 4-minute tour of v1.4.28 (real app, real voices; turn the sound on): Direct Text Reader, a language-and-voice tour including Hindi, Thai, Icelandic and Arabic, a Windows offline voice (George), smart auto-route with Hebrew right-to-left, Notifications, and the tray menu.*
 
-https://github.com/user-attachments/assets/dcd964fb-0cce-4372-9250-01529f837d3a
+https://github.com/user-attachments/assets/4347f702-a9bb-4f5b-92bf-6b88f28ed68e
 
 ---
 
