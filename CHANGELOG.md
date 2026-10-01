@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.26] - 2026-10-01
+
+### Fixed
+- **Hebrew / Arabic lines that mix in English showed their words in the wrong order** in the Preview & Test box and the Direct Text Reader (e.g. the Hebrew sample with "FluentVoice Pro" in the middle). Tk text boxes always lay text out left-to-right, so right-aligning was not enough; each right-to-left line is now wrapped in invisible Unicode direction marks (RLE … PDF), which are removed before speaking and from the word/character counts. Verified by comparing the Settings window against Windows' own right-to-left text layout.
+- Known Tk limitation: in the Direct Text Reader, the one line that holds the blinking text cursor is drawn in two parts around the cursor; it shows correctly again once the cursor leaves that line.
+
+### Notes
+- Hebrew **niqqud** is passed to the voice unchanged, and the Hebrew voices use it: pointed words are pronounced as pointed (e.g. סֵפֶר vs סַפָּר). Unpointed text gets the most common reading.
+- 4 new tests.
+
 ## [1.4.25] - 2026-10-01
 
 ### Fixed

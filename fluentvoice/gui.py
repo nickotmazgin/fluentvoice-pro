@@ -59,6 +59,33 @@ GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
 # Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
 BASE_VOICE_MAP = {label: vid for vid, label, _ in voices.CATALOG}
 
+# Tk text boxes always lay text out left-to-right. Right-aligning Hebrew / Arabic is not enough:
+# in a line that mixes in English ("…של FluentVoice Pro פעיל…") the word groups end up on the
+# wrong sides. Wrapping each right-to-left line in RLE … PDF gives the correct reading order.
+# The marks are invisible, stripped before speaking (core.clean_text_for_speech) and from counts.
+RLE, PDF = "\u202b", "\u202c"
+
+
+def bidi_strip(text: str) -> str:
+    return (text or "").replace(RLE, "").replace(PDF, "")
+
+
+def bidi_wrap_lines(text: str) -> str:
+    """Every non-empty line wrapped in RLE … PDF (any old marks removed first)."""
+    return "\n".join(f"{RLE}{line}{PDF}" if line.strip() else line for line in bidi_strip(text).split("\n"))
+
+
+def _index_after_plain(text: str, n: int) -> int:
+    """Position in `text` just after its n-th character that is not a bidi mark."""
+    seen = 0
+    for i, ch in enumerate(text):
+        if seen == n and ch != RLE:  # inside the marks: after an opening RLE, before a closing PDF
+            return i
+        if ch not in (RLE, PDF):
+            seen += 1
+    return len(text)
+
+
 def build_full_voice_map():
     vm = BASE_VOICE_MAP.copy()
     installed = core.get_installed_sapi_voices()
@@ -470,7 +497,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._meta_job = self.after(350, self._update_reader_meta)
 
     def _update_reader_meta(self):
-        txt = self.reader_textbox.get("1.0", "end-1c").strip()
+        txt = bidi_strip(self.reader_textbox.get("1.0", "end-1c")).strip()
         words = len(txt.split()) if txt else 0
         chars = len(txt)
         detected = core.detect_language(txt)
@@ -478,12 +505,27 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         # Hebrew / Arabic text reads right-aligned (the text box itself has no RTL layout).
         tb = self.reader_textbox
         tb.tag_config("rtl", justify="right")
-        if detected in voices.RTL_FAMILIES:
+        rtl = detected in voices.RTL_FAMILIES
+        self._apply_bidi(tb, rtl)
+        if rtl:
             tb.tag_add("rtl", "1.0", "end")
         else:
             tb.tag_remove("rtl", "1.0", "end")
         self.reader_meta_lbl.configure(text=f"{words:,} words • {chars:,} chars • Lang: {lang_str}")
         self._refresh_reader_voice_label()
+
+    def _apply_bidi(self, tb, rtl: bool):
+        """Add (or remove) the right-to-left marks in the Reader, keeping cursor and scroll."""
+        content = tb.get("1.0", "end-1c")
+        desired = bidi_wrap_lines(content) if rtl else bidi_strip(content)
+        if desired == content:
+            return
+        plain_before_cursor = len(bidi_strip(tb.get("1.0", "insert")))
+        top = tb.yview()[0]
+        tb.delete("1.0", "end")
+        tb.insert("1.0", desired)
+        tb.mark_set("insert", f"1.0+{_index_after_plain(desired, plain_before_cursor)}c")
+        tb.yview_moveto(top)
 
     def _on_reader_paste(self):
         clip = core.get_clipboard_text()
@@ -499,7 +541,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.reader_status_lbl.configure(text="Text cleared", text_color="#8B949E")
 
     def _on_reader_speak(self):
-        txt = self.reader_textbox.get("1.0", "end-1c").strip()
+        txt = bidi_strip(self.reader_textbox.get("1.0", "end-1c")).strip()
         if not txt:
             self.reader_status_lbl.configure(text="⚠ Please type or paste text to read aloud", text_color="#F85149")
             return
@@ -1711,6 +1753,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _align_test_entry(self, voice_code: str):
         rtl = voices.family_of(voice_code) in voices.RTL_FAMILIES
         self.test_entry.configure(justify="right" if rtl else "left")
+        cur = self.test_entry.get()
+        want = bidi_wrap_lines(cur) if rtl else bidi_strip(cur)
+        if want != cur:
+            self.test_entry.delete(0, "end")
+            self.test_entry.insert(0, want)
 
     def _on_voice_language_changed(self, group):
         labels = self._voice_groups().get(group, [])
@@ -1749,7 +1796,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._refresh_reader_voice_label()
         core.trigger_notification("FluentVoice Pro", f"🗣 Voice selected: {choice}")
         # Swap the preview sentence to the new voice's language unless the user typed their own.
-        cur = self.test_entry.get().strip()
+        cur = bidi_strip(self.test_entry.get()).strip()
         if not cur or cur in voices.SAMPLE_TEXT.values():
             self.test_entry.delete(0, "end")
             self.test_entry.insert(0, voices.sample_text(vcode))
@@ -2070,7 +2117,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._trigger_autosave_indicator()
 
     def _on_test_speak(self):
-        txt = self.test_entry.get().strip()
+        txt = bidi_strip(self.test_entry.get()).strip()
         if not txt:
             txt = voices.sample_text(self.cfg.get("voice", ""))
         # Always the selected voice: auto-route would swap it when the text's language differs.

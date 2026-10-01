@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.25** — Long texts and Auto-Read on Copy now read **without pauses** (the next parts are prepared in parallel), **voice, speed and pitch changes apply mid-read**, every Windows offline voice reads in its own voice, and **9 new languages**: Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam and Thai (78 HD voices in 21 languages). Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
+> **Latest: v1.4.26** — Hebrew & Arabic lines that mix in English now display in the right order. v1.4.25: Long texts and Auto-Read on Copy now read **without pauses** (the next parts are prepared in parallel), **voice, speed and pitch changes apply mid-read**, every Windows offline voice reads in its own voice, and **9 new languages**: Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam and Thai (78 HD voices in 21 languages). Attested ZIP + portable EXE + `SHA256SUMS.txt`. See [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
