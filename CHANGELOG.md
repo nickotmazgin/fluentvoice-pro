@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.27] - 2026-10-01
+
+### Fixed
+- **Hebrew / Arabic in the Preview & Test box still read backwards in v1.4.26.** The box used CTk's default Roboto font, which has no Hebrew or Arabic letters, so Tk drew each word separately in a fallback font, left to right, and no direction marks could reorder them. The box now uses Segoe UI (like the Direct Text Reader), which has both scripts, so the whole line is laid out right-to-left. Measured on the real window against Windows' own right-to-left layout, Hebrew and Arabic, Preview box and Reader: words now in correct reading order (v1.4.26 was reversed in the Preview box).
+- **Direct Text Reader:** Tk draws the line holding the text cursor in two parts, which breaks right-to-left order on that one line while you type. The cursor now moves to the end when the Reader loses focus, so every line displays correctly whenever you are not typing in it.
+
 ## [1.4.26] - 2026-10-01
 
 ### Fixed

@@ -405,6 +405,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         self.reader_textbox.pack(fill="both", expand=True, padx=14, pady=6)
         self.reader_textbox.bind("<KeyRelease>", self._on_reader_text_change)
+        # Tk draws the line that holds the text cursor in two pieces, which breaks right-to-left
+        # word order on that line; park the cursor at the end when the Reader loses focus.
+        self.reader_textbox.bind("<FocusOut>", self._on_reader_focus_out, add="+")
 
         sample_starter = "Paste articles, documents, notes, or OCR text directly into this scratchpad window to read them aloud with natural HD voice synthesis."
         self.reader_textbox.insert("1.0", sample_starter)
@@ -513,6 +516,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             tb.tag_remove("rtl", "1.0", "end")
         self.reader_meta_lbl.configure(text=f"{words:,} words • {chars:,} chars • Lang: {lang_str}")
         self._refresh_reader_voice_label()
+
+    def _on_reader_focus_out(self, _event=None):
+        tb = self.reader_textbox
+        try:
+            if tb.tag_ranges("rtl"):
+                tb.mark_set("insert", "end-1c")
+        except Exception:
+            pass
 
     def _apply_bidi(self, tb, rtl: bool):
         """Add (or remove) the right-to-left marks in the Reader, keeping cursor and scroll."""
@@ -918,7 +929,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.test_entry = ctk.CTkEntry(
             test_card,
             placeholder_text="Enter custom text to preview voice...",
-            font=ctk.CTkFont(size=13),
+            # Segoe UI has Hebrew and Arabic letters. With CTk's default Roboto, Tk drew every
+            # Hebrew/Arabic word separately in a fallback font, left to right, so the words of a
+            # right-to-left line came out in reverse order whatever direction marks were used.
+            font=ctk.CTkFont(family="Segoe UI", size=13),
             border_color="#00D2FF",
             fg_color="#0D131D"
         )
