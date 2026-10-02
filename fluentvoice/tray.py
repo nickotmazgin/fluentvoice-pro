@@ -72,8 +72,8 @@ def get_tray_icon_path():
 def tray_icon_px() -> int:
     """Real notification-area icon size in pixels (16 at 100%, 20 at 125%, 24 at 150%...).
 
-    The tray process is not DPI-aware, so a plain GetSystemMetrics answers 16 on every
-    display; ask as a DPI-aware thread instead."""
+    Asked as a DPI-aware thread, so the answer is right whether or not the process itself is
+    DPI-aware (GetSystemMetrics in a DPI-unaware process answers 16 on every display)."""
     try:
         u = ctypes.windll.user32
         u.SetThreadDpiAwarenessContext.restype = ctypes.c_void_p
@@ -820,7 +820,25 @@ class FluentVoiceTrayApp:
         logger.info("Running pystray tray_icon event loop...")
         self.tray_icon.run(setup=self._on_icon_ready)
 
+def enable_crisp_menus():
+    """Make the tray DPI-aware (per monitor). A DPI-unaware process gets its right-click menu
+    drawn at 96 DPI and stretched by Windows as a bitmap, so at 125% / 150% display scaling
+    the menu text was blurry. Must run before any window is created."""
+    u = ctypes.windll.user32
+    try:
+        u.SetProcessDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+        if u.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4)):  # PER_MONITOR_AWARE_V2
+            return True
+    except Exception:
+        pass
+    try:
+        return ctypes.windll.shcore.SetProcessDpiAwareness(2) == 0  # Windows 8.1 fallback
+    except Exception:
+        return False
+
+
 def main():
+    enable_crisp_menus()
     try:
         from fluentvoice import shortcuts
         shortcuts.apply_app_identity()  # toasts titled "FluentVoice Pro" with its icon, not "Python"

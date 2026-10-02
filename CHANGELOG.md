@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.1] - 2026-10-02
+
+### Fixed
+- **Blurry tray menu at 125% / 150% display scaling.** The tray process was not DPI-aware, so Windows drew its right-click menu at 100% and stretched it like a picture: soft text and icons. The tray is now per-monitor DPI-aware, so the menu (and its submenus) is drawn sharp at your scaling.
+- 1 new test.
+
 ## [1.5.0] - 2026-10-02
 
 ### Added

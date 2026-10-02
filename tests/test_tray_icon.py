@@ -52,3 +52,22 @@ def test_promote_runs_once_then_respects_the_user(tmp_path, monkeypatch):
     import winreg
     monkeypatch.setattr(winreg, "OpenKey", lambda *a, **k: pytest.fail("registry touched after first run"))
     assert tray.promote_notify_icons() == 0
+
+
+def test_tray_becomes_dpi_aware_before_anything_else(monkeypatch):
+    """v1.5.1: a DPI-unaware tray had its menu stretched as a bitmap (blurry at 125% / 150%)."""
+    from fluentvoice import shortcuts, tray
+    calls = []
+    monkeypatch.setattr(tray, "enable_crisp_menus", lambda: calls.append("dpi"))
+    monkeypatch.setattr(shortcuts, "apply_app_identity", lambda: calls.append("identity"))
+
+    class App:
+        def __init__(self):
+            calls.append("app")
+
+        def run(self):
+            calls.append("run")
+
+    monkeypatch.setattr(tray, "FluentVoiceTrayApp", App)
+    tray.main()
+    assert calls == ["dpi", "identity", "app", "run"]
