@@ -1,9 +1,9 @@
 """Build the README collage + social images from screenshots/v<version>/.
 
 Usage:  python scripts/build_collage.py            (version read from fluentvoice/__init__.py)
-Writes: screenshots/v<ver>/collage-v<ver>.jpg          3840 wide  README hero (3x3, 01–09)
+Writes: screenshots/v<ver>/collage-v<ver>.jpg          3840 wide  README hero (3 across, 01–12)
         screenshots/v<ver>/social-collage-1080.jpg     1080x1080  social posts
-        screenshots/v<ver>/social-preview-1280x640.jpg 1280x640   GitHub OG preview
+        screenshots/v<ver>/social-preview-1280x640.jpg 1280x640   GitHub OG preview (the full collage, 4 across)
         + copies to screenshots/collage.jpg, screenshots/social-preview.jpg, .github/social-preview.{jpg,png}
 """
 from __future__ import annotations
@@ -33,6 +33,9 @@ PANELS = [  # (file, number, label) in reading order
     ("07-tray-icon-closeup.png", "07", "Tray icon · HD + live"),
     ("08-settings-automation-preferred.png", "08", "Preferred Voices · one compact row"),
     ("09-portable-first-launch.png", "09", "Portable first launch"),
+    ("10-settings-voice-providers-mid.png", "10", "Voice Providers · Piper voices & licences"),
+    ("11-settings-voice-providers-bottom.png", "11", "Voice Providers · Kokoro, Windows & rights"),
+    ("12-settings-automation-bottom.png", "12", "Automation · tray, startup, updates & triggers"),
 ]
 
 CYAN = (0, 210, 255)
@@ -145,27 +148,32 @@ def header(canvas: Image.Image, s: float, x: int, y: int, compact: bool = False)
     return y + int(40 * s)
 
 
-def main() -> None:
-    shots = {f: Image.open(SRC / f) for f, _, _ in PANELS}
-
-    # README hero collage — 3x3 grid (01–09), 4K wide (matches the other repos' HD collages).
-    # Panel height follows the Settings window aspect so screens fill their frames.
+def grid(shots: dict, cols: int) -> Image.Image:
+    """Header + every panel in reading order, `cols` across, 4K wide.
+    Panel height follows the Settings window aspect so screens fill their frames."""
     s, W = 1.6, 3840
     m, gap = int(56 * s), int(36 * s)
-    pw = (W - 2 * m - 2 * gap) // 3
+    pw = (W - 2 * m - (cols - 1) * gap) // cols
     pad, head = int(16 * s), int(58 * s)
     ph = head + round((pw - 2 * pad) * 1140 / 1920) + pad
     probe = gradient_bg(W, 10)
     top = header(probe, s, int(64 * s), int(40 * s))  # measure header height
-    rows = (len(PANELS) + 2) // 3
+    rows = (len(PANELS) + cols - 1) // cols
     H = top + rows * ph + (rows - 1) * gap + m
     c = gradient_bg(W, H)
     accent_bar(c, int(10 * s))
     header(c, s, int(64 * s), int(40 * s))
     for i, (f, n, label) in enumerate(PANELS):
-        panel(c, shots[f], n, label, m + (i % 3) * (pw + gap), top + (i // 3) * (ph + gap), pw, ph, s=s)
+        panel(c, shots[f], n, label, m + (i % cols) * (pw + gap), top + (i // cols) * (ph + gap), pw, ph, s=s)
+    return c
+
+
+def main() -> None:
+    shots = {f: Image.open(SRC / f) for f, _, _ in PANELS}
+
+    # README hero collage — 3 across (01–12), 4K wide (matches the other repos' HD collages).
     collage = SRC / f"collage-v{VERSION}.jpg"
-    c.save(collage, "JPEG", quality=94, optimize=True, subsampling=0)
+    grid(shots, 3).save(collage, "JPEG", quality=94, optimize=True, subsampling=0)
 
     # Square social — 2x2 of the headline screens
     S = 1080
@@ -179,17 +187,12 @@ def main() -> None:
         panel(q, shots[f], n, label, m + (i % 2) * (pw + gap), top + (i // 2) * (ph + gap), pw, ph, s=0.62)
     q.save(SRC / "social-collage-1080.jpg", "JPEG", quality=94, optimize=True, subsampling=0)
 
-    # GitHub OG preview 1280x640 — title + wide Reader panel + tray menu
+    # GitHub OG preview 1280x640 — the full collage, 4 across so it fills the wide frame.
     og = gradient_bg(1280, 640)
+    full = grid(shots, 4)
+    full.thumbnail((1280, 640), Image.Resampling.LANCZOS)
+    og.paste(full, ((1280 - full.width) // 2, (640 - full.height) // 2))
     accent_bar(og, 6)
-    top = header(og, 0.5, 36, 22, compact=True)
-    # Two equal panels sized to the Settings window aspect, centred in the space left.
-    m, gap, s = 28, 18, 0.5
-    pw = (1280 - 2 * m - gap) // 2
-    ph = int(29 * s) + round((pw - 2 * int(8 * s)) * 1140 / 1920) + int(8 * s)
-    y = top + max(0, (640 - top - m - ph) // 2)
-    for i, (f, n, label) in enumerate((PANELS[2], PANELS[5])):  # 03 Voice Providers, 06 tray menu
-        panel(og, shots[f], n, label, m + i * (pw + gap), y, pw, ph, s=s)
     og_path = SRC / "social-preview-1280x640.jpg"
     og.save(og_path, "JPEG", quality=94, optimize=True, subsampling=0)
 

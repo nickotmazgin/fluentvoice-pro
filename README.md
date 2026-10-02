@@ -79,9 +79,23 @@ https://github.com/user-attachments/assets/c84a3edc-bb7b-4b9a-8e05-e109d0001f3a
     </td>
   </tr>
   <tr>
+    <td align="center">
+      <a href="screenshots/v1.5.2/10-settings-voice-providers-mid.png"><img src="screenshots/v1.5.2/10-settings-voice-providers-mid.png" width="260" alt="Voice Providers: Piper voices, each with its licence"></a><br>
+      <b>10</b> — Voice Providers · Piper voices &amp; licences
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.5.2/11-settings-voice-providers-bottom.png"><img src="screenshots/v1.5.2/11-settings-voice-providers-bottom.png" width="260" alt="Voice Providers: Kokoro pack, Windows voices, licences and rights"></a><br>
+      <b>11</b> — Voice Providers · Kokoro, Windows &amp; rights
+    </td>
+    <td align="center">
+      <a href="screenshots/v1.5.2/12-settings-automation-bottom.png"><img src="screenshots/v1.5.2/12-settings-automation-bottom.png" width="260" alt="Automation &amp; System: tray, startup, updates and how to trigger FluentVoice"></a><br>
+      <b>12</b> — Automation · tray, startup, updates &amp; triggers
+    </td>
+  </tr>
+  <tr>
     <td align="center" colspan="3">
-      <a href="screenshots/v1.5.2/10-tray-offline-voices.png"><img src="screenshots/v1.5.2/10-tray-offline-voices.png" width="360" alt="Tray: downloaded offline HD voices by language"></a><br>
-      <b>10</b> — Tray · downloaded offline HD voices (Piper &amp; Kokoro), pick one in two clicks
+      <a href="screenshots/v1.5.2/13-tray-offline-voices.png"><img src="screenshots/v1.5.2/13-tray-offline-voices.png" width="360" alt="Tray: downloaded offline HD voices by language"></a><br>
+      <b>13</b> — Tray · downloaded offline HD voices (Piper &amp; Kokoro), pick one in two clicks
     </td>
   </tr>
 </table>
