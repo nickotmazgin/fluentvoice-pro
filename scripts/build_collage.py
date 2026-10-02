@@ -20,18 +20,18 @@ SRC = ROOT / "screenshots" / f"v{VERSION}"
 
 TITLE = "FluentVoice Pro™"
 SUBTITLE = "Windows 11 / 10 text-to-speech & read-aloud tray suite"
-HIGHLIGHTS = "80 HD voices in 22 languages  •  Every offline Windows voice  •  Smart auto-route  •  Direct Text Reader  •  SHA-256 verified updates"
+HIGHLIGHTS = "80 online HD voices  •  57 offline HD voices (Piper & Kokoro)  •  Offline-only privacy mode  •  22 languages  •  SHA-256 verified"
 FOOTER = "Nick Otmazgin  •  github.com/nickotmazgin/fluentvoice-pro  •  MIT License"
 
 PANELS = [  # (file, number, label) in reading order
     ("01-settings-reader.png", "01", "Direct Text Reader"),
     ("02-settings-voice.png", "02", "Voice & Speech"),
-    ("03-settings-automation.png", "03", "Automation & System"),
-    ("04-settings-about-updates.png", "04", "About · Updates & Factory Reset"),
-    ("05-tray-menu.png", "05", "Tray menu · notifications & voices"),
-    ("06-desktop-icon-live.png", "06", "Desktop icon"),
+    ("03-settings-voice-providers.png", "03", "Voice Providers · privacy & rights"),
+    ("04-settings-automation.png", "04", "Automation & System"),
+    ("05-settings-about-updates.png", "05", "About · Updates & Factory Reset"),
+    ("06-tray-menu.png", "06", "Tray menu · online, offline HD & privacy"),
     ("07-tray-icon-closeup.png", "07", "Tray icon · HD + live"),
-    ("08-settings-automation-updates.png", "08", "Automation · Startup & Shortcuts"),
+    ("08-settings-automation-preferred.png", "08", "Preferred Voices · one compact row"),
     ("09-portable-first-launch.png", "09", "Portable first launch"),
 ]
 
@@ -172,7 +172,7 @@ def main() -> None:
     q = gradient_bg(S, S)
     accent_bar(q, 8)
     top = header(q, 0.62, 40, 30, compact=True)
-    picks = [PANELS[0], PANELS[7], PANELS[4], PANELS[8]]  # 01 Reader, 08 Startup, 05 tray, 09 portable prompt
+    picks = [PANELS[2], PANELS[0], PANELS[5], PANELS[7]]  # 03 Voice Providers, 01 Reader, 06 tray, 08 Preferred
     m, gap = 36, 24
     pw, ph = (S - 2 * m - gap) // 2, (S - top - m - gap) // 2
     for i, (f, n, label) in enumerate(picks):
@@ -188,7 +188,7 @@ def main() -> None:
     pw = (1280 - 2 * m - gap) // 2
     ph = int(29 * s) + round((pw - 2 * int(8 * s)) * 1140 / 1920) + int(8 * s)
     y = top + max(0, (640 - top - m - ph) // 2)
-    for i, (f, n, label) in enumerate((PANELS[0], PANELS[4])):
+    for i, (f, n, label) in enumerate((PANELS[2], PANELS[5])):  # 03 Voice Providers, 06 tray menu
         panel(og, shots[f], n, label, m + i * (pw + gap), y, pw, ph, s=s)
     og_path = SRC / "social-preview-1280x640.jpg"
     og.save(og_path, "JPEG", quality=94, optimize=True, subsampling=0)

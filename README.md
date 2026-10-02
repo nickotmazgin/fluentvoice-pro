@@ -23,64 +23,70 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Demo video
 
-*A 4-minute tour of v1.4.28 (real app, real voices; turn the sound on): Direct Text Reader, a language-and-voice tour including Hindi, Thai, Icelandic and Arabic, a Windows offline voice (George), smart auto-route with Hebrew right-to-left, Notifications, and the tray menu.*
+*A 5-minute tour of v1.5.2 (real app, real voices; turn the sound on): Direct Text Reader, eight Microsoft online voices (US & UK English, Hebrew, Arabic, Spanish, French, Japanese, Hindi), the new Voice Providers tab with a live Piper download and Kokoro offline voices, Offline-only privacy mode, Preferred Voices, About & Updates, and the tray's Offline HD Voices menu.*
 
-https://github.com/user-attachments/assets/4347f702-a9bb-4f5b-92bf-6b88f28ed68e
+https://github.com/user-attachments/assets/c84a3edc-bb7b-4b9a-8e05-e109d0001f3a
 
 ---
 
 ## Screenshots
 
-*FluentVoice Pro **v1.4.28** — click any image to view it full size.*
+*FluentVoice Pro **v1.5.2** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.4.28 collage](screenshots/v1.4.28/collage-v1.4.28.jpg)](screenshots/v1.4.28/collage-v1.4.28.jpg)
+[![FluentVoice Pro v1.5.2 collage](screenshots/v1.5.2/collage-v1.5.2.jpg)](screenshots/v1.5.2/collage-v1.5.2.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.28/01-settings-reader.png"><img src="screenshots/v1.4.28/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.5.2/01-settings-reader.png"><img src="screenshots/v1.5.2/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.28/02-settings-voice.png"><img src="screenshots/v1.4.28/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.5.2/02-settings-voice.png"><img src="screenshots/v1.5.2/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.28/03-settings-automation.png"><img src="screenshots/v1.4.28/03-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
-      <b>03</b> — Automation &amp; System
+      <a href="screenshots/v1.5.2/03-settings-voice-providers.png"><img src="screenshots/v1.5.2/03-settings-voice-providers.png" width="260" alt="Voice Providers: privacy, rights &amp; offline HD voices"></a><br>
+      <b>03</b> — Voice Providers · privacy &amp; rights
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.28/04-settings-about-updates.png"><img src="screenshots/v1.4.28/04-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
-      <b>04</b> — About · Updates &amp; Factory Reset
+      <a href="screenshots/v1.5.2/04-settings-automation.png"><img src="screenshots/v1.5.2/04-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
+      <b>04</b> — Automation &amp; System
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.28/05-tray-menu.png"><img src="screenshots/v1.4.28/05-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
-      <b>05</b> — Tray menu · notifications &amp; voices
+      <a href="screenshots/v1.5.2/05-settings-about-updates.png"><img src="screenshots/v1.5.2/05-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
+      <b>05</b> — About · Updates &amp; Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.28/06-desktop-icon-live.png"><img src="screenshots/v1.4.28/06-desktop-icon-live.png" width="260" alt="Desktop icon"></a><br>
-      <b>06</b> — Desktop icon
+      <a href="screenshots/v1.5.2/06-tray-menu.png"><img src="screenshots/v1.5.2/06-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
+      <b>06</b> — Tray menu · online, offline HD &amp; privacy
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.4.28/07-tray-icon-closeup.png"><img src="screenshots/v1.4.28/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
+      <a href="screenshots/v1.5.2/07-tray-icon-closeup.png"><img src="screenshots/v1.5.2/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
       <b>07</b> — Tray icon · HD + live
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.28/08-settings-automation-updates.png"><img src="screenshots/v1.4.28/08-settings-automation-updates.png" width="260" alt="Automation: Startup &amp; Shortcuts"></a><br>
-      <b>08</b> — Automation · Startup &amp; Shortcuts
+      <a href="screenshots/v1.5.2/08-settings-automation-preferred.png"><img src="screenshots/v1.5.2/08-settings-automation-preferred.png" width="260" alt="Preferred Voices: one compact row"></a><br>
+      <b>08</b> — Preferred Voices · one compact row
     </td>
     <td align="center">
-      <a href="screenshots/v1.4.28/09-portable-first-launch.png"><img src="screenshots/v1.4.28/09-portable-first-launch.png" width="260" alt="Portable first launch prompt"></a><br>
+      <a href="screenshots/v1.5.2/09-portable-first-launch.png"><img src="screenshots/v1.5.2/09-portable-first-launch.png" width="260" alt="Portable first launch prompt"></a><br>
       <b>09</b> — Portable first launch
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
+      <a href="screenshots/v1.5.2/10-tray-offline-voices.png"><img src="screenshots/v1.5.2/10-tray-offline-voices.png" width="360" alt="Tray: downloaded offline HD voices by language"></a><br>
+      <b>10</b> — Tray · downloaded offline HD voices (Piper &amp; Kokoro), pick one in two clicks
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.4.28.jpg](screenshots/v1.4.28/collage-v1.4.28.jpg)
+Full combined image (download): [collage-v1.5.2.jpg](screenshots/v1.5.2/collage-v1.5.2.jpg)
 
 ---
 

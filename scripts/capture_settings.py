@@ -1,12 +1,13 @@
-"""Capture maximized Settings screenshots for the README (01–04, optional Automation bottom).
+"""Capture maximized Settings screenshots for the README (01–05, optional Automation bottom).
 
 Usage (repo root):
-    python scripts/capture_settings.py                  # 01–04 into screenshots/v<version>/
+    python scripts/capture_settings.py                  # 01–05 into screenshots/v<version>/
     python scripts/capture_settings.py --bottom out.png # Automation tab scrolled to the bottom
 
 Runs against a temporary home folder, so your real ~/.fluentvoice settings are never
-read or changed (screens show default settings). 05 tray menu, 06/07 icons and 09 portable
-prompt are captured by hand; then run scripts/build_collage.py.
+read or changed (screens show default settings). 06 tray menu, 07 tray icon, 08 (Automation
+scrolled to Preferred Voices) and 09 portable prompt are captured by hand; then run
+scripts/build_collage.py.
 """
 from __future__ import annotations
 
@@ -29,8 +30,9 @@ REAL_HOME = str(Path.home())  # read before the temporary profile replaces HOME 
 TABS = [
     ("01-settings-reader.png", "Direct Text Reader"),
     ("02-settings-voice.png", "Voice & Speech"),
-    ("03-settings-automation.png", "Automation & System"),
-    ("04-settings-about-updates.png", "About & Developer"),
+    ("03-settings-voice-providers.png", "Voice Providers"),
+    ("04-settings-automation.png", "Automation & System"),
+    ("05-settings-about-updates.png", "About & Developer"),
 ]
 
 
