@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import re
 
+from . import local_catalog
+
 # family key → display name. Keys are also the preferred_voices / auto-route keys
 # ("cjk" is Japanese and "cyrillic" is Russian, kept for existing config files).
 LANGUAGES = {
@@ -224,6 +226,9 @@ def current_id(voice: str) -> str:
 
 
 def label_for(voice: str) -> str:
+    if is_local_hd(voice):
+        from . import localtts
+        return localtts.label(voice, LANGUAGES.get(family_of(voice), ""))
     return _BY_ID.get(current_id(voice), (voice, ""))[0]
 
 
@@ -246,6 +251,8 @@ def family_of(voice: str) -> str:
     v = current_id(voice or "")
     if v in _BY_ID:
         return _BY_ID[v][1]
+    if v in _LOCAL_FAMILY:
+        return _LOCAL_FAMILY[v]
     for lang, fam in _OFFLINE_LANG.items():
         if f" - {lang} (" in v:
             return fam
@@ -258,13 +265,29 @@ def family_of(voice: str) -> str:
 
 _NEURAL_ID = re.compile(r"^[a-z]{2,3}-[A-Z]{2,4}-\w+Neural$")
 
+# Offline HD voices (Piper / Kokoro, see local_catalog.py): id → language family.
+_LOCAL_FAMILY = {row[0]: row[2] for row in local_catalog.PIPER_VOICES}
+_LOCAL_FAMILY.update({f"kokoro:{name}": local_catalog.KOKORO_LANGS[name[0]][0]
+                      for name, _ in local_catalog.KOKORO_VOICES})
+
+
+def is_online(voice: str) -> bool:
+    """True for Microsoft Edge neural voices: the text is sent to Microsoft's online service."""
+    return bool(_NEURAL_ID.match(current_id(voice or "")))
+
+
+def is_local_hd(voice: str) -> bool:
+    """True for offline HD voices (Piper / Kokoro) that run on this PC."""
+    return (voice or "").startswith(("piper:", "kokoro:"))
+
 
 def is_offline(voice: str) -> bool:
     """True for Windows offline voices (SAPI5 / OneCore, e.g. 'Microsoft George - English
-    (United Kingdom)' or legacy 'Zira'); False for Microsoft neural (cloud) voice ids.
+    (United Kingdom)' or legacy 'Zira'); False for Microsoft neural (cloud) voice ids and for
+    offline HD voices (Piper / Kokoro, which have their own engine).
     Earlier versions only treated names containing "Desktop"/"SAPI" as offline, so OneCore
     voices were sent to the cloud service, failed, and fell back to Zira."""
-    return not _NEURAL_ID.match(current_id(voice or ""))
+    return not is_online(voice) and not is_local_hd(voice)
 
 
 def is_multilingual(voice: str) -> bool:
@@ -280,8 +303,20 @@ def can_read(voice: str, language: str) -> bool:
 
 
 def voices_for(family: str) -> list[tuple[str, str]]:
-    """[(voice id, label)] for one language, in catalog order."""
+    """[(voice id, label)] for one language, in catalog order (Microsoft online voices)."""
     return [(v, label) for v, label, fam in CATALOG if fam == family]
+
+
+def local_voices_for(family: str, installed_only: bool = True) -> list[tuple[str, str]]:
+    """[(voice id, label)] of offline HD voices (Piper / Kokoro) for one language."""
+    from . import localtts
+    return [(v["id"], label_for(v["id"])) for v in localtts.voices_for(family)
+            if not installed_only or localtts.is_installed(v["id"])]
+
+
+def all_voices_for(family: str) -> list[tuple[str, str]]:
+    """Online voices, then the downloaded offline HD voices, for one language."""
+    return voices_for(family) + local_voices_for(family)
 
 
 def sample_text(voice: str) -> str:

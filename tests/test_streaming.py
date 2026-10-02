@@ -88,6 +88,9 @@ def _patch_engine(monkeypatch, synth_ok=lambda idx: True, play_ok=True):
     monkeypatch.setattr(core, "_synthesize_to_file", fake_synth)
     monkeypatch.setattr(core, "play_audio_file", fake_play)
     monkeypatch.setattr(core, "speak_offline_sapi", fake_sapi)
+    # deterministic fallback: no downloaded offline HD voice, no language-specific Windows voice
+    monkeypatch.setattr(core, "_local_hd_for", lambda fam, cfg: None)
+    monkeypatch.setattr(core, "_windows_voice_for", lambda fam: None)
     return calls
 
 

@@ -26,6 +26,11 @@ except (ImportError, ValueError):  # pragma: no cover - script mode
     from fluentvoice.config import APP_DIR, load_config, save_config
 
 REPO = "nickotmazgin/fluentvoice-pro"
+# Release assets may only come from this repository's releases (GitHub redirects the download
+# itself to its own storage host, which urllib follows over HTTPS).
+ASSET_URL_PREFIX = f"https://github.com/{REPO}/releases/download/"
+_SAFE_ASSET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$")
+_SAFE_VERSION = re.compile(r"^[0-9A-Za-z][0-9A-Za-z.\-]{0,40}$")
 API_LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
 RELEASES_PAGE = f"https://github.com/{REPO}/releases/latest"
 STATE_FILE = APP_DIR / "update_state.json"
@@ -210,6 +215,8 @@ def download_update(info: dict, dest_dir: Path | None = None, progress=None, tim
     asset = preferred_asset(info)
     if not asset or not asset.get("url"):
         return {"ok": False, "message": "No downloadable ZIP found on the latest release."}
+    if not asset["url"].startswith(ASSET_URL_PREFIX) or not _SAFE_ASSET_NAME.match(asset.get("name", "")):
+        return {"ok": False, "message": "The release asset is not an official FluentVoice Pro download."}
     dest_dir = Path(dest_dir or (Path.home() / "Downloads"))
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / asset["name"]
@@ -236,15 +243,16 @@ def download_update(info: dict, dest_dir: Path | None = None, progress=None, tim
             expected = _expected_sha(info, asset, timeout)
         except Exception:
             expected = ""
-        if expected and actual != expected:
+        if not expected:
+            tmp.unlink(missing_ok=True)
+            return {"ok": False, "message": "The release publishes no SHA-256 checksum, so the download "
+                                            "could not be verified and was discarded for your safety."}
+        if actual != expected:
             tmp.unlink(missing_ok=True)
             return {"ok": False, "message": "Checksum mismatch — download discarded for your safety.",
                     "sha256": actual}
         os.replace(tmp, dest)
-        return {
-            "ok": True, "path": str(dest), "sha256": actual, "verified": bool(expected),
-            "message": "SHA-256 verified ✓" if expected else "Downloaded (no published checksum to verify)",
-        }
+        return {"ok": True, "path": str(dest), "sha256": actual, "verified": True, "message": "SHA-256 verified ✓"}
     except Exception as e:
         try:
             tmp.unlink(missing_ok=True)
@@ -293,9 +301,11 @@ def _safe_extract(zip_path: Path, dest: Path):
         zf.extractall(dest)
 
 
-def prepare_install(zip_path: str, info: dict, root: Path | None = None) -> dict:
+def prepare_install(zip_path: str, info: dict, root: Path | None = None, sha256: str | None = None) -> dict:
     """Extract a verified release ZIP next to the current install and build the launch command.
 
+    sha256: the verified checksum of the download; the ZIP is hashed again right before it is
+    extracted, so a file swapped in the Downloads folder meanwhile is never installed.
     Returns {"ok", "folder", "command", "portable", "message"}. Nothing is executed here.
     """
     root = Path(root or install_root())
@@ -303,8 +313,12 @@ def prepare_install(zip_path: str, info: dict, root: Path | None = None) -> dict
     if is_git_checkout(root):
         return {"ok": False, "message": "This copy is a git checkout — update it with `git pull` "
                                         "(then run install.ps1) instead of the one-click installer."}
+    if sha256 is not None and _sha256_file(zip_path) != sha256:
+        return {"ok": False, "message": "The downloaded ZIP changed after it was verified — not installed."}
     portable = "portable" in zip_path.name.lower()
     ver = info.get("latest", "new")
+    if not _SAFE_VERSION.match(str(ver)):
+        return {"ok": False, "message": "Unexpected version name on the release — not installed."}
     folder = root.parent / (f"FluentVoicePro-{ver}" if portable else f"fluentvoice-pro-{ver}")
     if folder.exists():
         folder = root.parent / f"{folder.name}-{int(time.time())}"
@@ -317,13 +331,14 @@ def prepare_install(zip_path: str, info: dict, root: Path | None = None) -> dict
         exe = next(folder.rglob("FluentVoicePro.exe"), None)
         if not exe:
             return {"ok": False, "message": "FluentVoicePro.exe not found in the portable ZIP."}
+        exe_ps = str(exe).replace("'", "''")  # PowerShell single-quoted string: a ' is written ''
         ps = (
             "Start-Sleep -Seconds 2; "
             "Get-CimInstance Win32_Process | Where-Object { ($_.Name -like 'python*.exe' -and "
             "$_.CommandLine -like '*fluentvoice*') -or ($_.Name -eq 'FluentVoicePro.exe' -and "
-            f"$_.ExecutablePath -ne '{exe}') }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force "
+            f"$_.ExecutablePath -ne '{exe_ps}') }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force "
             "-ErrorAction SilentlyContinue }; "
-            f"Start-Process -FilePath '{exe}'"
+            f"Start-Process -FilePath '{exe_ps}'"
         )
         cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", ps]
     else:

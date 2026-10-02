@@ -8,7 +8,8 @@ import sys
 import time
 from pathlib import Path
 
-MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"
+MUTEX_NAME = "Local\\FluentVoice_Pro_SingleInstance_Mutex"
+LEGACY_MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"  # v1.4.x trays
 
 
 def project_root() -> Path:
@@ -26,10 +27,11 @@ def is_tray_running() -> bool:
     try:
         user32 = ctypes.windll.kernel32
         # SYNCHRONIZE = 0x00100000
-        handle = user32.OpenMutexW(0x00100000, False, MUTEX_NAME)
-        if handle:
-            user32.CloseHandle(handle)
-            return True
+        for name in (MUTEX_NAME, LEGACY_MUTEX_NAME):
+            handle = user32.OpenMutexW(0x00100000, False, name)
+            if handle:
+                user32.CloseHandle(handle)
+                return True
         # ERROR_FILE_NOT_FOUND (2) => not running
         return False
     except Exception:

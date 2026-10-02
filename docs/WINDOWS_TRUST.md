@@ -50,7 +50,9 @@ Set-ExecutionPolicy -Scope Process Bypass
 FluentVoice Pro does **not** open inbound ports and does **not** install a firewall rule.
 
 - **Outbound HTTPS** to Microsoft Edge neural TTS endpoints when online voices are used.
-- Offline SAPI/OneCore voices need no network.
+- Offline SAPI/OneCore voices and offline HD voices (Piper / Kokoro) need no network to speak.
+- **Outbound HTTPS** to `huggingface.co` (and its `*.hf.co` download hosts) or `github.com` only when you click **Download** for an offline HD voice in Settings → Voice Providers; files are SHA-256 verified.
+- **Outbound HTTPS** to `api.github.com` / `github.com` for the optional once-a-day update check and update downloads.
 
 Default Windows Firewall allows user-initiated outbound HTTPS. No manual firewall change is required for normal use.
 

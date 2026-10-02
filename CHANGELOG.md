@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2026-10-02
+
+### Added
+- **Offline HD voices that run on your PC: Piper and Kokoro.** A new **Settings → Voice Providers** tab lets you download natural voices that work without internet; the text never leaves the computer.
+  - **Piper:** 29 voices for English (US / UK), Spanish, French, German, Italian, Portuguese, Russian, Hebrew, Arabic, Korean, Marathi, Bengali, Telugu, Malayalam and Icelandic, 60–115 MB each, downloaded only when you pick one.
+  - **Kokoro:** one 350 MB pack with 28 very natural voices for US / UK English, Spanish, French, Italian, Portuguese and Hindi.
+  - **Every voice was checked:** its speech was transcribed back to text with an offline speech recogniser (Whisper) and compared with the input. English and the European voices come back word for word; Hebrew, Arabic, Korean, Icelandic and the Indian-language voices are clear but more basic than the Microsoft voices. Kokoro's Japanese voices were left out: they skip kanji.
+  - **Licences checked voice by voice** and shown next to each voice: ✅ *Free to use* (public domain, CC0, CC BY, CC BY-SA, Apache-2.0) or 🏠 *Personal use only* (non-commercial recordings, e.g. the Hebrew voice; FluentVoice asks you to confirm before downloading those). Voices from research-only recordings and Kokoro voices named after other companies' voices are left out. Full list: `docs/VOICE_LICENSES.md`.
+  - **Verified downloads:** only from the official Piper voice library (Hugging Face) and the official sherpa-onnx release (GitHub), over HTTPS, and every file must match a fixed SHA-256 fingerprint and size, or it is deleted and never used. The Kokoro archive is unpacked with strict checks (nothing outside its folder, no links).
+  - Downloaded voices appear in Voice & Speech (in their language), in Preferred Voices, and in a new tray submenu **Offline HD Voices (Piper / Kokoro)**, which updates as soon as a voice is added or removed. **▶ Try** plays a sample; **Remove** frees the space.
+- **Privacy mode: "Offline only".** One switch (Voice Providers tab or tray menu) and no text is ever sent to the internet: each language is read by its Preferred Voice if that is offline, else a downloaded offline HD voice, else an installed Windows voice.
+- **Smarter fallback:** when the online voice is unreachable, reading continues with an offline HD voice **of the same language** if you downloaded one, then a Windows voice of the same language (before, always Zira, even for Hebrew text). An offline HD voice that fails never falls back to an online voice.
+- **Voice Providers tab** explains each provider in plain words: where the text goes, quality, size, and the rights / licence of each one, with links to the voice licences and third-party notices.
+- **Licences shipped with the app:** `THIRD_PARTY_NOTICES.md`, the full GPL / LGPL / Apache licence texts in `licenses/`, and `VOICE_LICENSES.md` are in both release ZIPs.
+
+### Changed
+- **Preferred Voices** (Automation & System) is one compact row, Language ▸ Voice, with a summary of what you changed and a **↺ Defaults** button, instead of a list of 22 rows.
+- Tray menu: the Microsoft voices are labelled **☁ Online HD Voices (Microsoft)**, so it is clear which voices send text online.
+- The README's legal section is rewritten in plain words: the online voices are not an official Microsoft service for other apps; for publishing or selling audio use Microsoft's official Azure AI Speech; no "fair use" claim.
+
+### Security
+- **Updater:** downloads are accepted only from this repository's GitHub releases; a release without a published SHA-256 is discarded instead of being offered unverified; the ZIP is hashed again right before it is installed; asset and version names are validated; the portable restart command escapes the install path safely (folders with an apostrophe).
+- **Single instance per Windows session:** with two people signed in on one PC, the second one's tray could not start. Older trays are still detected during an update.
+- `tray.log` now rotates at 256 KB (it grew without limit).
+- 23 new tests (offline voices, downloads, archive safety, privacy mode, fallback, updater hardening).
+
+### Notes
+- The portable EXE now contains GPL-3.0 components (the Piper engine and eSpeak NG), so the EXE as a whole is distributed under the GPL v3; FluentVoice Pro's own code stays MIT. Details in `THIRD_PARTY_NOTICES.md`.
+- Pitch applies to the online voices only; speed and volume work with every voice.
+- No offline HD voice yet for Chinese, Japanese, Thai, Tamil, Gujarati or Kannada (they need extra language tools); these keep the online and Windows voices.
+
 ## [1.4.28] - 2026-10-01
 
 ### Privacy

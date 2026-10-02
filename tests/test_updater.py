@@ -13,9 +13,9 @@ def _release(tag="v9.9.9", digest=None):
         "published_at": "2026-10-01T10:00:00Z",
         "body": "## notes\n### Changelog\n## [9.9.9]\n### Fixed\n- **Thing** fixed",
         "assets": [
-            {"name": f"fluentvoice-pro-{tag[1:]}-windows.zip", "browser_download_url": "https://x/src.zip",
+            {"name": f"fluentvoice-pro-{tag[1:]}-windows.zip", "browser_download_url": updater.ASSET_URL_PREFIX + "v9/src.zip",
              "size": 10, "digest": digest or ""},
-            {"name": f"FluentVoicePro-{tag[1:]}-portable-win64.zip", "browser_download_url": "https://x/port.zip",
+            {"name": f"FluentVoicePro-{tag[1:]}-portable-win64.zip", "browser_download_url": updater.ASSET_URL_PREFIX + "v9/port.zip",
              "size": 20, "digest": ""},
         ],
     }
@@ -174,3 +174,40 @@ def test_prepare_install_refuses_git_checkout_and_zip_slip(tmp_path):
     plan = updater.prepare_install(str(evil), {"latest": "9.9.10"}, root=root2)
     assert not plan["ok"] and "Unsafe" in plan["message"]
     assert not (tmp_path.parent / "escape.txt").exists()
+
+
+def test_download_refuses_assets_from_other_hosts(monkeypatch, tmp_path):
+    payload = b"PK"
+    monkeypatch.setattr(updater.urllib.request, "urlopen", lambda req, timeout=0: _Resp(payload))
+    info = updater._summarize(_release("v9.9.9", digest="sha256:" + hashlib.sha256(payload).hexdigest()))
+    for a in info["assets"]:
+        a["url"] = "https://evil.example.com/" + a["name"]
+    res = updater.download_update(info, dest_dir=tmp_path)
+    assert not res["ok"] and "official" in res["message"]
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_download_without_published_checksum_is_discarded(monkeypatch, tmp_path):
+    monkeypatch.setattr(updater.urllib.request, "urlopen", lambda req, timeout=0: _Resp(b"PK-unverifiable"))
+    info = updater._summarize(_release("v9.9.9"))  # no digest, no SHA256SUMS asset
+    res = updater.download_update(info, dest_dir=tmp_path)
+    assert not res["ok"] and "verified" in res["message"]
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_prepare_install_rechecks_checksum_and_version(tmp_path):
+    root = tmp_path / "FluentVoicePro"
+    root.mkdir()
+    z = _zip(tmp_path / "FluentVoicePro-9.9.9-portable-win64.zip", {"FluentVoicePro.exe": "MZ"})
+    plan = updater.prepare_install(str(z), {"latest": "9.9.9"}, root=root, sha256="0" * 64)
+    assert not plan["ok"] and "changed" in plan["message"]
+    plan = updater.prepare_install(str(z), {"latest": "9.9.9; rm -rf"}, root=root)
+    assert not plan["ok"] and "version" in plan["message"]
+
+
+def test_portable_command_quotes_paths_with_apostrophes(tmp_path):
+    root = tmp_path / "O'Brien" / "FluentVoicePro"
+    root.mkdir(parents=True)
+    z = _zip(tmp_path / "FluentVoicePro-9.9.9-portable-win64.zip", {"FluentVoicePro.exe": "MZ"})
+    plan = updater.prepare_install(str(z), {"latest": "9.9.9"}, root=root)
+    assert plan["ok"] and "O''Brien" in plan["command"][-1] and "O'Brien" not in plan["command"][-1].replace("O''Brien", "")

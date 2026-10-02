@@ -15,7 +15,7 @@ import customtkinter as ctk
 
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from fluentvoice import config, core, voices
+from fluentvoice import config, core, localtts, voices
 from fluentvoice import __version__ as APP_VERSION
 
 
@@ -55,6 +55,8 @@ PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LS
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
 GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
+VOICE_LICENSES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/docs/VOICE_LICENSES.md"
+THIRD_PARTY_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/THIRD_PARTY_NOTICES.md"
 
 # Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
 BASE_VOICE_MAP = {label: vid for vid, label, _ in voices.CATALOG}
@@ -88,6 +90,8 @@ def _index_after_plain(text: str, n: int) -> int:
 
 def build_full_voice_map():
     vm = BASE_VOICE_MAP.copy()
+    for v in localtts.installed_voices():
+        vm[voices.label_for(v["id"])] = v["id"]
     installed = core.get_installed_sapi_voices()
     for label, desc in installed:
         vm[f"{label} (Offline)"] = desc
@@ -229,11 +233,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         self.tab_reader = self.tabview.add("Direct Text Reader")
         self.tab_speech = self.tabview.add("Voice & Speech")
+        self.tab_providers = self.tabview.add("Voice Providers")
         self.tab_options = self.tabview.add("Automation & System")
         self.tab_about = self.tabview.add("About & Developer")
 
         self._populate_reader_tab()
         self._populate_speech_tab()
+        self._populate_providers_tab()
         self._populate_options_tab()
         self._populate_about_tab()
         self._fit_wide_labels()
@@ -241,6 +247,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._valid_tabs = [
             "Direct Text Reader",
             "Voice & Speech",
+            "Voice Providers",
             "Automation & System",
             "About & Developer",
         ]
@@ -306,7 +313,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
     def _refresh_scroll_regions(self):
         try:
-            for attr in ("tab_speech", "tab_options", "tab_about"):
+            for attr in ("tab_speech", "tab_providers", "tab_options", "tab_about"):
                 tab = getattr(self, attr, None)
                 if tab is None:
                     continue
@@ -475,6 +482,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         label = self._label_for_voice(curr_voice)
         auto = (" • Smart auto-route ON: other languages use your Preferred Voices"
                 if self.cfg.get("auto_route_language", True) else " • Auto-route OFF")
+        if self.cfg.get("offline_only"):
+            auto += " • 🛡 Offline only: text stays on this PC"
         return f"🎙 Active reading voice: {label}{auto}"
 
     def _refresh_reader_voice_label(self):
@@ -578,7 +587,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 return label.split(" (")[0]
         return voice_code
 
-    def _start_speech(self, txt, status_lbl, button, idle_text, auto_route=None):
+    def _start_speech(self, txt, status_lbl, button, idle_text, auto_route=None, voice=None):
         import queue as _queue
         self._finish_speech_ui()  # restore any previous button
         self._speech_token = getattr(self, "_speech_token", 0) + 1
@@ -592,7 +601,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             button.configure(text="⏳ Working…", state="disabled")
         except Exception:
             pass
-        status_lbl.configure(text="⏳ Connecting to neural engine…", text_color="#00D2FF")
+        status_lbl.configure(text="⏳ Preparing the voice…", text_color="#00D2FF")
 
         q = self._speech_ui["queue"]
 
@@ -601,7 +610,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         def worker():
             try:
-                res = core.speak_text(txt, on_status=on_status, auto_route=auto_route)
+                res = core.speak_text(txt, on_status=on_status, auto_route=auto_route, voice=voice)
             except Exception as e:  # never leave the UI spinning
                 res = {"status": "error", "message": f"{type(e).__name__}: {e}"}
             q.put(("__result__", res if isinstance(res, dict) else {}))
@@ -627,6 +636,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             ui["phase"] = phase
             if phase == "synthesizing":
                 ui["voice"] = self._voice_short_label(info.get("voice", ""))
+                ui["voice_id"] = info.get("voice", "")
                 ui["parts"] = info.get("parts", 1)
                 if info.get("routed_from"):
                     lang = voices.LANGUAGES.get(info.get("lang", ""), "other-language")
@@ -646,7 +656,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             if status == "success":
                 lbl.configure(text=f"✔ Finished reading • {ui['voice'] or 'voice'} • {self._fmt_ms(elapsed * 1000)}{ui['routed']}", text_color="#3FB950")
             elif status == "fallback":
-                lbl.configure(text="ℹ Cloud voice unreachable → finished with Windows offline voice", text_color="#E3B341")
+                how = "an offline HD voice" if final.get("mode") == "offline_hd" else "the Windows offline voice"
+                lbl.configure(text=f"ℹ First voice unavailable → finished with {how}", text_color="#E3B341")
             elif status == "aborted":
                 lbl.configure(text="⏹ Speech stopped", text_color="#8B949E")
             else:
@@ -655,14 +666,22 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             return
 
         if phase == "synthesizing":
-            msg = f"⏳ Connecting to neural engine… {int(elapsed)}s"
-            if elapsed > 8:
+            local = voices.is_local_hd(ui.get("voice_id", ""))
+            msg = (f"⏳ Preparing offline HD voice on this PC… {int(elapsed)}s" if local
+                   else f"⏳ Connecting to neural engine… {int(elapsed)}s")
+            if elapsed > 8 and not local:
                 msg += " — slow network? It will fall back to the offline voice automatically."
             lbl.configure(text=msg, text_color="#00D2FF" if elapsed <= 8 else "#E3B341")
         elif phase == "speaking":
             info = ui.get("speak_info", {})
             if info.get("mode") == "offline":
                 lbl.configure(text=f"🔊 Speaking (offline Windows voice) • {self._fmt_ms(elapsed * 1000)}", text_color="#3FB950")
+            elif info.get("mode") == "offline_hd":
+                part = f" • part {info.get('part', 1)}/{info.get('parts', 1)}" if info.get("parts", 1) > 1 else ""
+                pos, ln = info.get("pos_ms", 0), info.get("len_ms", 0)
+                clock = f"{self._fmt_ms(pos)} / {self._fmt_ms(ln)}" if ln else self._fmt_ms(pos)
+                lbl.configure(text=f"🔊 Speaking — {ui['voice']} (offline HD, on this PC){part} • {clock}{ui['routed']}",
+                              text_color="#3FB950")
             else:
                 part = f" • part {info.get('part', 1)}/{info.get('parts', 1)}" if info.get("parts", 1) > 1 else ""
                 pos = info.get("pos_ms", 0)
@@ -674,7 +693,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             except Exception:
                 pass
         elif phase == "fallback":
-            lbl.configure(text="ℹ Cloud voice unreachable → reading with Windows offline voice…", text_color="#E3B341")
+            lbl.configure(text="ℹ First voice unavailable → continuing with an offline voice…", text_color="#E3B341")
 
         self.after(200, self._poll_speech_status, token)
 
@@ -978,7 +997,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         They were created with wraplength=860, which CTk scales by the display scaling
         (1075 px at 125%), so in a normal-size window the text ran past the card and was cut
         off on both sides."""
-        stack = [self.tab_speech, self.tab_options]
+        stack = [self.tab_speech, self.tab_providers, self.tab_options]
         while stack:
             w = stack.pop()
             stack.extend(w.winfo_children())
@@ -1175,42 +1194,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             justify="left",
         ).pack(anchor="w", padx=16, pady=(0, 6))
 
-        self._pref_combos = {}
-        prefs = self.cfg.get("preferred_voices") or {}
-        for lang_key, lang_name in voices.LANGUAGES.items():
-            options = voices.voices_for(lang_key)  # [(voice id, label)]
-            row = ctk.CTkFrame(pref, fg_color="transparent")
-            row.pack(fill="x", padx=16, pady=2)
-            ctk.CTkLabel(
-                row,
-                text=f"{lang_name}:",
-                width=110,
-                anchor="w",
-                font=ctk.CTkFont(size=12),
-                text_color="#C9D1D9"
-            ).pack(side="left")
-            code_by_name = {label: vid for vid, label in options}
-            name_by_code = {vid: label for vid, label in options}
-            combo = ctk.CTkComboBox(
-                row,
-                values=[label for _, label in options],
-                width=380,
-                height=28,
-                state="readonly",
-                font=ctk.CTkFont(size=12),
-                dropdown_font=ctk.CTkFont(size=12),
-                fg_color="#0D131D",
-                border_color="#30363D",
-                button_color="#00D2FF",
-                button_hover_color="#33DCFF",
-                dropdown_fg_color="#121824",
-                dropdown_hover_color="#00D2FF",
-                command=lambda choice, k=lang_key, m=code_by_name: self._on_pref_voice(k, m.get(choice, ""))
-            )
-            current_code = voices.current_id(prefs.get(lang_key, voices.DEFAULT_PREFERRED[lang_key]))
-            combo.set(name_by_code.get(current_code, options[0][1]))
-            combo.pack(side="left", padx=(4, 0))
-            self._pref_combos[lang_key] = combo
+        self._build_preferred_picker(pref)
         ctk.CTkLabel(
             pref,
             text="Tip: a voice reads its own language as-is. Multilingual voices also keep English, "
@@ -1613,7 +1597,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             if pending.exists():
                 tab = pending.read_text(encoding="utf-8").strip()
                 pending.unlink(missing_ok=True)
-                valid = ["Direct Text Reader", "Voice & Speech", "Automation & System", "About & Developer"]
+                valid = ["Direct Text Reader", "Voice & Speech", "Voice Providers", "Automation & System", "About & Developer"]
                 if tab in valid:
                     self._select_tab(tab)
                     self.lift()
@@ -1665,6 +1649,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                         self._syncing_from_disk = False
                     changed = True
             apply_switch("switch_update_check", "check_updates", True)
+            apply_switch("switch_offline_only", "offline_only", False)
 
             # Debounce slider
             if hasattr(self, "buf_slider"):
@@ -1743,9 +1728,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
     def _voice_groups(self) -> dict:
         """{'English': [labels…], …, 'Offline (Windows voices)': […]} in catalog order."""
-        groups = {name: [label for _, label in voices.voices_for(fam)] for fam, name in voices.LANGUAGES.items()}
+        groups = {name: [label for _, label in voices.all_voices_for(fam)] for fam, name in voices.LANGUAGES.items()}
         catalog_labels = {label for _, label, _ in voices.CATALOG}
-        offline = [label for label in self.voice_map if label not in catalog_labels]
+        offline = [label for label, code in self.voice_map.items()
+                   if label not in catalog_labels and not voices.is_local_hd(code)]
         if offline:
             groups[self.OFFLINE_GROUP] = offline
         return groups
@@ -1804,7 +1790,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             return
         vcode = self.voice_map.get(choice, "en-US-AndrewMultilingualNeural")
         self.cfg["voice"] = vcode
-        self.cfg["engine"] = "offline" if voices.is_offline(vcode) else "neural"
+        self.cfg["engine"] = ("offline" if voices.is_offline(vcode) else
+                              "local" if voices.is_local_hd(vcode) else "neural")
         self._persist_cfg()
         self._trigger_autosave_indicator()
         self._refresh_reader_voice_label()
@@ -2293,7 +2280,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
             win.after(150, poll)
 
-        def install_now(path):
+        def install_now(path, sha=None):
             from tkinter import messagebox
             if updater.is_git_checkout():
                 status.configure(text="ℹ This copy is a git checkout — update with `git pull`, then run install.ps1.",
@@ -2307,7 +2294,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 parent=win,
             ):
                 return
-            plan = updater.prepare_install(path, info)
+            plan = updater.prepare_install(path, info, sha256=sha)
             if not plan.get("ok"):
                 status.configure(text="⚠ " + plan.get("message", "Install failed"), text_color="#F85149")
                 return
@@ -2325,7 +2312,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     text_color="#3FB950",
                 )
                 if res.get("verified") and not updater.is_git_checkout():
-                    btn_dl.configure(text="🚀 Install Now", state="normal", command=lambda: install_now(path))
+                    btn_dl.configure(text="🚀 Install Now", state="normal", command=lambda: install_now(path, res.get("sha256")))
                 else:
                     btn_dl.configure(text="📂 Show in Folder", state="normal",
                                      command=lambda: subprocess.Popen(["explorer", "/select,", path]))
@@ -2344,6 +2331,391 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                       width=130, command=skip).pack(side="left", padx=(0, 8))
         ctk.CTkButton(row, text="Later", fg_color="#21262D", hover_color="#30363D",
                       width=80, command=win.destroy).pack(side="right")
+
+    # ------------------------------------------------------------------ Preferred Voices (compact)
+    def _build_preferred_picker(self, parent):
+        """Language ▸ Voice: one row for all 22 languages, plus a summary of what was changed."""
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", padx=16, pady=(2, 4))
+        names = list(voices.LANGUAGES.values())
+        self.pref_lang_var = ctk.StringVar(value=names[0])
+        self.pref_lang_menu = ctk.CTkOptionMenu(
+            row, values=names, variable=self.pref_lang_var, command=lambda _n: self._refresh_pref_voice_menu(),
+            width=170, height=30, corner_radius=8, fg_color="#1F2E45", button_color="#00D2FF",
+            button_hover_color="#33DCFF", text_color="#E6EDF3", dropdown_fg_color="#121824",
+            dropdown_hover_color="#0E4A5C", dropdown_text_color="#E6EDF3", font=ctk.CTkFont(size=12, weight="bold"),
+            anchor="w")
+        self.pref_lang_menu.pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(row, text="→", font=ctk.CTkFont(size=14, weight="bold"), text_color="#8B949E").pack(side="left")
+        self.pref_voice_var = ctk.StringVar(value="")
+        self.pref_voice_menu = ctk.CTkOptionMenu(
+            row, values=[""], variable=self.pref_voice_var, command=self._on_pref_voice_picked,
+            height=30, corner_radius=8, fg_color="#1F2E45", button_color="#00D2FF", button_hover_color="#33DCFF",
+            text_color="#E6EDF3", dropdown_fg_color="#121824", dropdown_hover_color="#0E4A5C",
+            dropdown_text_color="#E6EDF3", font=ctk.CTkFont(size=12), anchor="w", width=440)
+        self.pref_voice_menu.pack(side="left", padx=(8, 8))
+        ctk.CTkButton(
+            row, text="↺ Defaults", width=96, height=30, fg_color="#21262D", hover_color="#30363D",
+            font=ctk.CTkFont(size=12), command=self._on_pref_reset).pack(side="left")
+        self.pref_summary_lbl = ctk.CTkLabel(
+            parent, text="", font=ctk.CTkFont(size=12), text_color="#C9D1D9", wraplength=860, justify="left",
+            anchor="w")
+        self.pref_summary_lbl.pack(fill="x", padx=16, pady=(4, 2))
+        self._refresh_pref_voice_menu()
+
+    def _pref_family(self) -> str:
+        name = self.pref_lang_var.get()
+        return next((f for f, n in voices.LANGUAGES.items() if n == name), "english")
+
+    def _refresh_pref_voice_menu(self):
+        if not hasattr(self, "pref_voice_menu"):
+            return
+        fam = self._pref_family()
+        options = voices.all_voices_for(fam)
+        labels = [label for _, label in options]
+        prefs = self.cfg.get("preferred_voices") or {}
+        code = voices.current_id(prefs.get(fam, voices.DEFAULT_PREFERRED[fam]))
+        current = next((label for vid, label in options if vid == code), voices.label_for(code))
+        if current not in labels:
+            labels.append(current)
+        self.pref_voice_menu.configure(values=labels)
+        self.pref_voice_var.set(current)
+        self._refresh_pref_summary()
+
+    def _refresh_pref_summary(self):
+        prefs = self.cfg.get("preferred_voices") or {}
+        changed = [f"{voices.LANGUAGES[f]} → {voices.short_name(prefs[f])}"
+                   for f in voices.LANGUAGES if prefs.get(f) and prefs[f] != voices.DEFAULT_PREFERRED[f]]
+        if changed:
+            text = "Changed from the defaults: " + " • ".join(changed)
+        else:
+            text = "All 22 languages use their default voice. Pick a language to see or change its voice."
+        self.pref_summary_lbl.configure(text=text)
+
+    def _on_pref_voice_picked(self, label):
+        fam = self._pref_family()
+        code = next((vid for vid, lbl in voices.all_voices_for(fam) if lbl == label), "")
+        self._on_pref_voice(fam, code)
+        self._refresh_pref_summary()
+
+    def _on_pref_reset(self):
+        self.cfg["preferred_voices"] = dict(voices.DEFAULT_PREFERRED)
+        self._persist_cfg()
+        self._trigger_autosave_indicator()
+        self._refresh_pref_voice_menu()
+
+    # ------------------------------------------------------------------ Voice Providers tab
+    def _provider_text(self, parent, text, color="#C9D1D9", size=12, pady=(0, 6)):
+        lbl = ctk.CTkLabel(parent, text=text, font=ctk.CTkFont(size=size), text_color=color,
+                           wraplength=860, justify="left", anchor="w")
+        lbl.pack(fill="x", padx=16, pady=pady)
+        return lbl
+
+    def _small_button(self, parent, text, command, accent=False, width=110):
+        return ctk.CTkButton(
+            parent, text=text, width=width, height=28, command=command,
+            fg_color="#00D2FF" if accent else "#21262D", hover_color="#33DCFF" if accent else "#30363D",
+            text_color="#080C14" if accent else "#E6EDF3", font=ctk.CTkFont(size=12, weight="bold" if accent else "normal"))
+
+    def _populate_providers_tab(self):
+        scroll = SmoothScrollableFrame(
+            self.tab_providers, fg_color="transparent", scrollbar_button_color="#30363D",
+            scrollbar_button_hover_color="#00D2FF")
+        scroll.pack(fill="both", expand=True)
+        self._dl = None  # the download in progress: {"voice", "done", "total", "error", "finished", "cancel"}
+
+        # --- Privacy ---
+        priv = self._section_card(scroll, "🛡 Privacy: where your text goes")
+        self._provider_text(
+            priv,
+            "• Online HD voices (Microsoft) send the text being read to Microsoft's online speech service.\n"
+            "• Offline voices (Piper, Kokoro and Windows) create the speech on this PC: the text never leaves it.\n"
+            "• With every voice, copied passwords, keys and text marked private by password managers are skipped "
+            "and never read or sent anywhere.")
+        self.switch_offline_only = ctk.CTkSwitch(
+            priv, text="Offline only: never send text to the internet (offline HD or Windows voices read everything)",
+            font=ctk.CTkFont(size=13), progress_color="#3FB950", command=self._on_toggle_offline_only)
+        if self.cfg.get("offline_only", False):
+            self.switch_offline_only.select()
+        self.switch_offline_only.pack(anchor="w", padx=16, pady=(0, 4))
+        self._provider_text(
+            priv, "Also in the tray menu. Each language then uses its Preferred Voice if it is offline, else a "
+                  "downloaded offline HD voice, else an installed Windows voice.", color="#8B949E", size=11,
+            pady=(0, 12))
+
+        # --- Microsoft online voices ---
+        ms = self._section_card(scroll, "☁ Microsoft online HD voices (80 voices • 22 languages • internet needed)")
+        self._provider_text(
+            ms,
+            "The most natural voices, the same ones Microsoft Edge's Read Aloud uses. FluentVoice reaches them "
+            "through the open-source edge-tts library.\n"
+            "Rights: this is not an official Microsoft service for other apps and Microsoft can change or stop it "
+            "at any time. Fine for personal reading; for publishing or selling audio, use Microsoft's official "
+            "paid service (Azure AI Speech) instead. FluentVoice is not affiliated with Microsoft.\n"
+            "If these voices stop working, FluentVoice continues with an offline HD voice or a Windows voice.",
+            pady=(0, 12))
+
+        # --- Piper ---
+        piper = self._section_card(scroll, "🖥 Piper offline HD voices (free download • on this PC)")
+        piper_ok = localtts.engine_available("piper")
+        self._provider_text(
+            piper,
+            "Natural voices that run on this PC, made by the Open Home Foundation's Piper project (used by Home "
+            "Assistant and the NVDA screen reader). About 60–115 MB each, downloaded only when you choose a voice, "
+            "from the official Piper voice library, and checked against a fixed SHA-256 fingerprint before use.\n"
+            "Licences were checked voice by voice: ✅ Free to use, or 🏠 Personal use only (fine for reading to "
+            "yourself, not for publishing or selling the audio).")
+        if not piper_ok:
+            self._provider_text(piper, "⚠ The Piper engine is not installed in this copy (pip install piper-tts).",
+                                color="#E3B341")
+        prow = ctk.CTkFrame(piper, fg_color="transparent")
+        prow.pack(fill="x", padx=16, pady=(0, 4))
+        ctk.CTkLabel(prow, text="Language:", font=ctk.CTkFont(size=12), text_color="#C9D1D9").pack(side="left")
+        piper_langs = [voices.LANGUAGES[f] for f in voices.LANGUAGES
+                       if any(v["provider"] == "piper" for v in localtts.voices_for(f))]
+        self.piper_lang_var = ctk.StringVar(value=piper_langs[0])
+        ctk.CTkOptionMenu(
+            prow, values=piper_langs, variable=self.piper_lang_var, command=lambda _n: self._render_provider_rows(),
+            width=170, height=28, fg_color="#1F2E45", button_color="#00D2FF", button_hover_color="#33DCFF",
+            text_color="#E6EDF3", dropdown_fg_color="#121824", dropdown_hover_color="#0E4A5C",
+            font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(8, 0))
+        self._provider_text(
+            piper, "Quality varies by language: English and the European voices are very good; Hebrew, Arabic, "
+                   "Korean, Icelandic and the Indian-language voices are clear but more basic than the Microsoft "
+                   "voices. No offline HD voice yet for Chinese, Japanese, Thai, Tamil, Gujarati or Kannada (they "
+                   "keep the online and Windows voices); Hindi has Kokoro voices below.", color="#8B949E", size=11,
+            pady=(2, 4))
+        self.piper_rows = ctk.CTkFrame(piper, fg_color="transparent")
+        self.piper_rows.pack(fill="x", padx=12, pady=(0, 10))
+
+        # --- Kokoro ---
+        kok = self._section_card(scroll, "✨ Kokoro offline HD voices (one 350 MB pack • 28 voices • on this PC)")
+        self._provider_text(
+            kok,
+            "Very natural voices (Kokoro-82M, Apache-2.0: free for any use) for US & UK English, Spanish, French, "
+            "Italian, Portuguese and Hindi. One download of 350 MB from the official sherpa-onnx "
+            "release, checked against a fixed SHA-256 fingerprint. Needs a reasonably fast PC (it computes about "
+            "2–3× faster than real time on a modern CPU). Kokoro voices named after other companies' voices are "
+            "left out.")
+        if not localtts.engine_available("kokoro"):
+            self._provider_text(kok, "⚠ The Kokoro engine is not installed in this copy (pip install sherpa-onnx).",
+                                color="#E3B341")
+        self.kokoro_rows = ctk.CTkFrame(kok, fg_color="transparent")
+        self.kokoro_rows.pack(fill="x", padx=12, pady=(0, 10))
+
+        # --- download progress (shared) ---
+        self.dl_status_lbl = ctk.CTkLabel(scroll, text="", font=ctk.CTkFont(size=12, weight="bold"),
+                                          text_color="#00D2FF", anchor="w")
+        self.dl_status_lbl.pack(fill="x", padx=24, pady=(0, 2))
+
+        # --- Windows voices ---
+        win = self._section_card(scroll, "💻 Windows offline voices (built into Windows)")
+        n_win = len([d for _, d in core.get_installed_sapi_voices()])
+        self._provider_text(
+            win,
+            f"{n_win} installed on this PC. They come with Windows (more in Windows Settings → Time & language → "
+            "Speech), run offline and are the last fallback. Licensed with Windows for use on this PC.")
+        self._small_button(win, "Install more Windows voices…", self._on_open_windows_speech_settings,
+                           width=220).pack(anchor="w", padx=16, pady=(0, 12))
+
+        # --- Legal ---
+        legal = self._section_card(scroll, "⚖ Licences, rights & disclaimer")
+        self._provider_text(
+            legal,
+            "• FluentVoice Pro's own code is MIT-licensed. The portable EXE also contains open-source components "
+            "under their own licences (including GPL-3.0 parts of the Piper engine), listed in THIRD_PARTY_NOTICES.\n"
+            "• Offline HD voices keep the licence of their recordings (shown next to each voice; full list in "
+            "VOICE_LICENSES). CC BY / BY-SA voices: credit the source if you share audio made with them.\n"
+            "• You are responsible for the rights to the text you have read aloud and for how you use any audio.\n"
+            "• Microsoft, Windows and Microsoft Edge are trademarks of Microsoft Corporation. FluentVoice Pro is "
+            "independent and not affiliated with, sponsored or endorsed by Microsoft, Piper or Kokoro.")
+        lrow = ctk.CTkFrame(legal, fg_color="transparent")
+        lrow.pack(fill="x", padx=16, pady=(0, 12))
+        self._small_button(lrow, "Voice licences", lambda: webbrowser.open(VOICE_LICENSES_URL), width=150).pack(
+            side="left", padx=(0, 8))
+        self._small_button(lrow, "Third-party notices", lambda: webbrowser.open(THIRD_PARTY_URL), width=170).pack(
+            side="left")
+
+        self._render_provider_rows()
+
+    def _licence_badge(self, v) -> tuple[str, str]:
+        return ("✅ Free to use", "#3FB950") if v["kind"] == "free" else ("🏠 Personal use only", "#E3B341")
+
+    def _render_provider_rows(self):
+        """(Re)draw the Piper rows for the chosen language and the Kokoro pack row."""
+        busy = self._dl is not None and not self._dl.get("finished")
+        for frame in (self.piper_rows, self.kokoro_rows):
+            for w in frame.winfo_children():
+                w.destroy()
+        name = self.piper_lang_var.get()
+        fam = next((f for f, n in voices.LANGUAGES.items() if n == name), "english")
+        for v in localtts.voices_for(fam):
+            if v["provider"] != "piper":
+                continue
+            installed = localtts.is_installed(v["id"])
+            row = ctk.CTkFrame(self.piper_rows, fg_color="#121A28", corner_radius=8)
+            row.pack(fill="x", pady=3)
+            top = ctk.CTkFrame(row, fg_color="transparent")
+            top.pack(fill="x", padx=10, pady=(6, 0))
+            ctk.CTkLabel(top, text=voices.label_for(v["id"]).replace(" · Piper Offline", ""),
+                         font=ctk.CTkFont(size=13, weight="bold"), text_color="#E6EDF3").pack(side="left")
+            badge, color = self._licence_badge(v)
+            ctk.CTkLabel(top, text=f"  {badge}", font=ctk.CTkFont(size=12), text_color=color).pack(side="left")
+            size_mb = localtts.download_size(v["id"]) / 1e6
+            if installed:
+                self._small_button(top, "Remove", lambda i=v["id"]: self._on_remove_voice(i), width=80).pack(
+                    side="right")
+                self._small_button(top, "▶ Try", lambda i=v["id"]: self._on_try_voice(i), accent=True,
+                                   width=70).pack(side="right", padx=(0, 6))
+                ctk.CTkLabel(top, text="✓ Downloaded  ", font=ctk.CTkFont(size=12), text_color="#3FB950").pack(
+                    side="right")
+            else:
+                b = self._small_button(top, f"Download {size_mb:.0f} MB", lambda i=v["id"]: self._on_download_voice(i),
+                                       accent=True, width=140)
+                b.pack(side="right")
+                if busy:
+                    b.configure(state="disabled")
+            ctk.CTkLabel(row, text=f"Licence: {v['licence']} • {v['source']}", font=ctk.CTkFont(size=11),
+                         text_color="#8B949E", anchor="w", justify="left", wraplength=820).pack(
+                fill="x", padx=10, pady=(0, 6))
+
+        # Kokoro: one pack for all its voices
+        kv = next(v for v in localtts.VOICES if v["provider"] == "kokoro")
+        installed = localtts.is_installed(kv["id"])
+        row = ctk.CTkFrame(self.kokoro_rows, fg_color="#121A28", corner_radius=8)
+        row.pack(fill="x", pady=3)
+        top = ctk.CTkFrame(row, fg_color="transparent")
+        top.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(top, text="Kokoro voice pack", font=ctk.CTkFont(size=13, weight="bold"),
+                     text_color="#E6EDF3").pack(side="left")
+        ctk.CTkLabel(top, text="  ✅ Free to use (Apache-2.0)", font=ctk.CTkFont(size=12),
+                     text_color="#3FB950").pack(side="left")
+        if installed:
+            self._small_button(top, "Remove", lambda: self._on_remove_voice(kv["id"]), width=80).pack(side="right")
+            kokoro_labels = {voices.label_for(v["id"]): v["id"] for v in localtts.VOICES if v["provider"] == "kokoro"}
+            self.kokoro_try_var = ctk.StringVar(value=next(iter(kokoro_labels)))
+            self._small_button(top, "▶ Try", lambda: self._on_try_voice(kokoro_labels[self.kokoro_try_var.get()]),
+                               accent=True, width=70).pack(side="right", padx=(0, 6))
+            ctk.CTkOptionMenu(
+                top, values=list(kokoro_labels), variable=self.kokoro_try_var, width=330, height=28,
+                fg_color="#1F2E45", button_color="#00D2FF", button_hover_color="#33DCFF", text_color="#E6EDF3",
+                dropdown_fg_color="#121824", dropdown_hover_color="#0E4A5C", font=ctk.CTkFont(size=12)).pack(
+                side="right", padx=(0, 6))
+        else:
+            b = self._small_button(top, "Download 350 MB", lambda: self._on_download_voice(kv["id"]), accent=True,
+                                   width=150)
+            b.pack(side="right")
+            if busy:
+                b.configure(state="disabled")
+
+    def _on_download_voice(self, voice_id):
+        from tkinter import messagebox
+        if self._dl is not None and not self._dl.get("finished"):
+            return
+        v = localtts.info(voice_id)
+        if v is None:
+            return
+        if not localtts.engine_available(v["provider"]):
+            messagebox.showwarning("Engine missing", f"The {localtts.PROVIDER_NAMES[v['provider']]} engine is not "
+                                   "installed in this copy of FluentVoice Pro.", parent=self)
+            return
+        if v["kind"] == "personal":
+            ok = messagebox.askyesno(
+                "Personal use only",
+                f"{voices.label_for(voice_id)}\n\nLicence: {v['licence']}\nSource: {v['source']}\n\n"
+                "This voice may be used for personal reading only: not for publishing, broadcasting or selling "
+                "audio made with it.\n\nDownload it for personal use?", parent=self)
+            if not ok:
+                return
+        import threading as _th
+        state = {"voice": voice_id, "done": 0, "total": localtts.download_size(voice_id), "error": None,
+                 "finished": False, "cancel": _th.Event()}
+        self._dl = state
+
+        def progress(done, total):
+            state["done"], state["total"] = done, total
+
+        def worker():
+            try:
+                localtts.install(voice_id, progress=progress, cancel=state["cancel"])
+            except localtts.Cancelled:
+                state["error"] = "cancelled"
+            except Exception as e:  # network error, checksum mismatch, unsafe archive, disk full…
+                state["error"] = str(e) or type(e).__name__
+            state["finished"] = True
+
+        _th.Thread(target=worker, name="fv-voice-download", daemon=True).start()
+        self._render_provider_rows()
+        self.after(250, self._poll_download)
+
+    def _poll_download(self):
+        st = self._dl
+        if st is None:
+            return
+        name = voices.short_name(st["voice"]) if st["voice"].startswith("piper:") else "Kokoro pack"
+        if not st["finished"]:
+            pct = 100 * st["done"] / st["total"] if st["total"] else 0
+            self.dl_status_lbl.configure(
+                text=f"⬇ Downloading {name}: {st['done'] / 1e6:.0f} / {st['total'] / 1e6:.0f} MB ({pct:.0f}%)",
+                text_color="#00D2FF")
+            self.after(250, self._poll_download)
+            return
+        if st["error"] == "cancelled":
+            self.dl_status_lbl.configure(text=f"Download of {name} cancelled.", text_color="#8B949E")
+        elif st["error"]:
+            self.dl_status_lbl.configure(text=f"⚠ {name}: download failed ({st['error']}). Nothing was installed.",
+                                         text_color="#F85149")
+        else:
+            self.dl_status_lbl.configure(text=f"✓ {name} downloaded, verified and ready (works offline).",
+                                         text_color="#3FB950")
+            core.trigger_notification("FluentVoice Pro", f"✓ Offline HD voice ready: {name}")
+        self._dl = None
+        self._refresh_voice_lists()
+        self._render_provider_rows()
+
+    def _on_remove_voice(self, voice_id):
+        from tkinter import messagebox
+        v = localtts.info(voice_id)
+        what = "the Kokoro pack (all 28 Kokoro voices)" if v["provider"] == "kokoro" else voices.label_for(voice_id)
+        if not messagebox.askyesno("Remove offline voice", f"Delete the downloaded files of {what}?\n\n"
+                                   "You can download it again at any time.", parent=self):
+            return
+        core.stop_all_playback(notify=False)
+        localtts.remove(voice_id)
+        self.dl_status_lbl.configure(text=f"Removed {what}.", text_color="#8B949E")
+        self._refresh_voice_lists()
+        self._render_provider_rows()
+
+    def _on_try_voice(self, voice_id):
+        if self._dl is not None and not self._dl.get("finished"):
+            return
+        sample = voices.sample_text(voice_id)
+        self.dl_status_lbl.configure(text=f"▶ {voices.label_for(voice_id)}", text_color="#00D2FF")
+        threading.Thread(target=lambda: core.speak_text(sample, voice=voice_id), name="fv-try-voice",
+                         daemon=True).start()
+
+    def _on_toggle_offline_only(self):
+        if self._syncing_from_disk:
+            return
+        on = self.switch_offline_only.get() == 1
+        self.cfg["offline_only"] = on
+        self._persist_cfg()
+        self._trigger_autosave_indicator()
+        self._refresh_reader_voice_label()
+        core.trigger_notification("🛡 Privacy", "Offline only: text stays on this PC" if on else
+                                  "Online HD voices allowed again")
+
+    def _refresh_voice_lists(self):
+        """After a download / removal: rebuild every voice picker."""
+        try:
+            self.voice_map = build_full_voice_map()
+            if hasattr(self, "voice_menu"):
+                self.lang_menu.configure(values=list(self._voice_groups().keys()))
+                self._show_voice(self._label_for_voice(self.cfg.get("voice", voices.DEFAULT_VOICE)))
+            self._refresh_pref_voice_menu()
+            self._refresh_reader_voice_label()
+        except Exception:
+            pass
 
     def _label_for_voice(self, code: str, default: str | None = None) -> str:
         """Exact match first (substring matching mislabeled voices), then loose match."""

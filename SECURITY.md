@@ -8,6 +8,9 @@ FluentVoice Pro is a **local Windows 11/10** system-tray TTS suite. It can:
 - Register a global hotkey
 - Call **outbound HTTPS** to Microsoft Edge neural TTS when online voices are used
 - Fall back to local **SAPI / OneCore** voices (no network)
+- Download **offline HD voices** (Piper / Kokoro) only when you click Download, only over HTTPS from Hugging Face / GitHub, and only if every file matches a SHA-256 fingerprint pinned in the source code (`fluentvoice/local_catalog.py`); archives are unpacked with path-traversal and link checks
+- Speak with offline HD voices entirely on this PC, and an **Offline only** privacy mode that never sends text online
+- Never read or send clipboard text that looks like a password or key, or that a password manager marked private
 - Create desktop / Startup shortcuts and Explorer context-menu entries via the installer
 
 Install only from official [GitHub Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases) (attested ZIP assets) or this repository’s `main` tag.

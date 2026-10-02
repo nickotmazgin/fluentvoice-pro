@@ -55,6 +55,7 @@ CHUNK_CHARS = 700                 # later chunks; several are prepared in parall
 PREFETCH_WORKERS = 3              # chunks synthesized at the same time
 PREFETCH_AHEAD = 4                # never prepare more than this many chunks ahead of the one playing
 MAX_SPEAK_CHARS = 100_000         # ~1.5 h of speech; longer texts are read up to here (flood guard)
+LOCAL_FIRST_CHUNK_CHARS = 120     # offline HD voices compute on this PC: a shorter first chunk starts sooner
 PLAYBACK_STALL_SEC = 8.0          # MCI "playing" but position frozen => treat as stalled
 CACHE_MAX_AGE_SEC = 15 * 60
 
@@ -938,6 +939,42 @@ def _safe_remove(path):
 def _voice_family(voice: str) -> str:
     return voices.family_of(voice)
 
+
+def _local_hd_for(family: str, cfg: dict):
+    """A downloaded offline HD voice (Piper / Kokoro) for `family`: the Preferred Voice when it
+    is one, else the first downloaded voice of that language. None if there is none."""
+    try:
+        from . import localtts
+    except Exception:
+        return None
+    pref = (cfg.get("preferred_voices") or {}).get(family)
+    if pref and voices.is_local_hd(pref) and localtts.is_usable(pref):
+        return pref
+    for v in localtts.voices_for(family):
+        if localtts.is_usable(v["id"]):
+            return v["id"]
+    return None
+
+
+def _windows_voice_for(family: str):
+    """An installed Windows offline voice for `family` (its SAPI description), or None."""
+    try:
+        for _label, desc in get_installed_sapi_voices():
+            if voices.family_of(desc) == family:
+                return desc
+    except Exception:
+        pass
+    return None
+
+
+def offline_voice_for(family: str, cfg: dict) -> str:
+    """The best voice for `family` that keeps the text on this PC: the Preferred Voice when it is
+    offline, an offline HD voice of that language, a Windows voice of that language, else Zira."""
+    pref = (cfg.get("preferred_voices") or {}).get(family)
+    if pref and voices.is_offline(pref):
+        return pref
+    return _local_hd_for(family, cfg) or _windows_voice_for(family) or _windows_voice_for("english") or "Zira"
+
 def _emit(on_status, phase: str, **info):
     if on_status is None:
         return
@@ -947,7 +984,7 @@ def _emit(on_status, phase: str, **info):
         pass
 
 
-def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None) -> dict:
+def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None, voice: str | None = None) -> dict:
     """Main thread-safe speech dispatcher. Returns status dictionary (see _speak_text_impl).
 
     auto_route=None follows the Settings switch; False plays exactly the chosen voice
@@ -957,7 +994,7 @@ def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None) ->
     with _requests_lock:
         _active_requests += 1
     try:
-        return _speak_text_impl(raw_text, on_status, auto_route)
+        return _speak_text_impl(raw_text, on_status, auto_route, voice)
     except Exception as e:
         _log.exception("speak_text crashed")
         _emit(on_status, "error", message=f"{type(e).__name__}: {e}")
@@ -995,22 +1032,46 @@ class _SettingsWatch:
         return load_config()
 
 
+def _local_hd_usable(voice: str) -> bool:
+    try:
+        from . import localtts
+        return localtts.is_usable(voice)
+    except Exception:
+        return False
+
+
 def _speech_plan(cfg: dict, text: str, detected_lang: str, auto_route_override) -> dict:
     """Voice and prosody for `text` under the given settings (auto-route applied)."""
     chosen = cfg.get("voice", voices.DEFAULT_VOICE)
     auto_route = cfg.get("auto_route_language", True) if auto_route_override is None else auto_route_override
     voice, routed = choose_voice(detected_lang, chosen, cfg, text) if auto_route else (chosen, False)
+    family = voices.family_of(voice)
+    if auto_route and detected_lang in voices.LANGUAGES and not voices.can_read(voice, detected_lang):
+        family = detected_lang
+    elif auto_route and detected_lang in voices.LANGUAGES and voices.is_online(voice) and voices.is_multilingual(voice):
+        # A Multilingual online voice keeps Spanish / French / … text itself; an offline replacement
+        # (privacy mode) must speak the language of the text, not the online voice's own language.
+        family = detected_lang
+    private = False
+    if voices.is_local_hd(voice) and not _local_hd_usable(voice):
+        # Offline HD voice picked but its files were removed (or its engine is missing).
+        voice = offline_voice_for(family, cfg) if cfg.get("offline_only") else voices.DEFAULT_PREFERRED.get(
+            family, voices.DEFAULT_VOICE)
+    if cfg.get("offline_only") and voices.is_online(voice):
+        # Privacy mode: the text must not leave this PC, so no online voice is used.
+        voice, private = offline_voice_for(family, cfg), True
     rate_mult = float(cfg.get("rate_mult", 1.0))
     pct = int(round((rate_mult - 1.0) * 100))
     pitch_hz = int(cfg.get("pitch_hz", 0))
     return {
-        "voice": voice, "chosen": chosen, "routed": routed, "auto_route": auto_route,
+        "voice": voice, "chosen": chosen, "routed": routed, "auto_route": auto_route, "private": private,
         "rate_mult": rate_mult, "rate": f"{pct:+d}%", "pitch": f"{pitch_hz:+d}Hz",
         "volume": int(cfg.get("volume", 100)),
     }
 
 
-def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | None = None) -> dict:
+def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | None = None,
+                     voice_override: str | None = None) -> dict:
     """Speech pipeline.
 
     on_status(phase, info) is called (from this worker thread) as speech progresses:
@@ -1027,6 +1088,8 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
     global _current_generation, _is_speaking
 
     cfg = load_config()
+    if voice_override:  # Settings → Voice Providers "Try": exactly this voice (privacy mode still applies)
+        cfg, auto_route_override = dict(cfg, voice=voice_override), False
     if cfg.get("clean_markdown", True):
         cleaned = clean_text_for_speech(raw_text)
     else:
@@ -1088,6 +1151,8 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         fresh = watch.poll()
         if fresh is None:
             return False
+        if voice_override:
+            fresh = dict(fresh, voice=voice_override)
         new = _speech_plan(fresh, cleaned, detected_lang, auto_route_override)
         cur = state["plan"]
         cur["volume"] = new["volume"]
@@ -1106,8 +1171,9 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         plan = state["plan"]
         voice = plan["voice"]
         offline = voices.is_offline(voice)
+        local = voices.is_local_hd(voice)
         _log.info("speak request gen=%d voice=%s engine=%s lang=%s chars=%d%s%s", my_gen, voice,
-                  "offline" if offline else "neural", detected_lang, len(text_left),
+                  "offline" if offline else ("offline-hd" if local else "neural"), detected_lang, len(text_left),
                   f" routed_from={plan['chosen']}" if plan["routed"] else "",
                   "" if first_round else " (settings changed mid-read)")
         first_round = False
@@ -1141,7 +1207,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
 
         result = _speak_neural(text_left, plan, my_gen=my_gen, start_ts=start_ts, on_status=on_status,
                                aborted=aborted, interrupt=settings_changed, live_volume=live_volume,
-                               snippet=snippet, lang=detected_lang)
+                               snippet=snippet, lang=detected_lang, local=local)
         kind = result[0]
         if kind == "aborted" or aborted():
             return aborted_result()
@@ -1152,26 +1218,54 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
                 continue
             kind = "done"
         if kind == "done":
-            _emit(on_status, "done", mode="neural", voice=voice)
-            return {"status": "success", "mode": "neural", "voice": voice}
+            mode = "offline_hd" if local else "neural"
+            _emit(on_status, "done", mode=mode, voice=voice)
+            return {"status": "success", "mode": mode, "voice": voice}
         break
 
-    # ---- Fallback to local SAPI for whatever has not been spoken yet -------------------
+    # ---- Fallback for whatever has not been spoken yet ------------------------------------
+    # Online voice failed -> an offline HD voice of the same language (if downloaded) -> a Windows
+    # voice of the same language -> Zira. An offline HD voice that failed goes straight to Windows.
     _, remaining, fail_reason, failed_at, parts = result
-    _log.warning("falling back to offline SAPI at part %d/%d: %s", failed_at + 1, parts, fail_reason)
+    family = detected_lang if detected_lang in voices.LANGUAGES else voices.family_of(voice)
+    hd = None if local else _local_hd_for(family, load_config())
+    if hd:
+        _log.warning("online voice failed at part %d/%d (%s); continuing with offline HD voice %s",
+                     failed_at + 1, parts, fail_reason, hd)
+        trigger_notification(
+            "🌐 Offline HD voice in use",
+            f"The online voice is unreachable, so FluentVoice continues with {voices.short_name(hd)} (offline).",
+            force=True,
+            important=True,
+        )
+        _emit(on_status, "fallback", reason=fail_reason)
+        hd_plan = dict(plan, voice=hd)
+        result = _speak_neural(remaining, hd_plan, my_gen=my_gen, start_ts=start_ts, on_status=on_status,
+                               aborted=aborted, interrupt=lambda: False, live_volume=live_volume,
+                               snippet=snippet, lang=detected_lang, local=True)
+        if result[0] == "aborted" or aborted():
+            return aborted_result()
+        if result[0] == "done":
+            _emit(on_status, "done", mode="offline_hd", voice=hd)
+            return {"status": "fallback", "mode": "offline_hd", "voice": hd,
+                    "message": f"Online voice failed ({fail_reason}), continued offline with {hd}."}
+        remaining, fail_reason = result[1], result[2]
+    win_voice = _windows_voice_for(family) or "Zira"
+    _log.warning("falling back to offline SAPI (%s) at part %d/%d: %s", win_voice, failed_at + 1, parts, fail_reason)
     trigger_notification(
         "🌐 Offline voice in use",
-        "The cloud voice is unreachable, so FluentVoice switched to the offline Windows voice.",
+        ("The offline HD voice could not speak, so FluentVoice switched to the Windows voice." if local else
+         "The online voice is unreachable, so FluentVoice switched to the offline Windows voice."),
         force=True,
         important=True,
     )
     _emit(on_status, "fallback", reason=fail_reason)
-    ok = speak_offline_sapi(remaining, voice_pref="Zira", rate_mult=plan["rate_mult"], volume=plan["volume"],
+    ok = speak_offline_sapi(remaining, voice_pref=win_voice, rate_mult=plan["rate_mult"], volume=plan["volume"],
                             start_ts=start_ts, my_gen=my_gen)
     if aborted():
         return aborted_result()
     if not ok:
-        msg = f"Cloud voice failed ({fail_reason}) and no offline voice is available."
+        msg = f"Voice failed ({fail_reason}) and no offline voice is available."
         trigger_notification(
             "⚠ Speech failed",
             "Check your internet connection, or install Windows offline voices.",
@@ -1181,19 +1275,20 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         _emit(on_status, "error", message=msg)
         return {"status": "error", "mode": "failed", "message": msg}
     _emit(on_status, "done", mode="offline")
-    return {"status": "fallback", "mode": "offline", "message": f"Cloud failed ({fail_reason}), fell back to offline."}
+    return {"status": "fallback", "mode": "offline", "message": f"Voice failed ({fail_reason}), fell back to offline."}
 
 
 def _speak_neural(text, plan, *, my_gen, start_ts=None, on_status=None, aborted, interrupt,
-                  live_volume, snippet, lang):
-    """Chunked neural streaming. Several chunks are synthesized in parallel ahead of the one
-    playing, so long texts read without gaps.
+                  live_volume, snippet, lang, local=False):
+    """Chunked streaming. Several chunks are synthesized in parallel ahead of the one playing,
+    so long texts read without gaps. local=True: an offline HD voice (Piper / Kokoro) computes
+    the audio on this PC, one chunk at a time (each already uses several CPU cores).
 
     Returns ("done",) | ("aborted",) | ("changed", text_still_to_read)
           | ("failed", text_still_to_read, reason, chunk_index, chunk_count)
     """
     voice = plan["voice"]
-    chunks = split_for_streaming(text) or [text]
+    chunks = (split_for_streaming(text, first=LOCAL_FIRST_CHUNK_CHARS) if local else split_for_streaming(text)) or [text]
     parts = len(chunks)
     _emit(on_status, "synthesizing", voice=voice, parts=parts,
           routed_from=plan["chosen"] if plan["routed"] else "", lang=lang)
@@ -1207,13 +1302,18 @@ def _speak_neural(text, plan, *, my_gen, start_ts=None, on_status=None, aborted,
     def synth(idx):
         if stop_synth():
             return None, "aborted"
-        out = str(CACHE_DIR / f"speech_{_PID}_{my_gen}_{tag}_{idx}.mp3")
+        out = str(CACHE_DIR / f"speech_{_PID}_{my_gen}_{tag}_{idx}.{'wav' if local else 'mp3'}")
         # Synthesized at full level: volume is applied once, at playback (and can change live).
-        ok, err = _synthesize_to_file(chunks[idx], voice, out, rate=plan["rate"], pitch=plan["pitch"],
-                                      volume=100, abort_check=stop_synth)
+        if local:
+            from . import localtts
+            ok, err = localtts.synthesize_to_wav(chunks[idx], voice, out, rate_mult=plan["rate_mult"],
+                                                 abort_check=stop_synth)
+        else:
+            ok, err = _synthesize_to_file(chunks[idx], voice, out, rate=plan["rate"], pitch=plan["pitch"],
+                                          volume=100, abort_check=stop_synth)
         return (out if ok else None), err
 
-    pool = ThreadPoolExecutor(max_workers=PREFETCH_WORKERS, thread_name_prefix="fv-synth")
+    pool = ThreadPoolExecutor(max_workers=1 if local else PREFETCH_WORKERS, thread_name_prefix="fv-synth")
     futures = {}
 
     def submit_from(i):
@@ -1259,14 +1359,15 @@ def _speak_neural(text, plan, *, my_gen, start_ts=None, on_status=None, aborted,
                     return ("aborted",)
                 return ("failed", " ".join(chunks[i:]), err or "synthesis failed", i, parts)
             if not played_any:
-                trigger_notification("🔊 Speaking", f"\"{snippet}\"")
+                trigger_notification("🔊 Speaking (offline HD voice)" if local else "🔊 Speaking", f"\"{snippet}\"")
                 played_any = True
 
             pos = {"ms": 0, "len": 0}
 
             def progress(pos_ms, len_ms, _idx=i):
                 pos["ms"], pos["len"] = pos_ms, len_ms
-                _emit(on_status, "speaking", voice=voice, mode="neural", part=_idx + 1, parts=parts,
+                _emit(on_status, "speaking", voice=voice, mode="offline_hd" if local else "neural",
+                      part=_idx + 1, parts=parts,
                       pos_ms=pos_ms, len_ms=len_ms)
 
             changed = {"flag": False}

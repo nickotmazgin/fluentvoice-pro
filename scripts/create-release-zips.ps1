@@ -38,6 +38,8 @@ $Include = @(
   "README.md",
   "CHANGELOG.md",
   "LICENSE",
+  "THIRD_PARTY_NOTICES.md",
+  "licenses",
   "CONTRIBUTORS.md",
   "SECURITY.md",
   "PRIVACY.md",
@@ -111,9 +113,18 @@ First launch may show Windows SmartScreen on unsigned builds:
   Or: Unblock-File .\FluentVoicePro.exe
 
 This build is GitHub Artifact Attested when downloaded from Releases.
-Firewall: outbound HTTPS only (Edge neural voices). No inbound ports.
+Firewall: outbound HTTPS only (online voices, update check, and offline HD voice
+downloads you start yourself in Settings -> Voice Providers). No inbound ports.
+Licences: LICENSE.txt (FluentVoice Pro, MIT), THIRD_PARTY_NOTICES.md (bundled
+components, including GPL-3.0 parts of the Piper engine), VOICE_LICENSES.md.
 See docs\WINDOWS_TRUST.md in the source ZIP / repo.
 "@ | Set-Content -Encoding UTF8 (Join-Path $PortableSrc "README-PORTABLE.txt")
+
+# Licences travel with the EXE: FluentVoice's MIT licence + every bundled component's licence.
+Copy-Item -Force (Join-Path $Root "LICENSE") (Join-Path $PortableSrc "LICENSE.txt")
+Copy-Item -Force (Join-Path $Root "THIRD_PARTY_NOTICES.md") (Join-Path $PortableSrc "THIRD_PARTY_NOTICES.md")
+Copy-Item -Recurse -Force (Join-Path $Root "licenses") (Join-Path $PortableSrc "licenses")
+Copy-Item -Force (Join-Path $Root "docs\VOICE_LICENSES.md") (Join-Path $PortableSrc "VOICE_LICENSES.md")
 
 $PortableZip = Join-Path $Dist "FluentVoicePro-$Ver-portable-win64.zip"
 if (Test-Path $PortableZip) { Remove-Item -Force $PortableZip }

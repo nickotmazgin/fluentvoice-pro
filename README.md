@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.4.28** — Copied passwords and keys are never read aloud or sent to the cloud voice, and **Icelandic** is new (80 HD voices in 22 languages). Recent releases also brought gap-free Auto-Read, voice changes that apply mid-read, Hindi, Thai and 7 more Indian languages, and correct Hebrew / Arabic right-to-left display. Attested ZIP + portable EXE + `SHA256SUMS.txt`: see [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); full history in [CHANGELOG.md](CHANGELOG.md).
+> **Latest: v1.5.0** — **Offline HD voices** (Piper & Kokoro) that run on your PC: 57 natural voices in 16 languages, licence-checked and SHA-256 verified downloads. New **Voice Providers** tab with rights & privacy explained, an **Offline only** privacy mode, same-language offline fallback, a compact Preferred Voices picker and updater hardening. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -98,7 +98,7 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 - 🛡️ **Guaranteed Single-Stream Playback (Zero Collisions):** An atomic generation tracker ensures that starting or requesting new speech instantly cancels any in-flight download and stops prior playback. No overlapping voices, ever.
 - 📋 **Dedicated Direct Text Reader & Scratchpad:** Full-fledged scratchpad window in the Control Center to paste, review, and read long articles, PDFs, OCR texts, or code notes with live word/char counters and language tags.
-- 🌐 **Smart Language Auto-Routing:** Detects 22 languages (English, Hebrew, Arabic, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean, Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Thai, Icelandic) and reads text in another language with your **Preferred Voice** for it (Automation & System). A voice always keeps its own language, **Multilingual** voices also keep English/Spanish/French/German/Italian/Portuguese, very short snippets keep your voice, and the **Voice & Speech test always plays the voice you picked**. The Reader status shows when a voice was auto-routed.
+- 🌐 **Smart Language Auto-Routing:** Detects 22 languages (English, Hebrew, Arabic, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean, Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Thai, Icelandic) and reads text in another language with your **Preferred Voice** for it (Automation & System). Pick them in one compact **Language ▸ Voice** row (online or offline voices). A voice always keeps its own language, **Multilingual** voices also keep English/Spanish/French/German/Italian/Portuguese, very short snippets keep your voice, and the **Voice & Speech test always plays the voice you picked**. The Reader status shows when a voice was auto-routed.
 - ⏳ **Streaming Playback & Live Status:** Long texts are synthesized in small parts, up to three at a time ahead of playback, so speech starts in a few seconds and continues without pauses. Changing the voice, speed or pitch mid-read continues from the current sentence with the new settings. The Reader shows `Connecting… → 🔊 Speaking — voice • part 2/7 • 1:05 / 3:10 → ✔️ Finished`, with automatic offline fallback if the cloud voice stalls.
 - ⬆️ **Built-in Update Checker:** Tray menu **Check for Updates…**, Settings → **Automation & System → Updates** and **About & Developer → Updates**, a green header badge and a release-notes popup. Downloads come straight from GitHub Releases and are **SHA-256 verified**; then **🚀 Install Now** (you confirm) installs and restarts FluentVoice. Git clones are told to `git pull` instead. Once-a-day anonymous check, switchable off.
 - 🧹 **Advanced PDF, OCR & Niqqud Text Sanitizer:** Automatically repairs hyphenated line wraps from PDF copy-pastes, normalizes Unicode (NFKC), strips invisible zero-width and bidirectional markers, and cleans code blocks and markdown.
@@ -106,6 +106,8 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 - ⌨️ **Global Hotkey:** Configurable chord (default `Ctrl+Shift+Space`) toggles speak/stop from any app.
 - 🔔 **Windows Notifications, your level:** *Important only* (default: voice & setting changes, updates, errors), *All* (also every read and auto-route) or *Off*, from Settings or the tray menu. Toasts are titled **FluentVoice Pro** with the app icon, rate-limited and de-duplicated.
 - 🗣️ **80 HD Neural Voices in 22 Languages:** Microsoft Neural voices with a male *and* female option for every language — e.g. `Andrew`, `Ava`, `Christopher`, `Jenny`, `Sonia`, `Ryan`, `Avri`, `Hila`, `Hamed`, `Zariyah`, `Alvaro`, `Elvira`, `Henri`, `Denise`, `Conrad`, `Katja`, `Diego`, `Isabella`, `Antonio`, `Francisca`, `Dmitry`, `Svetlana`, `Keita`, `Nanami`, `Yunxi`, `Xiaoxiao`, `InJoon`, `Madhur`, `Swara`, `Pallavi`, `Premwadee`, `Gunnar`, `Gudrun`, `SunHi` — including US, UK, Australian, Canadian, Irish and Indian English. The **Preview & Test Voice** box switches to a sample sentence in the selected voice's language.
+- 🖥️ **Offline HD Voices (Piper & Kokoro), on your PC:** Settings → **Voice Providers** downloads natural voices that work without internet; the text never leaves the computer. **Piper**: 29 voices for English, Spanish, French, German, Italian, Portuguese, Russian, Hebrew, Arabic, Korean, Marathi, Bengali, Telugu, Malayalam and Icelandic (60–115 MB each). **Kokoro**: one 350 MB pack, 28 very natural voices for English, Spanish, French, Italian, Portuguese and Hindi. Every voice was checked by transcribing its speech back to text. Every download comes from the official source and must match a fixed SHA-256 fingerprint. Each voice shows its licence: ✅ *Free to use* or 🏠 *Personal use only* ([full list](docs/VOICE_LICENSES.md)).
+- 🛡️ **Privacy mode — Offline only:** one switch (Voice Providers tab or tray) and no text is ever sent online; each language uses an offline HD or Windows voice. If the online voice is unreachable, reading continues with an offline voice **of the same language**.
 - ⚡ **Every Offline Windows Voice:** Lists both classic SAPI5 voices and the modern OneCore voices that Windows language packs install (e.g. George, Susan, Hebrew or Russian packs). The *Install Windows Offline Voices…* button opens Windows Speech settings to add more.
 - 📋 **Auto-Read on Copy:** Optional mode that reads newly copied text after an adjustable stability buffer (0.3–1.5 s). Copying the same text again reads it again once the previous reading has finished; copies with no letters or digits, duplicate clipboard updates, **passwords marked private** by the copying app and **text that looks like a password or API key** are skipped (also for the tray click, hotkey and `--clip`), so secrets are never read aloud or sent to the cloud voice; texts are read up to 100,000 characters. Plain text only: formatting, images and files on the clipboard are skipped.
 - 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus and escaped Win32 menu accelerators.
@@ -163,7 +165,7 @@ python -m fluentvoice.installer
 
 1. **System Tray Icon (Next to Clock):**
    - **Left-Click**: Instant Toggle (Read clipboard / Stop speech immediately).
-   - **Right-Click**: Open Direct Text Reader, Settings, switch voices, toggle Auto-Read, or access developer links.
+   - **Right-Click**: Open Direct Text Reader, Settings, switch voices (online, offline HD or Windows), toggle Auto-Read or **Offline Only (Privacy Mode)**, or access developer links.
 2. **Global Hotkey:** `Ctrl+Shift+Space` (change under Automation & System).
 3. **Desktop Shortcut:**
    - Double-click **`FluentVoice Pro`** to open the Control Center (brings an existing window to the front; revives tray if you previously Exit'ed).
@@ -195,14 +197,13 @@ python -m fluentvoice.installer
                    ▼
    [ Cross-process claim + Hard Audio Purge ] ─► Tray & Settings never talk at once
                    │
-         ┌─────────┴─────────┐
-         ▼                   ▼
-  [ Neural Engine ]   [ Local SAPI/OneCore ]
-  (Edge HD, chunked    (Offline, no network) 
-   streaming, 15s          │
-   no-response timeout)    │
-         │                   │
-         └─────────┬─────────┘
+                   ▼
+     [ Voice engine for this text ]
+       • Online HD    Microsoft voices, chunked streaming, 15 s timeout
+       • Offline HD   Piper / Kokoro, computed on this PC, no network
+       • Windows      SAPI / OneCore voices, on this PC, no network
+       Fallback: online → offline HD → Windows (same language)
+                   │
                    ▼
     [ Generation / Stop-signal Check ] ─► If superseded: DISCARD
                    │
@@ -311,9 +312,15 @@ Built with pair-programming assistance from AI co-pilots operated under the main
 
 ## Legal & Trademarks Disclaimer
 
-> **FluentVoice Pro™** is an unregistered trademark claim of **Nick Otmazgin**. The source code remains free and open-source under the MIT License; the trademark claim covers the product name/brand only.
+> **FluentVoice Pro™** is an unregistered trademark claim of **Nick Otmazgin**. The source code is free and open-source under the MIT License; the trademark claim covers the product name/brand only. The portable EXE also bundles open-source components under their own licences (including GPL-3.0 parts of the Piper engine), listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 >
-> Microsoft, Windows, Windows 11, and Microsoft Edge are registered trademarks of Microsoft Corporation. FluentVoice Pro™ is an independent open-source project and is **not** affiliated with, sponsored, or endorsed by Microsoft Corporation. All voice synthesis APIs and endpoints are utilized strictly for personal, accessibility, and educational interoperability under fair use principles.
+> **Voices and rights, in plain words:**
+> - **Microsoft online HD voices** are the voices Microsoft Edge's Read Aloud uses, reached through the open-source [edge-tts](https://github.com/rany2/edge-tts) library. This is **not an official Microsoft service for other apps**: Microsoft may change or stop it at any time (FluentVoice then continues with offline voices). Use it for personal reading. To publish or sell audio, use Microsoft's official paid service, [Azure AI Speech](https://azure.microsoft.com/products/ai-services/text-to-speech).
+> - **Windows offline voices** come with Windows and are licensed with it for use on your PC.
+> - **Piper and Kokoro offline HD voices** are downloaded by you from their official sources; each keeps the licence of its recordings, shown next to the voice and in [docs/VOICE_LICENSES.md](docs/VOICE_LICENSES.md) (✅ free to use, or 🏠 personal use only).
+> - You are responsible for the rights to the text you have read aloud and for how you use any audio you make.
+>
+> Microsoft, Windows, Windows 11 and Microsoft Edge are trademarks of Microsoft Corporation. FluentVoice Pro™ is an independent open-source project and is **not** affiliated with, sponsored or endorsed by Microsoft Corporation, the Open Home Foundation (Piper), k2-fsa (sherpa-onnx) or the Kokoro authors.
 
 ---
 

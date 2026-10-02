@@ -29,11 +29,14 @@ LOG_FILE = LOG_DIR / "tray.log"
 logger = logging.getLogger("fluentvoice.tray")
 if not logger.handlers:
     logger.setLevel(logging.INFO)
-    _fh = logging.FileHandler(str(LOG_FILE), encoding="utf-8")
+    from logging.handlers import RotatingFileHandler
+    _fh = RotatingFileHandler(str(LOG_FILE), maxBytes=256_000, backupCount=1, encoding="utf-8")
     _fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] (%(threadName)s) %(message)s"))
     logger.addHandler(_fh)
 
-MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"
+# Per Windows session: with Global\ a second user signed in on the same PC could not start the tray.
+MUTEX_NAME = "Local\\FluentVoice_Pro_SingleInstance_Mutex"
+LEGACY_MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"  # v1.4.x trays (same user only)
 PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=4HM44VH47LSMW"
 GITHUB_REPO_URL = "https://github.com/nickotmazgin/fluentvoice-pro"
 GITHUB_ISSUES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/issues"
@@ -44,6 +47,11 @@ def check_single_instance():
     # which could let a second tray instance start.
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel32.CreateMutexW.restype = ctypes.wintypes.HANDLE
+    kernel32.OpenMutexW.restype = ctypes.wintypes.HANDLE
+    legacy = kernel32.OpenMutexW(0x00100000, False, LEGACY_MUTEX_NAME)  # SYNCHRONIZE
+    if legacy:  # an older FluentVoice tray of this user is still running
+        kernel32.CloseHandle(legacy)
+        return None
     handle = kernel32.CreateMutexW(None, False, MUTEX_NAME)
     if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
         if handle:
@@ -321,7 +329,7 @@ class FluentVoiceTrayApp:
     def on_stop(self, icon=None, item=None):
         core.stop_all_playback()
 
-    def _launch_cli(self, flag: str, tab: str):
+    def _launch_cli(self, flag: str, tab: str, *extra: str):
         try:
             from .gui import focus_existing_settings_window
             if focus_existing_settings_window(preferred_tab=tab):
@@ -332,13 +340,16 @@ class FluentVoiceTrayApp:
         if not pythonw.exists():
             pythonw = Path(sys.executable)
         base_dir = Path(__file__).parent.parent.resolve()
-        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", flag], cwd=str(base_dir))
+        subprocess.Popen([str(pythonw), "-m", "fluentvoice.cli", flag, *extra], cwd=str(base_dir))
 
     def on_open_reader(self, icon=None, item=None):
         self._launch_cli("--reader", "Direct Text Reader")
 
     def on_open_settings(self, icon=None, item=None):
         self._launch_cli("--gui", "Voice & Speech")
+
+    def on_open_providers(self, icon=None, item=None):
+        self._launch_cli("--gui", "Voice Providers", "Voice", "Providers")
 
     def on_open_about(self, icon=None, item=None):
         self._launch_cli("--about", "About & Developer")
@@ -458,7 +469,8 @@ class FluentVoiceTrayApp:
             # Only the voice changes; a reading in progress switches to it at once (core).
             self.cfg = config.update_config({
                 "voice": voice_name,
-                "engine": "offline" if voices.is_offline(voice_name) else "neural",
+                "engine": ("offline" if voices.is_offline(voice_name) else
+                           "local" if voices.is_local_hd(voice_name) else "neural"),
             })
             label = display_label or voice_name
             self.notify_user("🗣 Voice selected", label)
@@ -470,6 +482,32 @@ class FluentVoiceTrayApp:
             item(label, self.set_voice(vid, label), checked=self.is_voice_checked(vid))
             for vid, label in voices.voices_for(family)
         ]
+
+    def _local_hd_items(self):
+        """Downloaded offline HD voices (Piper / Kokoro), by language. Rebuilt when one is added."""
+        from . import localtts
+        installed = localtts.installed_voices()
+        if not installed:
+            yield item("Download offline HD voices… (Settings → Voice Providers)", self.on_open_providers)
+            return
+        for fam, name in voices.LANGUAGES.items():
+            mine = [v for v in installed if v["family"] == fam]
+            if mine:
+                yield item(name, pystray.Menu(*[
+                    item(voices.label_for(v["id"]), self.set_voice(v["id"], voices.label_for(v["id"])),
+                         checked=self.is_voice_checked(v["id"]))
+                    for v in mine
+                ]))
+        yield pystray.Menu.SEPARATOR
+        yield item("Manage offline HD voices…", self.on_open_providers)
+
+    def toggle_offline_only(self, icon=None, item=None):
+        on = not load_config().get("offline_only", False)
+        self.cfg = config.update_config({"offline_only": on})
+        self.notify_user("🛡 Privacy", "Offline only: text stays on this PC" if on else "Online HD voices allowed again")
+
+    def is_offline_only_checked(self, item):
+        return load_config().get("offline_only", False)
 
     def is_voice_checked(self, voice_name):
         def _inner(item):
@@ -505,6 +543,8 @@ class FluentVoiceTrayApp:
         last_seq = user32.GetClipboardSequenceNumber()
         last_cfg_check = 0.0
         cfg_cached = load_config()
+        from . import localtts
+        voices_sig = localtts.installed_signature()
 
         while True:
             try:
@@ -523,6 +563,11 @@ class FluentVoiceTrayApp:
                 if now - last_cfg_check >= 2.0:
                     cfg_cached = load_config()
                     last_cfg_check = now
+                    sig = localtts.installed_signature()
+                    if sig != voices_sig:  # an offline HD voice was downloaded or removed in Settings
+                        voices_sig = sig
+                        if self.tray_icon:
+                            self.tray_icon.update_menu()
 
                 curr_seq = user32.GetClipboardSequenceNumber()
                 if not cfg_cached.get("auto_read_copy", False):
@@ -747,17 +792,19 @@ class FluentVoiceTrayApp:
             item("⏹ Stop Speech Immediately", self.on_stop),
             pystray.Menu.SEPARATOR,
             item("⚡ Auto-Read on Copy", self.toggle_auto_read, checked=self.is_auto_read_checked),
+            item("🛡 Offline Only (Privacy Mode)", self.toggle_offline_only, checked=self.is_offline_only_checked),
             item("🔔 Notifications", pystray.Menu(*[
                 item(text, self.set_notification_level(lvl), checked=self.is_notification_level(lvl), radio=True)
                 for lvl, text in self.NOTIFY_CHOICES
             ])),
             pystray.Menu.SEPARATOR,
-            item("🗣 Neural Voices (English HD)", pystray.Menu(*self._voice_items("english"))),
-            item("🎙 Neural Voices (Hebrew HD)", pystray.Menu(*self._voice_items("hebrew"))),
-            item("🌍 Neural Voices (World HD)", pystray.Menu(*[
+            item("☁ Online HD Voices: English (Microsoft)", pystray.Menu(*self._voice_items("english"))),
+            item("☁ Online HD Voices: Hebrew (Microsoft)", pystray.Menu(*self._voice_items("hebrew"))),
+            item("☁ Online HD Voices: World (Microsoft)", pystray.Menu(*[
                 item(name, pystray.Menu(*self._voice_items(fam)))
                 for fam, name in voices.LANGUAGES.items() if fam not in ("english", "hebrew")
             ])),
+            item("🖥 Offline HD Voices (Piper / Kokoro)", pystray.Menu(lambda: tuple(self._local_hd_items()))),
             item("💻 Local Windows Voices (Offline)", pystray.Menu(*offline_items)),
             pystray.Menu.SEPARATOR,
             item("ℹ️ About && Credits (Nick Otmazgin)...", self.on_open_about),

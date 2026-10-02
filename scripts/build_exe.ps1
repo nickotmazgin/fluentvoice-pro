@@ -39,6 +39,8 @@ python -m PyInstaller `
   --hidden-import=fluentvoice.shortcuts `
   --hidden-import=fluentvoice.voices `
   --hidden-import=fluentvoice.installer `
+  --hidden-import=fluentvoice.localtts `
+  --hidden-import=fluentvoice.local_catalog `
   --hidden-import=win32com.client `
   --hidden-import=win32com.propsys `
   --hidden-import=win32com.shell `
@@ -48,6 +50,13 @@ python -m PyInstaller `
   --hidden-import=langdetect `
   --collect-all customtkinter `
   --collect-all edge_tts `
+  --hidden-import=piper `
+  --collect-data piper `
+  --collect-binaries piper `
+  --collect-all sherpa_onnx `
+  --collect-binaries onnxruntime `
+  --exclude-module piper.train `
+  --exclude-module torch `
   "fluentvoice\__launcher__.py"
 
 Write-Host ""

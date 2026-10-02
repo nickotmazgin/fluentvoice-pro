@@ -48,7 +48,7 @@ Use after install or before cutting a release.
    - Voice & Speech: Language = Hebrew, Voice = Avri → the test box shows a right-aligned Hebrew sample → **Speak Test Text** plays Avri.
    - Direct Text Reader with Avri + English text → status shows `auto-routed for English text (your voice: Avri)`.
    - Ava Multilingual + a long Spanish paragraph → still Ava (no routing).
-   - Automation & System → Preferred Voices lists 22 languages; tray → Neural Voices (World HD) has a submenu per language.
+   - Automation & System → Preferred Voices: pick any of the 22 languages in the Language ▸ Voice row; tray → Online HD Voices: World (Microsoft) has a submenu per language.
 
 10. **Notifications, offline voices, clicks (v1.4.22+)**
    - Tray → Voice → pick a voice: the toast header says **FluentVoice Pro** with the app icon (not "Python").
@@ -67,3 +67,10 @@ Use after install or before cutting a release.
    - Copy a password-like string (e.g. `Tr0ub4dor&3`) and click the tray icon / press the hotkey: "🔒 Skipped private text", nothing is spoken. With Auto-Read on, copying it stays silent.
    - Copy a normal sentence: it is read as usual.
    - Voice & Speech → Language: Icelandic shows Gunnar and Gudrun; the test sentence is spoken in Icelandic.
+
+## v1.5.0 — offline HD voices & privacy mode
+
+13. Settings → **Voice Providers**: Piper → Language *English* → **Download** Joe (63 MB) → progress, then "downloaded, verified and ready". **▶ Try** speaks offline. The voice appears in Voice & Speech → English and in the tray → Offline HD Voices within 2 s.
+14. Turn on **Offline only** (Voice Providers or tray). With an online voice selected, Speak Test Text reads with an offline voice (status shows "offline HD, on this PC" or "offline Windows voice"). Turn it off again.
+15. Unplug the network with an online voice selected and Joe downloaded: reading continues with Joe ("First voice unavailable → finished with an offline HD voice").
+16. **Remove** Joe: it disappears from every list; a reading that used it falls back to a working voice.

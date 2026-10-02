@@ -15,7 +15,9 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DEFAULT_PREFERRED_VOICES = dict(voices.DEFAULT_PREFERRED)
 
 DEFAULT_CONFIG = {
-    "engine": "neural",  # 'neural' or 'offline'
+    "engine": "neural",  # 'neural' (online), 'local' (offline HD: Piper / Kokoro) or 'offline' (Windows)
+    # Privacy mode: never send text to an online voice; offline HD or Windows voices read everything.
+    "offline_only": False,
     "voice": "en-US-AndrewMultilingualNeural",
     "auto_read_copy": False,
     "clean_markdown": True,
