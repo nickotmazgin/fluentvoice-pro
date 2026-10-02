@@ -1579,8 +1579,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _on_close_to_tray(self):
         """Hide Settings and ensure the tray daemon is alive (fixes Exit → reopen → no tray)."""
         try:
-            from .lifecycle import ensure_tray_running
-            ok = ensure_tray_running(wait_sec=1.2)
+            from .lifecycle import TRAY_START_TIMEOUT_SEC, ensure_tray_running
+            ok = ensure_tray_running(wait_sec=TRAY_START_TIMEOUT_SEC)  # returns as soon as the tray is up
             if hasattr(self, "autosave_lbl"):
                 if ok:
                     self.autosave_lbl.configure(text="✓ Tray running — closing…", text_color="#3FB950")
@@ -2034,18 +2034,27 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self._refresh_shortcuts_status(f"⚠ Could not remove shortcuts: {e}", "#F85149")
 
     def _on_ensure_tray(self):
-        from .lifecycle import ensure_tray_running
-        ok = ensure_tray_running(wait_sec=1.5)
-        self._refresh_tray_status()
-        if ok:
-            self.autosave_lbl.configure(text="✓ Tray started / already running", text_color="#3FB950")
-            core.trigger_notification("FluentVoice Pro", "Tray daemon is active")
-        else:
-            self.autosave_lbl.configure(text="⚠ Failed to start tray", text_color="#F85149")
+        from .lifecycle import TRAY_START_TIMEOUT_SEC, ensure_tray_running
+        self.autosave_lbl.configure(text="↻ Starting tray…", text_color="#00D2FF")
+
+        def work():  # off the UI thread: a cold start can take a few seconds
+            ok = ensure_tray_running(wait_sec=TRAY_START_TIMEOUT_SEC)
+
+            def done():
+                self._refresh_tray_status()
+                if ok:
+                    self.autosave_lbl.configure(text="✓ Tray started / already running", text_color="#3FB950")
+                    core.trigger_notification("FluentVoice Pro", "Tray daemon is active")
+                else:
+                    self.autosave_lbl.configure(text="⚠ Failed to start tray", text_color="#F85149")
+
+            self.after(0, done)
+
+        threading.Thread(target=work, daemon=True).start()
 
     def _on_restart_tray(self):
         """Ask running tray to exit, then start a fresh daemon."""
-        from .lifecycle import ensure_tray_running, is_tray_running
+        from .lifecycle import TRAY_START_TIMEOUT_SEC, ensure_tray_running, is_tray_running
         flag = config.APP_DIR / "pending_tray_restart.txt"
         try:
             flag.write_text("1", encoding="utf-8")
@@ -2061,7 +2070,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     break
                 time.sleep(0.15)
             time.sleep(0.25)
-            ok = ensure_tray_running(wait_sec=1.5)
+            ok = ensure_tray_running(wait_sec=TRAY_START_TIMEOUT_SEC)
 
             def done():
                 self._refresh_tray_status()

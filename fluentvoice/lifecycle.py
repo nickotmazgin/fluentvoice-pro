@@ -12,6 +12,11 @@ MUTEX_NAME = "Local\\FluentVoice_Pro_SingleInstance_Mutex"
 LEGACY_MUTEX_NAME = "Global\\FluentVoice_Pro_SingleInstance_Mutex"  # v1.4.x trays
 
 
+# A fresh tray usually starts in 1–3 s, but right after sign-in or an Explorer restart it can take
+# longer; waiting only ~2 s reported "restart failed" although the tray came up a moment later.
+TRAY_START_TIMEOUT_SEC = 12.0
+
+
 def project_root() -> Path:
     return Path(__file__).parent.parent.resolve()
 
@@ -61,7 +66,7 @@ def ensure_tray_running(wait_sec: float = 0.8) -> bool:
         return False
 
 
-def request_tray_restart(wait_exit_sec: float = 3.0, wait_start_sec: float = 2.0) -> bool:
+def request_tray_restart(wait_exit_sec: float = 3.0, wait_start_sec: float = TRAY_START_TIMEOUT_SEC) -> bool:
     """Ask a running tray to exit via pending flag, then start a fresh daemon."""
     from .config import APP_DIR
 

@@ -71,3 +71,16 @@ def test_tray_becomes_dpi_aware_before_anything_else(monkeypatch):
     monkeypatch.setattr(tray, "FluentVoiceTrayApp", App)
     tray.main()
     assert calls == ["dpi", "identity", "app", "run"]
+
+
+def test_tray_start_waits_long_enough_and_returns_early(monkeypatch):
+    """v1.5.2: a tray that needed ~5 s to start (e.g. after an Explorer restart) was reported as failed."""
+    from fluentvoice import lifecycle
+    state = {"t": 0.0, "launched": False}
+    monkeypatch.setattr(lifecycle.time, "time", lambda: state["t"])
+    monkeypatch.setattr(lifecycle.time, "sleep", lambda s: state.__setitem__("t", state["t"] + s))
+    monkeypatch.setattr(lifecycle.subprocess, "Popen", lambda *a, **k: state.__setitem__("launched", True))
+    monkeypatch.setattr(lifecycle, "is_tray_running", lambda: state["launched"] and state["t"] >= 5.0)
+    assert lifecycle.ensure_tray_running(wait_sec=lifecycle.TRAY_START_TIMEOUT_SEC) is True
+    assert 5.0 <= state["t"] < 5.5  # stopped polling as soon as the tray was up
+    assert lifecycle.TRAY_START_TIMEOUT_SEC >= 10

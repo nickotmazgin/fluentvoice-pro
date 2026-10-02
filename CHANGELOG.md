@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.2] - 2026-10-02
+
+### Fixed
+- **"Tray restart failed" although the tray restarted.** Restart Tray, Ensure Tray Running, Close to Tray and `fluentvoice --restart-tray` waited only 1.2–2 s for the new tray; right after sign-in or an Explorer restart it can need a few seconds more, so they reported a failure while the tray came up a moment later. They now wait up to 12 s and finish as soon as the tray is up.
+- **Ensure Tray Running** no longer freezes the Settings window while the tray starts.
+- 1 new test.
+
 ## [1.5.1] - 2026-10-02
 
 ### Fixed

@@ -15,7 +15,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.5.1** — **Offline HD voices** (Piper & Kokoro) that run on your PC: 57 natural voices in 16 languages, licence-checked and SHA-256 verified downloads. New **Voice Providers** tab with rights & privacy explained, an **Offline only** privacy mode, same-language offline fallback, a compact Preferred Voices picker and updater hardening. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
+> **Latest: v1.5.2** — **Offline HD voices** (Piper & Kokoro) that run on your PC: 57 natural voices in 16 languages, licence-checked and SHA-256 verified downloads. New **Voice Providers** tab with rights & privacy explained, an **Offline only** privacy mode, same-language offline fallback, a compact Preferred Voices picker and updater hardening. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
