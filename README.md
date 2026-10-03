@@ -170,6 +170,15 @@ Requires **Python 3.10+** on PATH.
 
 SmartScreen / App Control / firewall notes: [`docs/WINDOWS_TRUST.md`](docs/WINDOWS_TRUST.md).
 
+### Option C — Scoop
+
+```powershell
+scoop bucket add nickotmazgin https://github.com/nickotmazgin/scoop-bucket
+scoop install nickotmazgin/fluentvoicepro
+```
+
+Installs the same portable EXE ZIP from Releases (SHA-256 checked) with a Start Menu shortcut and the `fluentvoicepro` command. Update with `scoop update fluentvoicepro`. Bucket: [nickotmazgin/scoop-bucket](https://github.com/nickotmazgin/scoop-bucket).
+
 ### From Source / Git
 
 ```powershell
