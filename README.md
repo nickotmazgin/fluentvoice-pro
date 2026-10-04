@@ -10,6 +10,7 @@
 
 [![Issues](https://img.shields.io/github/issues/nickotmazgin/fluentvoice-pro)](https://github.com/nickotmazgin/fluentvoice-pro/issues)
 [![Discussions](https://img.shields.io/github/discussions/nickotmazgin/fluentvoice-pro?label=discussions&color=8B5CF6)](https://github.com/nickotmazgin/fluentvoice-pro/discussions)
+[![AlternativeTo](https://img.shields.io/badge/AlternativeTo-FluentVoice%20Pro-1A73E8)](https://alternativeto.net/software/fluentvoice-pro/about/)
 
 **FluentVoice Pro™** is a modern, lightweight Native Desktop Application and System Tray Suite for **Windows 11 and Windows 10** that reads aloud any text across your entire operating system.
 
@@ -255,11 +256,14 @@ python -m fluentvoice.installer
 - **Releases:** https://github.com/nickotmazgin/fluentvoice-pro/releases
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
+- **AlternativeTo:** https://alternativeto.net/software/fluentvoice-pro/about/ (reviews and alternatives)
 - **Security:** [`SECURITY.md`](SECURITY.md) · [Report a vulnerability](https://github.com/nickotmazgin/fluentvoice-pro/security/advisories/new)
 - **Privacy:** [`PRIVACY.md`](PRIVACY.md)
 - **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - **Windows trust / SmartScreen:** [`docs/WINDOWS_TRUST.md`](docs/WINDOWS_TRUST.md)
 - **Smoke checklist:** [`docs/SMOKE_TEST.md`](docs/SMOKE_TEST.md)
+
+<a href="https://alternativeto.net/software/fluentvoice-pro/about/?utm_source=badge&utm_medium=referral" target="_blank"><img src="https://alternativeto.net/static/badges/badge-compact-color.svg" alt="FluentVoice Pro | AlternativeTo" width="244" height="79" /></a>
 
 ## Other Open-Source Projects by Nick Otmazgin
 
