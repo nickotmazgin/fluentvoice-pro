@@ -11,7 +11,9 @@ on:
       - "scripts/build_msix.ps1"
       - "scripts/make_msix_layout.py"
       - "scripts/build_exe.ps1"
-      - "fluentvoice/msix.py"
+      - "fluentvoice/**"
+      - "assets/**"
+      - "requirements.txt"
       - ".github/workflows/msix-build.yml"
 
 permissions:

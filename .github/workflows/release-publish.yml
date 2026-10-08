@@ -146,7 +146,7 @@ jobs:
           $port = "${{ steps.meta.outputs.portable_zip }}"
           $sums = "${{ steps.sums.outputs.sums }}"
           $msix = "${{ steps.meta.outputs.msix }}"
-          $title = "FluentVoice Pro $ver — Attested source ZIP + portable EXE"
+          $title = "FluentVoice Pro $ver — Attested source ZIP + portable EXE + Store MSIX"
           if (gh release view $tag 2>$null) {
             gh release upload $tag $src $port $msix $sums --clobber
             gh release edit $tag --title $title --notes-file release-notes.md

@@ -16,7 +16,8 @@ python scripts\make_msix_layout.py --src dist\FluentVoicePro --out $Layout
 if ($LASTEXITCODE -ne 0) { throw "make_msix_layout.py failed" }
 
 $MakeAppx = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\makeappx.exe" -ErrorAction SilentlyContinue |
-  Sort-Object FullName -Descending | Select-Object -First 1
+  Sort-Object { $v = [version]"0.0"; [void][version]::TryParse($_.Directory.Parent.Name, [ref]$v); $v } -Descending |
+  Select-Object -First 1
 if (-not $MakeAppx) { throw "makeappx.exe not found: install the Windows 10/11 SDK" }
 Write-Host "Using $($MakeAppx.FullName)"
 
