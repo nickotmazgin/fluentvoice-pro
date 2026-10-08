@@ -59,6 +59,17 @@ def check_single_instance():
         return None
     return handle
 
+def _open_settings_on_store_relaunch():
+    """Store build: the Start menu tile starts the tray; clicking it again while the tray is
+    already running opens Settings instead of doing nothing."""
+    try:
+        from fluentvoice import msix
+        if msix.is_packaged() and getattr(sys, "frozen", False):
+            subprocess.Popen([sys.executable, "--gui"], close_fds=True)
+    except Exception as e:
+        logger.warning(f"Could not open Settings on relaunch: {e}")
+
+
 def get_tray_icon_path():
     p = Path(__file__).parent.parent / "assets" / "tray_icon.ico"
     if p.exists():
@@ -282,6 +293,7 @@ class FluentVoiceTrayApp:
     def __init__(self):
         self.mutex_handle = check_single_instance()
         if not self.mutex_handle:
+            _open_settings_on_store_relaunch()
             sys.exit(0)
 
         apply_win32_dark_menus()
@@ -374,6 +386,10 @@ class FluentVoiceTrayApp:
                 self._open_update_popup()
             elif st == "current":
                 self.notify_user("✅ Up to date", f"You have the latest version (v{res.get('current')}).")
+            elif st == "store":
+                from . import msix
+                msix.open_store_page()
+                self.notify_user("Microsoft Store", "Updates for this copy come from the Microsoft Store.")
             else:
                 self.notify_user("⚠ Update check failed", "Couldn't reach GitHub (offline?). Try again later.")
         threading.Thread(target=_run, daemon=True, name="UpdateCheck").start()
@@ -397,8 +413,8 @@ class FluentVoiceTrayApp:
         """Portable EXE only: keep our shortcuts pointing at this folder, and offer
         Start-with-Windows + Desktop/Start Menu shortcuts once on first launch
         (the portable ZIP has no installer, so otherwise it vanishes after a reboot)."""
-        from fluentvoice import shortcuts
-        if not shortcuts.is_frozen():
+        from fluentvoice import msix, shortcuts
+        if not shortcuts.is_frozen() or msix.is_packaged():  # Store build: Windows handles startup and the Start tile
             return
         try:
             fixed = shortcuts.repair_moved_portable()
@@ -441,6 +457,8 @@ class FluentVoiceTrayApp:
         while True:
             try:
                 res = updater.check_for_update(force=False)
+                if res.get("status") == "store":  # Microsoft Store build: nothing to poll
+                    return
                 if res.get("status") == "update":
                     self._set_update(res)
                     if announced != res.get("latest"):

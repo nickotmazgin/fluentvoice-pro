@@ -84,6 +84,8 @@ def main():
             print(f"Update available: v{res['latest']} (you have v{res['current']})\n{res['url']}")
         elif st == "current":
             print(f"FluentVoice Pro v{res['current']} is up to date.")
+        elif st == "store":
+            print(f"FluentVoice Pro v{res['current']} (Microsoft Store): updates come from the Store.\n{res['url']}")
         else:
             print(f"Update check failed: {res.get('message', st)}")
         return

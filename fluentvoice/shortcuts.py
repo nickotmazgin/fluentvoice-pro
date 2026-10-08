@@ -112,6 +112,9 @@ def apply_app_identity() -> bool:
     (the portable EXE's version info names it 'FluentVoice Pro').
     """
     try:
+        from . import msix
+        if msix.is_packaged():  # the MSIX package already gives the process its identity
+            return False
         if not identity_path().exists():
             return False
         import ctypes
@@ -217,7 +220,8 @@ def repair_moved_portable() -> int:
     Only touches shortcuts that target some other FluentVoicePro.exe; returns how many
     were rewritten. No-op for source installs.
     """
-    if not is_frozen():
+    from . import msix
+    if not is_frozen() or msix.is_packaged():
         return 0
     here = str(Path(sys.executable).resolve()).lower()
     fixed = 0

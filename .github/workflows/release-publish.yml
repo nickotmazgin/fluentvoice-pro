@@ -36,6 +36,11 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File .\scripts\create-release-zips.ps1
 
+      - name: Build Microsoft Store package (MSIX, unsigned; the Store signs it)
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\scripts\build_msix.ps1
+
       - name: Resolve version and asset paths
         id: meta
         shell: pwsh
@@ -45,6 +50,9 @@ jobs:
           $port = "dist/FluentVoicePro-$ver-portable-win64.zip"
           if (-not (Test-Path $src)) { throw "missing $src" }
           if (-not (Test-Path $port)) { throw "missing $port" }
+          $msix = "dist/FluentVoicePro-$ver-x64.msix"
+          if (-not (Test-Path $msix)) { throw "missing $msix" }
+          "msix=$msix" >> $env:GITHUB_OUTPUT
           "version=$ver" >> $env:GITHUB_OUTPUT
           "source_zip=$src" >> $env:GITHUB_OUTPUT
           "portable_zip=$port" >> $env:GITHUB_OUTPUT
@@ -59,7 +67,7 @@ jobs:
         id: sums
         shell: pwsh
         run: |
-          $files = @("${{ steps.meta.outputs.source_zip }}", "${{ steps.meta.outputs.portable_zip }}")
+          $files = @("${{ steps.meta.outputs.source_zip }}", "${{ steps.meta.outputs.portable_zip }}", "${{ steps.meta.outputs.msix }}")
           $lines = foreach ($f in $files) { "{0}  {1}" -f (Get-FileHash $f -Algorithm SHA256).Hash.ToLower(), (Split-Path $f -Leaf) }
           $lines | Set-Content -Encoding ascii dist/SHA256SUMS.txt
           Get-Content dist/SHA256SUMS.txt
@@ -77,8 +85,9 @@ jobs:
              - Needs Python 3.10+ · run ``install.ps1``
           2. **Portable EXE ZIP** ``FluentVoicePro-$ver-portable-win64.zip``
              - No Python · run ``FluentVoicePro.exe`` (tray)
+          3. ``FluentVoicePro-$ver-x64.msix`` is the package submitted to the **Microsoft Store** (unsigned: the Store signs it). Install FluentVoice Pro from the Store rather than this file.
 
-          Both assets are **GitHub Artifact Attested** (green verification on this Release) and listed in ``SHA256SUMS.txt``.
+          All assets are **GitHub Artifact Attested** (green verification on this Release) and listed in ``SHA256SUMS.txt``.
           Already on v1.4.17+? Settings → About & Developer → **Check for Updates** downloads and SHA-256-verifies this release for you.
 
           ### Verify
@@ -106,6 +115,11 @@ jobs:
         with:
           subject-path: ${{ steps.meta.outputs.portable_zip }}
 
+      - name: Attest MSIX
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.meta.outputs.msix }}
+
       - name: Attest checksum manifest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -116,7 +130,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          foreach ($f in @("${{ steps.meta.outputs.source_zip }}", "${{ steps.meta.outputs.portable_zip }}", "${{ steps.sums.outputs.sums }}")) {
+          foreach ($f in @("${{ steps.meta.outputs.source_zip }}", "${{ steps.meta.outputs.portable_zip }}", "${{ steps.meta.outputs.msix }}", "${{ steps.sums.outputs.sums }}")) {
             gh attestation verify $f --repo ${{ github.repository }}
             if ($LASTEXITCODE -ne 0) { throw "Attestation verification failed for $f" }
           }
@@ -131,10 +145,11 @@ jobs:
           $src = "${{ steps.meta.outputs.source_zip }}"
           $port = "${{ steps.meta.outputs.portable_zip }}"
           $sums = "${{ steps.sums.outputs.sums }}"
+          $msix = "${{ steps.meta.outputs.msix }}"
           $title = "FluentVoice Pro $ver — Attested source ZIP + portable EXE"
           if (gh release view $tag 2>$null) {
-            gh release upload $tag $src $port $sums --clobber
+            gh release upload $tag $src $port $msix $sums --clobber
             gh release edit $tag --title $title --notes-file release-notes.md
           } else {
-            gh release create $tag $src $port $sums --title $title --notes-file release-notes.md --latest
+            gh release create $tag $src $port $msix $sums --title $title --notes-file release-notes.md --latest
           }

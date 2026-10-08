@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Microsoft Store (MSIX) manifest for FluentVoice Pro. scripts/make_msix_layout.py fills {VERSION}.
+     Identity values come from Partner Center (product 9N293MJ0MD9F). -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 rescap">
+
+  <Identity
+    Name="NickOtmazgin.FluentVoicePro"
+    Publisher="CN=EF3282CE-7FE3-40B0-967F-87857697D3B0"
+    Version="{VERSION}"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>FluentVoice Pro</DisplayName>
+    <PublisherDisplayName>Nick Otmazgin</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Reads selected or copied text aloud from the system tray, with online and offline HD voices.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="FluentVoicePro" Executable="FluentVoicePro.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="FluentVoice Pro"
+        Description="Reads selected or copied text aloud from the system tray."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Start with Windows: on after the first launch; the user toggles it in Settings > Apps > Startup. -->
+        <uap5:Extension Category="windows.startupTask" Executable="FluentVoicePro.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:StartupTask TaskId="FluentVoiceProStartup" Enabled="true" DisplayName="FluentVoice Pro" />
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

@@ -19,6 +19,11 @@ from fluentvoice import config, core, localtts, voices
 from fluentvoice import __version__ as APP_VERSION
 
 
+
+def _is_store_build() -> bool:
+    from fluentvoice import msix
+    return msix.is_packaged()
+
 class SmoothScrollableFrame(ctk.CTkScrollableFrame):
     """CTkScrollableFrame that repaints between wheel steps.
 
@@ -1275,6 +1280,12 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_remove_shortcuts
         )
         self.btn_remove_shortcuts.pack(side="left")
+        from . import msix
+        if msix.is_packaged():  # Microsoft Store build: Windows manages startup; the Start tile replaces shortcuts
+            self.switch_startup.configure(
+                text="Start with Windows: managed by Windows (Settings → Apps → Startup)", state="disabled")
+            self.btn_shortcuts.configure(text="Open Windows Startup Settings", command=msix.open_startup_settings)
+            self.btn_remove_shortcuts.pack_forget()
         self.shortcuts_status_lbl = ctk.CTkLabel(
             boot,
             text="",
@@ -1305,7 +1316,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(side="left", padx=(0, 10))
         self.update_status_lbl_sys = ctk.CTkLabel(
             upd_row,
-            text=f"Installed: v{APP_VERSION} • GitHub Releases, SHA-256 verified",
+            text=f"Installed: v{APP_VERSION} • "
+                 + ("updates from the Microsoft Store" if _is_store_build() else "GitHub Releases, SHA-256 verified"),
             font=ctk.CTkFont(size=12),
             text_color="#8B949E",
             anchor="w",
@@ -1982,7 +1994,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.after(2000, self._refresh_tray_status)
 
     def _refresh_shortcuts_status(self, note: str = "", color: str = "#8B949E"):
-        from . import shortcuts
+        from . import msix, shortcuts
+        if msix.is_packaged():
+            self.shortcuts_status_lbl.configure(
+                text=note or ("Microsoft Store version: FluentVoice Pro starts with Windows after its first launch.\n"
+                              "Turn this on or off in Windows Settings → Apps → Startup. Find the app in the Start menu."),
+                text_color=color)
+            return
         on = shortcuts.startup_enabled()
         have = shortcuts.shortcuts_installed()
         if on:
@@ -2200,6 +2218,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         elif st in ("current", "cached", "skipped"):
             if force:
                 self._set_update_status(f"✅ You're on the latest version (v{res.get('current')}).", "#3FB950")
+        elif st == "store":
+            self._set_update_status("Updates for this copy come from the Microsoft Store.", "#3FB950")
+            if force:
+                from fluentvoice import msix
+                msix.open_store_page()
         elif st == "error" and force:
             self._set_update_status("⚠ Couldn't reach GitHub (offline or rate-limited). Try again later.", "#E3B341")
 

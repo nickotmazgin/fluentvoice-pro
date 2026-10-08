@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2026-10-08
+
+### Added
+- **Microsoft Store package (MSIX).** Each release now also builds `FluentVoicePro-<version>-x64.msix`, the package submitted to the Microsoft Store (the Store signs it). It is attested and listed in `SHA256SUMS.txt` like the ZIPs.
+- In the Store version:
+  - **Updates come from the Microsoft Store.** Check for Updates opens the Store page instead of downloading from GitHub.
+  - **Start with Windows is managed by Windows.** It is on after the first launch, and you turn it on or off in Settings → Apps → Startup (Settings → Automation & System has a button that opens it).
+  - The app appears in the Start menu, so no Desktop / Start Menu shortcuts are created.
+  - Clicking FluentVoice Pro in the Start menu while the tray is already running opens Settings.
+- `scripts/build_msix.ps1` and `scripts/make_msix_layout.py` build the package from the portable EXE folder; a new **MSIX Build** workflow checks packaging changes on pull requests.
+
+### Notes
+- The source ZIP and the portable EXE work exactly as before.
+
 ## [1.5.2] - 2026-10-02
 
 ### Fixed

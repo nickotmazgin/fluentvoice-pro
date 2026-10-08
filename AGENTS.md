@@ -4,6 +4,7 @@ FluentVoice Pro is a Windows 10/11 tray text-to-speech app in Python (3.10–3.1
 
 ## Layout
 - `fluentvoice/` — the app: `tray.py` (tray daemon), `gui.py` (Settings window), `core.py` (speech plan, fallback), `voices.py` (voice catalogue), `localtts.py` + `local_catalog.py` (offline Piper / Kokoro voices), `updater.py`, `lifecycle.py`, `config.py`.
+- `fluentvoice/msix.py` — Microsoft Store (MSIX) detection; `packaging/AppxManifest.xml.in` + `scripts/make_msix_layout.py` + `scripts/build_msix.ps1` build the Store package (CI only: needs the Windows SDK). In the Store build the GitHub updater, Startup shortcut and custom app identity are off.
 - `tests/` — pytest suite; `scripts/` — build, release ZIPs, screenshots, collage; `docs/` — user docs.
 
 ## Commands
