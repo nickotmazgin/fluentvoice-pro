@@ -1,0 +1,66 @@
+name: MSIX Build
+
+# Builds the Microsoft Store package (unsigned; the Store signs it) as a downloadable artifact,
+# so packaging changes can be checked before a release.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packaging/**"
+      - "scripts/build_msix.ps1"
+      - "scripts/make_msix_layout.py"
+      - "scripts/build_exe.ps1"
+      - "fluentvoice/msix.py"
+      - ".github/workflows/msix-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  msix:
+    name: Build MSIX
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Build portable EXE folder
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1
+
+      - name: Build MSIX
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File .\scripts\build_msix.ps1
+
+      - name: Check the package
+        shell: pwsh
+        run: |
+          $msix = Get-ChildItem dist\*.msix | Select-Object -First 1
+          if (-not $msix) { throw "no MSIX produced" }
+          "{0}  {1:N1} MB" -f $msix.Name, ($msix.Length / 1MB)
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead($msix.FullName)
+          try {
+            foreach ($need in @("AppxManifest.xml", "FluentVoicePro.exe", "Assets/Square150x150Logo.png", "AppxBlockMap.xml")) {
+              if (-not ($zip.Entries | Where-Object FullName -eq $need)) { throw "missing $need in package" }
+            }
+          } finally { $zip.Dispose() }
+
+      - name: Upload MSIX
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: FluentVoicePro-msix
+          path: dist/*.msix
+          retention-days: 14

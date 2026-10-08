@@ -137,6 +137,10 @@ def check_for_update(*, force: bool = False, timeout: float = 8.0, fetch=None) -
     force=True ignores the daily interval, the skipped version and the auto-check switch
     (used by the "Check for Updates" button). `fetch` is injectable for tests.
     """
+    from . import msix
+    if msix.is_packaged():  # Microsoft Store build: the Store delivers updates
+        return {"status": "store", "current": CURRENT_VERSION, "url": msix.STORE_PAGE}
+
     state = _load_state()
     now = time.time()
     cfg = load_config()
