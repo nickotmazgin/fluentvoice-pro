@@ -82,8 +82,8 @@ If SmartScreen or PowerShell blocks the script:
 Docs: docs\WINDOWS_TRUST.md
 "@ | Set-Content -Encoding UTF8 (Join-Path $SourceDir "INSTALL.txt")
 
-Compress-Archive -Path (Join-Path $SourceDir "*") -DestinationPath $SourceZip -Force
-Write-Host "Wrote $SourceZip"
+python (Join-Path $Root "scripts\make_zip.py") $SourceDir $SourceZip
+if ($LASTEXITCODE -ne 0) { throw "make_zip.py failed for $SourceZip" }
 
 Write-Host "=== Portable PyInstaller ZIP ===" -ForegroundColor Cyan
 & powershell -ExecutionPolicy Bypass -File (Join-Path $Root "scripts\build_exe.ps1")
@@ -127,9 +127,8 @@ Copy-Item -Recurse -Force (Join-Path $Root "licenses") (Join-Path $PortableSrc "
 Copy-Item -Force (Join-Path $Root "docs\VOICE_LICENSES.md") (Join-Path $PortableSrc "VOICE_LICENSES.md")
 
 $PortableZip = Join-Path $Dist "FluentVoicePro-$Ver-portable-win64.zip"
-if (Test-Path $PortableZip) { Remove-Item -Force $PortableZip }
-Compress-Archive -Path (Join-Path $PortableSrc "*") -DestinationPath $PortableZip -Force
-Write-Host "Wrote $PortableZip"
+python (Join-Path $Root "scripts\make_zip.py") $PortableSrc $PortableZip
+if ($LASTEXITCODE -ne 0) { throw "make_zip.py failed for $PortableZip" }
 
 Write-Host ""
 Write-Host "SOURCE_ZIP=$SourceZip"

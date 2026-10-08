@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The "Check for updates automatically (anonymous GitHub request)" switch is gone: the Store version never contacts GitHub.
   - Check for Updates no longer flashes "Checking GitHub…" before opening the Store page.
   - The Updates hint and the "How to Trigger" tips describe the Store version (no desktop or Explorer shortcuts there).
-- 1 new test.
+- **Release ZIPs use forward slashes in their file paths, as the ZIP format requires.** `Compress-Archive` in Windows PowerShell 5.1 wrote backslashes, which made winget's local archive scan report a false "malware" result when testing the manifest with `winget install --manifest`. Both ZIPs are now built by `scripts/make_zip.py`.
+- 3 new tests (1 for the Store version, 2 for the release ZIPs).
 
 ## [1.6.0] - 2026-10-08
 
