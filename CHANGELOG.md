@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **Store version: Settings no longer shows options it doesn't use.** Found by running the Store package on a real PC:
+  - The greyed-out "Start with Windows" switch looked off although Windows starts the app; it is gone (the Open Windows Startup Settings button and the note stay).
+  - The "Check for updates automatically (anonymous GitHub request)" switch is gone: the Store version never contacts GitHub.
+  - Check for Updates no longer flashes "Checking GitHub…" before opening the Store page.
+  - The Updates hint and the "How to Trigger" tips describe the Store version (no desktop or Explorer shortcuts there).
+- 1 new test.
+
 ## [1.6.0] - 2026-10-08
 
 ### Added

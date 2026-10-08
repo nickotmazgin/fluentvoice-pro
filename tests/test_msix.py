@@ -45,6 +45,22 @@ def test_store_build_keeps_package_identity_and_shortcuts(monkeypatch):
     assert shortcuts.repair_moved_portable() == 0
 
 
+def test_store_build_check_for_updates_never_mentions_github(monkeypatch):
+    from fluentvoice import gui
+    monkeypatch.setattr(gui, "_is_store_build", lambda: True)
+    monkeypatch.setattr(updater, "check_for_update", lambda force=False: {"status": "store"})
+    opened = []
+    monkeypatch.setattr(msix, "open_store_page", lambda: opened.append(True))
+    win = gui.FluentVoiceSettingsWindow.__new__(gui.FluentVoiceSettingsWindow)
+    statuses = []
+    win._set_update_status = lambda text, color: statuses.append(text)
+    win.after = lambda ms, fn: None
+    win._check_updates_async(force=True)
+    win._apply_update_result({"status": "store"}, force=True, popup=True)
+    assert statuses == ["Updates for this copy come from the Microsoft Store."]
+    assert opened == [True]
+
+
 def test_store_links_are_fixed():
     assert msix.STORE_ID == "9N293MJ0MD9F"
     assert msix.STORE_PAGE == "https://apps.microsoft.com/detail/9N293MJ0MD9F"
