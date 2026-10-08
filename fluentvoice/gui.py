@@ -1282,8 +1282,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.btn_remove_shortcuts.pack(side="left")
         from . import msix
         if msix.is_packaged():  # Microsoft Store build: Windows manages startup; the Start tile replaces shortcuts
-            self.switch_startup.configure(
-                text="Start with Windows: managed by Windows (Settings → Apps → Startup)", state="disabled")
+            self.switch_startup.pack_forget()  # it can't show the StartupTask state Windows keeps
             self.btn_shortcuts.configure(text="Open Windows Startup Settings", command=msix.open_startup_settings)
             self.btn_remove_shortcuts.pack_forget()
         self.shortcuts_status_lbl = ctk.CTkLabel(
@@ -1325,24 +1324,35 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.update_status_lbl_sys.pack(side="left", fill="x", expand=True)
         ctk.CTkLabel(
             upd,
-            text="Daily auto-check and \"Skip This Version\" are in About & Developer → Updates.",
+            text=("The Microsoft Store installs updates for this copy." if _is_store_build()
+                  else "Daily auto-check and \"Skip This Version\" are in About & Developer → Updates."),
             font=ctk.CTkFont(size=11),
             text_color="#8B949E",
         ).pack(anchor="w", padx=16, pady=(0, 12))
 
         # --- Tips ---
         tips = self._section_card(scroll, "How to Trigger FluentVoice")
-        guide = (
+        common = (
             "• Direct Text Reader — paste/type long text, then Read Aloud.\n"
             "• Tray icon — left-click toggles speak/stop; right-click for voices and settings.\n"
             "• Global hotkey — Ctrl+Shift+Space (configurable above).\n"
-            "• Desktop shortcut — one icon opens this Control Center (Emergency Stop is in the footer).\n"
-            "• Footer Emergency Stop — always available on every Settings tab.\n"
-            "• Start Menu → FluentVoice Pro — optional Stop / Restart Tray / Reader shortcuts.\n"
-            "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
-            "• Start with Windows — Startup & Shortcuts card above (tray icon at every sign-in).\n"
-            "• Explorer (installed version) — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
         )
+        if _is_store_build():
+            guide = common + (
+                "• Start menu → FluentVoice Pro — starts the tray, or opens this Control Center if it is running.\n"
+                "• Footer Emergency Stop — always available on every Settings tab.\n"
+                "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
+                "• Start with Windows — Windows Settings → Apps → Startup."
+            )
+        else:
+            guide = common + (
+                "• Desktop shortcut — one icon opens this Control Center (Emergency Stop is in the footer).\n"
+                "• Footer Emergency Stop — always available on every Settings tab.\n"
+                "• Start Menu → FluentVoice Pro — optional Stop / Restart Tray / Reader shortcuts.\n"
+                "• Close to Tray — hides Settings and ensures the tray icon is running.\n"
+                "• Start with Windows — Startup & Shortcuts card above (tray icon at every sign-in).\n"
+                "• Explorer (installed version) — right-click desktop/folder background → FluentVoice Pro (Read Aloud)."
+            )
         ctk.CTkLabel(
             tips,
             text=guide,
@@ -1472,7 +1482,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         if self.cfg.get("check_updates", True):
             self.switch_update_check.select()
-        self.switch_update_check.pack(anchor="w", padx=12, pady=(0, 10))
+        if _is_store_build():  # the Store build never asks GitHub
+            self.update_status_lbl.configure(text="Updates for this copy come from the Microsoft Store.")
+            self.update_status_lbl.pack_configure(pady=(2, 10))
+        else:
+            self.switch_update_check.pack(anchor="w", padx=12, pady=(0, 10))
 
         # Advanced / factory reset (Settings only — not in tray)
         adv = ctk.CTkFrame(card, fg_color="#121824", corner_radius=8, border_width=1, border_color="#30363D")
@@ -2172,7 +2186,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if popup is None:
             popup = force
         q = _queue.Queue()
-        if force:
+        if force and not _is_store_build():
             self._set_update_status("⏳ Checking GitHub for the latest release…", "#00D2FF")
             try:
                 self.btn_check_updates.configure(state="disabled")
