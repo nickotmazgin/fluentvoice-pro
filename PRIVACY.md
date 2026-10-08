@@ -16,6 +16,7 @@ FluentVoice Pro is a **local Windows** TTS / read-aloud suite. It does **not** c
 - **Privacy mode ("Offline only", Settings → Voice Providers or the tray menu):** no text is ever sent to an online voice; offline HD or Windows voices read everything
 - **Passwords and keys** copied to the clipboard (or marked private by a password manager) are never read aloud or sent anywhere, with any voice
 - **Update check (optional, on by default):** one anonymous HTTPS GET to the public GitHub Releases API (`api.github.com/repos/nickotmazgin/fluentvoice-pro/releases/latest`) at most once a day, or when you click **Check for Updates**. No identifiers are sent. Turn it off in Settings → About & Developer → Updates.
+- **Microsoft Store version:** there is no GitHub update check at all; the Microsoft Store delivers updates, and Windows manages Start with Windows (Settings → Apps → Startup)
 - Donate / GitHub / PayPal links open **only when you click them**
 
 FluentVoice does **not** embed advertising SDKs or third-party trackers.
