@@ -13,7 +13,7 @@ FluentVoice Pro is a **local Windows 11/10** system-tray TTS suite. It can:
 - Never read or send clipboard text that looks like a password or key, or that a password manager marked private
 - Create desktop / Startup shortcuts and Explorer context-menu entries via the installer
 
-Install only from official [GitHub Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases) (attested ZIP assets) or this repository’s `main` tag.
+Install only from official sources: the [Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F) (signed by Microsoft), [GitHub Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases) (attested ZIP assets), the [Scoop bucket](https://github.com/nickotmazgin/scoop-bucket) (installs the same release ZIP, SHA-256 checked) or this repository’s `main` branch.
 
 **Verify a download** (any of these):
 
@@ -24,7 +24,7 @@ gh attestation verify .\fluentvoice-pro-<ver>-windows.zip --repo nickotmazgin/fl
 Get-FileHash .\fluentvoice-pro-<ver>-windows.zip -Algorithm SHA256
 ```
 
-The in-app updater (Settings → About → **Check for Updates**) downloads over HTTPS from GitHub and refuses any file whose SHA-256 does not match the digest GitHub publishes for that release asset.
+The in-app updater (Settings → About → **Check for Updates**) downloads over HTTPS from GitHub and refuses any file whose SHA-256 does not match the digest GitHub publishes for that release asset. The Microsoft Store version has no GitHub updater: the Store delivers its updates.
 
 **Platforms:** Windows **11** and **10** (x64). Python **3.10+** for the source install; portable EXE ZIP needs no Python.
 

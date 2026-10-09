@@ -122,7 +122,7 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 - 📋 **Dedicated Direct Text Reader & Scratchpad:** Full-fledged scratchpad window in the Control Center to paste, review, and read long articles, PDFs, OCR texts, or code notes with live word/char counters and language tags.
 - 🌐 **Smart Language Auto-Routing:** Detects 22 languages (English, Hebrew, Arabic, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean, Hindi, Marathi, Bengali, Tamil, Telugu, Gujarati, Kannada, Malayalam, Thai, Icelandic) and reads text in another language with your **Preferred Voice** for it (Automation & System). Pick them in one compact **Language ▸ Voice** row (online or offline voices). A voice always keeps its own language, **Multilingual** voices also keep English/Spanish/French/German/Italian/Portuguese, very short snippets keep your voice, and the **Voice & Speech test always plays the voice you picked**. The Reader status shows when a voice was auto-routed.
 - ⏳ **Streaming Playback & Live Status:** Long texts are synthesized in small parts, up to three at a time ahead of playback, so speech starts in a few seconds and continues without pauses. Changing the voice, speed or pitch mid-read continues from the current sentence with the new settings. The Reader shows `Connecting… → 🔊 Speaking — voice • part 2/7 • 1:05 / 3:10 → ✔️ Finished`, with automatic offline fallback if the cloud voice stalls.
-- ⬆️ **Built-in Update Checker:** Tray menu **Check for Updates…**, Settings → **Automation & System → Updates** and **About & Developer → Updates**, a green header badge and a release-notes popup. Downloads come straight from GitHub Releases and are **SHA-256 verified**; then **🚀 Install Now** (you confirm) installs and restarts FluentVoice. Git clones are told to `git pull` instead. Once-a-day anonymous check, switchable off.
+- ⬆️ **Built-in Update Checker:** Tray menu **Check for Updates…**, Settings → **Automation & System → Updates** and **About & Developer → Updates**, a green header badge and a release-notes popup. Downloads come straight from GitHub Releases and are **SHA-256 verified**; then **🚀 Install Now** (you confirm) installs and restarts FluentVoice. Git clones are told to `git pull` instead. Once-a-day anonymous check, switchable off. The Microsoft Store version gets its updates from the Store instead (no GitHub check).
 - 🧹 **Advanced PDF, OCR & Niqqud Text Sanitizer:** Automatically repairs hyphenated line wraps from PDF copy-pastes, normalizes Unicode (NFKC), strips invisible zero-width and bidirectional markers, and cleans code blocks and markdown.
 - 🎛️ **Modern Fluent UI Control Center:** Dark Fluent UI with voices, pitch, **volume**, speed, preferred auto-route voices, tray ensure/restart, and automation.
 - ⌨️ **Global Hotkey:** Configurable chord (default `Ctrl+Shift+Space`) toggles speak/stop from any app.
@@ -134,7 +134,7 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 - 📋 **Auto-Read on Copy:** Optional mode that reads newly copied text after an adjustable stability buffer (0.3–1.5 s). Copying the same text again reads it again once the previous reading has finished; copies with no letters or digits, duplicate clipboard updates, **passwords marked private** by the copying app and **text that looks like a password or API key** are skipped (also for the tray click, hotkey and `--clip`), so secrets are never read aloud or sent to the cloud voice; texts are read up to 100,000 characters. Plain text only: formatting, images and files on the clipboard are skipped.
 - 🎨 **Redesigned Ultra-Crisp Tray Icon & Dark Menus:** Transparent-background high-contrast neon cyan speaker glyph with native Windows 11 dark context menus and escaped Win32 menu accelerators.
 - 🖥️ **Single Unified Desktop Shortcut & Tray Revive:** Desktop launcher opens Control Center and **Close to Tray** / **Ensure Tray** bring the icon back after Exit.
-- 🚀 **Start with Windows:** Starts silently at sign-in (no console window) — the installer sets it up, the portable EXE asks once on first launch, and **Settings → Automation & System → Startup & Shortcuts** has the switch.
+- 🚀 **Start with Windows:** Starts silently at sign-in (no console window) — the installer sets it up, the portable EXE asks once on first launch, and **Settings → Automation & System → Startup & Shortcuts** has the switch. In the Microsoft Store version Windows manages it (Settings → Apps → Startup).
 - ✅ **Smoke checklist:** See [`docs/SMOKE_TEST.md`](docs/SMOKE_TEST.md) for a 2-minute release verification path.
 
 ---
@@ -162,6 +162,8 @@ winget install 9N293MJ0MD9F --source msstore
 ### Downloads from GitHub
 
 Two attested download options on **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)** (green GitHub verification stamps when published by Actions):
+
+> The `FluentVoicePro-<ver>-x64.msix` on Releases is the package sent to the Microsoft Store (Microsoft signs it there). To get the Store version, install it from the Store link above.
 
 ### Option A — Source ZIP + `install.ps1` (Recommended)
 
@@ -264,7 +266,9 @@ python -m fluentvoice.installer
 
 ## Links
 
+- **Microsoft Store:** https://apps.microsoft.com/detail/9N293MJ0MD9F (free; `winget install 9N293MJ0MD9F --source msstore`)
 - **Releases:** https://github.com/nickotmazgin/fluentvoice-pro/releases
+- **Scoop:** https://github.com/nickotmazgin/scoop-bucket
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
 - **AlternativeTo:** https://alternativeto.net/software/fluentvoice-pro/about/ (reviews and alternatives)

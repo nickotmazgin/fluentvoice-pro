@@ -2,6 +2,10 @@
 
 Text for Partner Center (product **9N293MJ0MD9F**). Update it here first, then paste it in, so the listing and the repo stay in sync.
 
+**Live:** https://apps.microsoft.com/detail/9N293MJ0MD9F since 2026-10-09 (1.6.0; 1.6.1 submitted the same day). IARC Global Rating ID 039b0d55-5718-89b9-8d30-3fa5382f3719 (3+ / Everyone).
+
+**Each update submission:** upload the release's `FluentVoicePro-<ver>-x64.msix` (test it locally first, see AGENTS.md), keep Properties → Product declarations → "allows users to make purchases, but does not use the Microsoft Store commerce system" **ticked** (PayPal donate link, policy 10.8.2) and "record and broadcast clips" unticked (Games only), and fill "What's new".
+
 ## Product name
 FluentVoice Pro
 
@@ -25,7 +29,9 @@ FluentVoice Pro is free and open source (MIT): https://github.com/nickotmazgin/f
 About the online voices: they are Microsoft Edge's Read Aloud voices, reached through the open-source edge-tts library. This is not an official Microsoft service for other apps and is meant for personal reading; Microsoft may change or stop it at any time, in which case FluentVoice Pro continues with offline voices.
 
 ## What's new in this version
-First Microsoft Store release (1.6.0): offline HD voices, Voice Providers tab with licences, Offline-only privacy mode; updates now arrive through the Store.
+1.6.1 (submitted 2026-10-09): Settings now matches the Store version. The Start with Windows note points to Windows Settings > Apps > Startup, updates come from the Microsoft Store, and options that only apply to the GitHub download are hidden. Small fixes to the release packages.
+
+1.6.0 (first release): left blank, as Partner Center asks for a first submission.
 
 ## Product features (one per line, ≤ 200 characters each)
 - Reads selected or copied text aloud with a global hotkey or from the tray
