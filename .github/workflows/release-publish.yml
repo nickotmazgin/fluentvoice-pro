@@ -80,6 +80,10 @@ jobs:
           $notes = @"
           ## FluentVoice Pro v$ver
 
+          <a href="https://apps.microsoft.com/detail/9N293MJ0MD9F?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft"></a>
+
+          **Easiest: [get FluentVoice Pro from the Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** (free, signed by Microsoft, automatic updates; a new version reaches the Store after Microsoft's certification, usually within a day). Or ``winget install 9N293MJ0MD9F --source msstore``.
+
           ### Download options (pick one)
           1. **Recommended — Source ZIP** ``fluentvoice-pro-$ver-windows.zip``
              - Needs Python 3.10+ · run ``install.ps1``

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- README and the GitHub release notes show the official **Get it from Microsoft** badge and a Microsoft Store link at the top.
+
 ## [1.6.1] - 2026-10-09
 
 ### Added
