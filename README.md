@@ -10,13 +10,14 @@
 
 [![Issues](https://img.shields.io/github/issues/nickotmazgin/fluentvoice-pro)](https://github.com/nickotmazgin/fluentvoice-pro/issues)
 [![Discussions](https://img.shields.io/github/discussions/nickotmazgin/fluentvoice-pro?label=discussions&color=8B5CF6)](https://github.com/nickotmazgin/fluentvoice-pro/discussions)
+[![Microsoft Store](https://img.shields.io/badge/Microsoft%20Store-Get%20it-0078D4?logo=windows&logoColor=white)](https://apps.microsoft.com/detail/9N293MJ0MD9F)
 [![AlternativeTo](https://img.shields.io/badge/AlternativeTo-FluentVoice%20Pro-1A73E8)](https://alternativeto.net/software/fluentvoice-pro/about/)
 
 **FluentVoice Pro™** is a modern, lightweight Native Desktop Application and System Tray Suite for **Windows 11 and Windows 10** that reads aloud any text across your entire operating system.
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.6.0** — FluentVoice Pro is getting ready for the **Microsoft Store**: each release now also builds an MSIX package (updates and Start with Windows are then handled by the Store and Windows). Still included since v1.5: **offline HD voices** (Piper & Kokoro, 57 voices in 16 languages, SHA-256 verified), the **Voice Providers** tab, **Offline only** privacy mode. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
+> **Latest: v1.6.1** — FluentVoice Pro is now in the **[Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** (free; updates and Start with Windows are handled by the Store and Windows). 1.6.1 tidies the Store version's Settings and fixes the release ZIP paths. Still included since v1.5: **offline HD voices** (Piper & Kokoro, 57 voices in 16 languages, SHA-256 verified), the **Voice Providers** tab, **Offline only** privacy mode. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -149,6 +150,16 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 ---
 
 ## Installation
+
+### Microsoft Store (easiest)
+
+**[Get FluentVoice Pro from the Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** — free, signed by Microsoft, automatic updates, no Python needed. Or from a terminal:
+
+```powershell
+winget install 9N293MJ0MD9F --source msstore
+```
+
+### Downloads from GitHub
 
 Two attested download options on **[Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases/latest)** (green GitHub verification stamps when published by Actions):
 

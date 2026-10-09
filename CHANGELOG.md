@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-10-09
+
+### Added
+- **FluentVoice Pro is in the Microsoft Store:** https://apps.microsoft.com/detail/9N293MJ0MD9F (or `winget install 9N293MJ0MD9F --source msstore`). The README has a Store badge and install option.
+
 ### Fixed
 - **Store version: Settings no longer shows options it doesn't use.** Found by running the Store package on a real PC:
   - The greyed-out "Start with Windows" switch looked off although Windows starts the app; it is gone (the Open Windows Startup Settings button and the note stay).
