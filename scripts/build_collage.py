@@ -32,7 +32,7 @@ PANELS = [  # (file, number, label) in reading order
     ("06-tray-menu.png", "06", "Tray menu · online, offline HD & privacy"),
     ("07-tray-icon-closeup.png", "07", "Tray icon · HD + live"),
     ("08-settings-automation-preferred.png", "08", "Preferred Voices · one compact row"),
-    ("09-portable-first-launch.png", "09", "Portable first launch"),
+    ("09-tray-offline-voices.png", "09", "Tray · offline HD voices in two clicks"),
     ("10-settings-voice-providers-mid.png", "10", "Voice Providers · Piper voices & licences"),
     ("11-settings-voice-providers-bottom.png", "11", "Voice Providers · Kokoro, Windows & rights"),
     ("12-settings-automation-bottom.png", "12", "Automation · tray, startup, updates & triggers"),
