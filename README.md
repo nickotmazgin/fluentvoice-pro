@@ -153,6 +153,8 @@ FluentVoice Pro is a **Native Windows 11 Desktop Application & Background System
 
 ### Microsoft Store (easiest)
 
+<a href="https://apps.microsoft.com/detail/9N293MJ0MD9F?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft"></a>
+
 **[Get FluentVoice Pro from the Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** — free, signed by Microsoft, automatic updates, no Python needed. Or from a terminal:
 
 ```powershell
