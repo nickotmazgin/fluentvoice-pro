@@ -1,6 +1,8 @@
 # FluentVoice Pro — Windows trust, SmartScreen, App Control & firewall
 
-This release ships **two download options** from GitHub Releases (both can carry green **Artifact Attestation** stamps when built by Actions):
+**Easiest: the [Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F).** The Store version is signed by Microsoft, so there is no SmartScreen or "unknown publisher" warning, and the Store installs updates automatically. From a terminal: `winget install 9N293MJ0MD9F --source msstore`.
+
+GitHub Releases also ships **two download options** (both carry green **Artifact Attestation** stamps when built by Actions):
 
 | Asset | Who it’s for | Notes |
 | --- | --- | --- |
@@ -17,7 +19,7 @@ Unsigned desktop binaries may show SmartScreen the first time. That is normal wi
 
 **Mitigations we use (no paid cert required):**
 
-1. Prefer the **source ZIP + install.ps1** path (Python) when possible.
+1. Offer the **Microsoft Store** version (signed by Microsoft), and the **source ZIP + install.ps1** path (Python).
 2. Ship the portable build as a **ZIP**, not a lone `.exe` upload.
 3. Publish via **Actions + attestations** so Releases show green verification.
 4. Clear Unblock / Run anyway steps below.
