@@ -17,11 +17,10 @@ HD captures for the README, the GitHub social preview, and social posts.
 | `screenshots/v1.6.1/06-tray-menu.png` | 06 Tray right-click menu (Offline HD Voices submenu open, languages of the downloaded voices) |
 | `screenshots/v1.6.1/07-tray-icon-closeup.png` | 07 Tray icon: HD (drawn by the tray code) + live 20 px capture from the taskbar |
 | `screenshots/v1.6.1/08-settings-automation-preferred.png` | 08 Automation scrolled to Preferred Voices (one Language ▸ Voice row), tray, startup, updates |
-| `screenshots/v1.6.1/09-portable-first-launch.png` | 09 Portable EXE first-launch prompt (Start with Windows?) |
 | `screenshots/v1.6.1/10-settings-voice-providers-mid.png` | 10 Voice Providers, middle: Piper voices, each with its licence |
 | `screenshots/v1.6.1/11-settings-voice-providers-bottom.png` | 11 Voice Providers, bottom: Kokoro pack, Windows voices, licences & rights |
 | `screenshots/v1.6.1/12-settings-automation-bottom.png` | 12 Automation & System, bottom: tray, startup & shortcuts, updates, how to trigger FluentVoice |
-| `screenshots/v1.6.1/13-tray-offline-voices.png` | 13 Tray → Offline HD Voices → English: the downloaded Piper / Kokoro voices (README only, not in the collage) |
+| `screenshots/v1.6.1/09-tray-offline-voices.png` | 09 Tray → Offline HD Voices → English: the downloaded Piper / Kokoro voices (README only, not in the collage) |
 
 ## Recapture + rebuild
 

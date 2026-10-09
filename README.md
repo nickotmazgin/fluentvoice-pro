@@ -76,8 +76,8 @@ https://github.com/user-attachments/assets/69232ed1-b2f7-4aae-80f1-908521427841
       <b>08</b> — Preferred Voices · one compact row
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/09-portable-first-launch.png"><img src="screenshots/v1.6.1/09-portable-first-launch.png" width="260" alt="Portable first launch prompt"></a><br>
-      <b>09</b> — Portable first launch
+      <a href="screenshots/v1.6.1/09-tray-offline-voices.png"><img src="screenshots/v1.6.1/09-tray-offline-voices.png" width="260" alt="Tray: downloaded offline HD voices by language"></a><br>
+      <b>09</b> — Tray · offline HD voices (Piper &amp; Kokoro) in two clicks
     </td>
   </tr>
   <tr>
@@ -92,12 +92,6 @@ https://github.com/user-attachments/assets/69232ed1-b2f7-4aae-80f1-908521427841
     <td align="center">
       <a href="screenshots/v1.6.1/12-settings-automation-bottom.png"><img src="screenshots/v1.6.1/12-settings-automation-bottom.png" width="260" alt="Automation &amp; System: tray, startup, updates and how to trigger FluentVoice"></a><br>
       <b>12</b> — Automation · tray, startup, updates &amp; triggers
-    </td>
-  </tr>
-  <tr>
-    <td align="center" colspan="3">
-      <a href="screenshots/v1.6.1/13-tray-offline-voices.png"><img src="screenshots/v1.6.1/13-tray-offline-voices.png" width="360" alt="Tray: downloaded offline HD voices by language"></a><br>
-      <b>13</b> — Tray · downloaded offline HD voices (Piper &amp; Kokoro), pick one in two clicks
     </td>
   </tr>
 </table>
