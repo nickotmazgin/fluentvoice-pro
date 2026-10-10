@@ -1195,14 +1195,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.switch_hotkey_selection.pack(anchor="w", padx=16, pady=(4, 4))
 
         self.hotkey_status_lbl = ctk.CTkLabel(hk, text="", font=ctk.CTkFont(size=12), text_color="#8B949E")
-        self.hotkey_status_lbl.pack(anchor="w", padx=16, pady=(0, 2))
-        ctk.CTkLabel(
+        self._hotkey_hint_lbl = ctk.CTkLabel(
             hk,
             text="Default: ctrl+shift+space  |  Use Ctrl, Alt or Win with a key (F1–F24 may be used alone)  |  "
                  "Win+Shift+S is reserved by Snipping Tool",
             font=ctk.CTkFont(size=11),
             text_color="#8B949E"
-        ).pack(anchor="w", padx=16, pady=(0, 12))
+        )
+        self._hotkey_hint_lbl.pack(anchor="w", padx=16, pady=(0, 12))
 
         # --- Notifications ---
         notif = self._section_card(scroll, "Notifications")
@@ -2057,6 +2057,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         text = "   ".join(lines)
         if text != self.hotkey_status_lbl.cget("text"):
             self.hotkey_status_lbl.configure(text=text, text_color="#F85149" if bad else "#3FB950")
+            if text:
+                self.hotkey_status_lbl.pack(anchor="w", padx=16, pady=(0, 2), before=self._hotkey_hint_lbl)
+            else:
+                self.hotkey_status_lbl.pack_forget()
 
     def _on_pref_voice(self, lang_key: str, voice_code: str):
         if self._syncing_from_disk or not voice_code:

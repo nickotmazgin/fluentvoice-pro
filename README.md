@@ -17,7 +17,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.6.1** — FluentVoice Pro is now in the **[Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** (free; updates and Start with Windows are handled by the Store and Windows). 1.6.1 tidies the Store version's Settings and fixes the release ZIP paths. Still included since v1.5: **offline HD voices** (Piper & Kokoro, 57 voices in 16 languages, SHA-256 verified), the **Voice Providers** tab, **Offline only** privacy mode. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
+> **Latest: v1.6.2** — when an online voice fails, the reading continues with a voice that can actually read the text (or FluentVoice says what to install) and returns to online when the service recovers; the **hotkey reads the selected text**, an optional **Stop hotkey**, a warning when another app owns your chord; the tray lists newly added Windows voices; offline HD voices start sooner. FluentVoice Pro is in the **[Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** (free; updates and Start with Windows are handled by the Store and Windows). Still included since v1.5: **offline HD voices** (Piper & Kokoro, 57 voices in 16 languages, SHA-256 verified), the **Voice Providers** tab, **Offline only** privacy mode. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -33,70 +33,70 @@ https://github.com/user-attachments/assets/69232ed1-b2f7-4aae-80f1-908521427841
 
 ## Screenshots
 
-*FluentVoice Pro **v1.6.1** — click any image to view it full size.*
+*FluentVoice Pro **v1.6.2** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.6.1 collage](screenshots/v1.6.1/collage-v1.6.1.jpg)](screenshots/v1.6.1/collage-v1.6.1.jpg)
+[![FluentVoice Pro v1.6.2 collage](screenshots/v1.6.2/collage-v1.6.2.jpg)](screenshots/v1.6.2/collage-v1.6.2.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.1/01-settings-reader.png"><img src="screenshots/v1.6.1/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.6.2/01-settings-reader.png"><img src="screenshots/v1.6.2/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/02-settings-voice.png"><img src="screenshots/v1.6.1/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.6.2/02-settings-voice.png"><img src="screenshots/v1.6.2/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/03-settings-voice-providers.png"><img src="screenshots/v1.6.1/03-settings-voice-providers.png" width="260" alt="Voice Providers: privacy, rights &amp; offline HD voices"></a><br>
+      <a href="screenshots/v1.6.2/03-settings-voice-providers.png"><img src="screenshots/v1.6.2/03-settings-voice-providers.png" width="260" alt="Voice Providers: privacy, rights &amp; offline HD voices"></a><br>
       <b>03</b> — Voice Providers · privacy &amp; rights
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.1/04-settings-automation.png"><img src="screenshots/v1.6.1/04-settings-automation.png" width="260" alt="Automation &amp; System"></a><br>
-      <b>04</b> — Automation &amp; System
+      <a href="screenshots/v1.6.2/04-settings-automation.png"><img src="screenshots/v1.6.2/04-settings-automation.png" width="260" alt="Automation &amp; System: Global Hotkey reads the selection, optional Stop hotkey"></a><br>
+      <b>04</b> — Automation · read-selection &amp; Stop hotkeys
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/05-settings-about-updates.png"><img src="screenshots/v1.6.1/05-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
+      <a href="screenshots/v1.6.2/05-settings-about-updates.png"><img src="screenshots/v1.6.2/05-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
       <b>05</b> — About · Updates &amp; Factory Reset
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/06-tray-menu.png"><img src="screenshots/v1.6.1/06-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
+      <a href="screenshots/v1.6.2/06-tray-menu.png"><img src="screenshots/v1.6.2/06-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
       <b>06</b> — Tray menu · online, offline HD &amp; privacy
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.1/07-tray-icon-closeup.png"><img src="screenshots/v1.6.1/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
+      <a href="screenshots/v1.6.2/07-tray-icon-closeup.png"><img src="screenshots/v1.6.2/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
       <b>07</b> — Tray icon · HD + live
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/08-settings-automation-preferred.png"><img src="screenshots/v1.6.1/08-settings-automation-preferred.png" width="260" alt="Preferred Voices: one compact row"></a><br>
+      <a href="screenshots/v1.6.2/08-settings-automation-preferred.png"><img src="screenshots/v1.6.2/08-settings-automation-preferred.png" width="260" alt="Preferred Voices: one compact row"></a><br>
       <b>08</b> — Preferred Voices · one compact row
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/09-tray-offline-voices.png"><img src="screenshots/v1.6.1/09-tray-offline-voices.png" width="260" alt="Tray: downloaded offline HD voices by language"></a><br>
+      <a href="screenshots/v1.6.2/09-tray-offline-voices.png"><img src="screenshots/v1.6.2/09-tray-offline-voices.png" width="260" alt="Tray: downloaded offline HD voices by language"></a><br>
       <b>09</b> — Tray · offline HD voices (Piper &amp; Kokoro) in two clicks
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.1/10-settings-voice-providers-mid.png"><img src="screenshots/v1.6.1/10-settings-voice-providers-mid.png" width="260" alt="Voice Providers: Piper voices, each with its licence"></a><br>
+      <a href="screenshots/v1.6.2/10-settings-voice-providers-mid.png"><img src="screenshots/v1.6.2/10-settings-voice-providers-mid.png" width="260" alt="Voice Providers: Piper voices, each with its licence"></a><br>
       <b>10</b> — Voice Providers · Piper voices &amp; licences
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/11-settings-voice-providers-bottom.png"><img src="screenshots/v1.6.1/11-settings-voice-providers-bottom.png" width="260" alt="Voice Providers: Kokoro pack, Windows voices, licences and rights"></a><br>
+      <a href="screenshots/v1.6.2/11-settings-voice-providers-bottom.png"><img src="screenshots/v1.6.2/11-settings-voice-providers-bottom.png" width="260" alt="Voice Providers: Kokoro pack, Windows voices, licences and rights"></a><br>
       <b>11</b> — Voice Providers · Kokoro, Windows &amp; rights
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.1/12-settings-automation-bottom.png"><img src="screenshots/v1.6.1/12-settings-automation-bottom.png" width="260" alt="Automation &amp; System: tray, startup, updates and how to trigger FluentVoice"></a><br>
+      <a href="screenshots/v1.6.2/12-settings-automation-bottom.png"><img src="screenshots/v1.6.2/12-settings-automation-bottom.png" width="260" alt="Automation &amp; System: tray, startup, updates and how to trigger FluentVoice"></a><br>
       <b>12</b> — Automation · tray, startup, updates &amp; triggers
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.6.1.jpg](screenshots/v1.6.1/collage-v1.6.1.jpg)
+Full combined image (download): [collage-v1.6.2.jpg](screenshots/v1.6.2/collage-v1.6.2.jpg)
 
 ---
 
