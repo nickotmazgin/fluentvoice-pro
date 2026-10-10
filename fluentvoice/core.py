@@ -1417,7 +1417,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
                     msg = f"{voice_display_name(plan['fallback_from'])} failed and the Windows voice could not speak either."
                 else:
                     msg = "The Windows voice could not speak (no working Windows voice found)."
-                _log.error("%s", msg)
+                _log.error("the Windows voice could not speak; no other voice is left")
                 trigger_notification("⚠ Speech failed", missing_voice_help(family), force=True, important=True)
                 _emit(on_status, "error", message=f"{msg} {missing_voice_help(family)}")
                 return {"status": "error", "mode": "offline", "message": msg}
