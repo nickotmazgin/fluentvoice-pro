@@ -58,7 +58,7 @@ Productivity (subcategory, if asked: none). Secondary idea: Utilities & tools.
 © 2026 Nick Otmazgin. FluentVoice Pro is open source under the MIT License.
 
 ## Screenshots (desktop, at least 1366×768; ours are 1920×1140)
-From `screenshots/v1.6.1/`, in this order: 01 Reader, 03 Voice Providers, 06 tray menu, 02 Voice & Speech, 04 Automation, 10 Voice Providers (Piper), 11 Voice Providers (Kokoro & rights), 12 Automation (tray & startup), 05 About.
+From `screenshots/v1.6.2/`, in this order: 01 Reader, 03 Voice Providers, 06 tray menu, 02 Voice & Speech, 04 Automation, 10 Voice Providers (Piper), 11 Voice Providers (Kokoro & rights), 12 Automation (tray & startup), 05 About.
 Store logo: Partner Center can use the package logo; a 300×300 PNG can be made from `assets/icon.png` if asked.
 
 ## Pricing and availability

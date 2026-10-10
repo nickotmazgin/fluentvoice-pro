@@ -27,7 +27,7 @@ PANELS = [  # (file, number, label) in reading order
     ("01-settings-reader.png", "01", "Direct Text Reader"),
     ("02-settings-voice.png", "02", "Voice & Speech"),
     ("03-settings-voice-providers.png", "03", "Voice Providers · privacy & rights"),
-    ("04-settings-automation.png", "04", "Automation & System"),
+    ("04-settings-automation.png", "04", "Automation · read-selection & Stop hotkeys"),
     ("05-settings-about-updates.png", "05", "About · Updates & Factory Reset"),
     ("06-tray-menu.png", "06", "Tray menu · online, offline HD & privacy"),
     ("07-tray-icon-closeup.png", "07", "Tray icon · HD + live"),
