@@ -248,8 +248,18 @@ def test_tray_offers_download_when_no_offline_hd_voice(monkeypatch):
     items = list(app._local_hd_items())
     assert len(items) == 1 and "Download offline HD voices" in items[0].text
     monkeypatch.setattr(localtts, "installed_voices", lambda: [localtts.info("piper:en_US-joe-medium")])
+    monkeypatch.setattr(localtts, "is_usable", lambda v: True)
     names = [i.text for i in app._local_hd_items() if hasattr(i, "text")]
     assert "English" in names and "Manage offline HD voices…" in names
+
+
+def test_tray_hides_offline_voices_whose_engine_is_missing(monkeypatch):
+    from fluentvoice import tray
+    monkeypatch.setattr(localtts, "installed_voices", lambda: [localtts.info("piper:en_US-joe-medium")])
+    monkeypatch.setattr(localtts, "is_usable", lambda v: False)
+    app = tray.FluentVoiceTrayApp.__new__(tray.FluentVoiceTrayApp)
+    items = list(app._local_hd_items())
+    assert len(items) == 1 and "engine missing" in items[0].text
 
 
 def test_voice_licence_doc_is_up_to_date():

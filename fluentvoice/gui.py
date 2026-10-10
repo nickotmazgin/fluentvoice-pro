@@ -15,7 +15,7 @@ import customtkinter as ctk
 
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from fluentvoice import config, core, localtts, voices
+from fluentvoice import config, core, hotkeys, localtts, voices
 from fluentvoice import __version__ as APP_VERSION
 
 
@@ -651,6 +651,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 ui["speak_info"] = info
             elif phase == "fallback":
                 ui["reason"] = info.get("reason", "")
+                if info.get("voice"):
+                    ui["fallback_voice"] = core.voice_display_name(info["voice"])
             elif phase in ("done", "aborted", "error"):
                 ui["final_info"] = info
 
@@ -662,7 +664,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 lbl.configure(text=f"✔ Finished reading • {ui['voice'] or 'voice'} • {self._fmt_ms(elapsed * 1000)}{ui['routed']}", text_color="#3FB950")
             elif status == "fallback":
                 how = "an offline HD voice" if final.get("mode") == "offline_hd" else "the Windows offline voice"
-                lbl.configure(text=f"ℹ First voice unavailable → finished with {how}", text_color="#E3B341")
+                lbl.configure(text="ℹ " + final.get("message", f"First voice unavailable → finished with {how}"),
+                              text_color="#E3B341")
             elif status == "aborted":
                 lbl.configure(text="⏹ Speech stopped", text_color="#8B949E")
             else:
@@ -674,9 +677,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             local = voices.is_local_hd(ui.get("voice_id", ""))
             msg = (f"⏳ Preparing offline HD voice on this PC… {int(elapsed)}s" if local
                    else f"⏳ Connecting to neural engine… {int(elapsed)}s")
-            if elapsed > 8 and not local:
-                msg += " — slow network? It will fall back to the offline voice automatically."
-            lbl.configure(text=msg, text_color="#00D2FF" if elapsed <= 8 else "#E3B341")
+            if elapsed > 5 and not local:
+                msg += " — slow network? An offline voice takes over if the service doesn't answer."
+            lbl.configure(text=msg, text_color="#00D2FF" if elapsed <= 5 else "#E3B341")
         elif phase == "speaking":
             info = ui.get("speak_info", {})
             if info.get("mode") == "offline":
@@ -698,7 +701,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             except Exception:
                 pass
         elif phase == "fallback":
-            lbl.configure(text="ℹ First voice unavailable → continuing with an offline voice…", text_color="#E3B341")
+            nxt = ui.get("fallback_voice") or "an offline voice"
+            lbl.configure(text=f"ℹ Voice unavailable → continuing with {nxt}…", text_color="#E3B341")
 
         self.after(200, self._poll_speech_status, token)
 
@@ -1152,9 +1156,38 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#30363D",
             command=self._on_hotkey_commit
         ).pack(side="left")
+
+        stop_row = ctk.CTkFrame(hk, fg_color="transparent")
+        stop_row.pack(fill="x", padx=16, pady=(0, 4))
+        ctk.CTkLabel(stop_row, text="Stop only:", font=ctk.CTkFont(size=12), text_color="#8B949E").pack(side="left")
+        self.stop_hotkey_entry = ctk.CTkEntry(
+            stop_row, width=200, font=ctk.CTkFont(size=12), border_color="#30363D", fg_color="#0D131D",
+            placeholder_text="optional, e.g. ctrl+shift+x")
+        self.stop_hotkey_entry.pack(side="left", padx=(10, 8))
+        if self.cfg.get("stop_hotkey"):
+            self.stop_hotkey_entry.insert(0, self.cfg["stop_hotkey"])
+        self.stop_hotkey_entry.bind("<FocusOut>", lambda e: self._on_stop_hotkey_commit())
+        self.stop_hotkey_entry.bind("<Return>", lambda e: self._on_stop_hotkey_commit())
+        ctk.CTkButton(stop_row, text="Apply", width=70, height=28, fg_color="#21262D", hover_color="#30363D",
+                      command=self._on_stop_hotkey_commit).pack(side="left")
+
+        self.switch_hotkey_selection = ctk.CTkSwitch(
+            hk,
+            text="Read the selected text (copies it first; with nothing selected, reads what you copied)",
+            font=ctk.CTkFont(size=13),
+            progress_color="#00D2FF",
+            command=self._on_toggle_hotkey_selection
+        )
+        if self.cfg.get("hotkey_reads_selection", True):
+            self.switch_hotkey_selection.select()
+        self.switch_hotkey_selection.pack(anchor="w", padx=16, pady=(4, 4))
+
+        self.hotkey_status_lbl = ctk.CTkLabel(hk, text="", font=ctk.CTkFont(size=12), text_color="#8B949E")
+        self.hotkey_status_lbl.pack(anchor="w", padx=16, pady=(0, 2))
         ctk.CTkLabel(
             hk,
-            text="Default: ctrl+shift+space  |  Win+Shift+S is reserved by Snipping Tool",
+            text="Default: ctrl+shift+space  |  Use Ctrl, Alt or Win with a key (F1–F24 may be used alone)  |  "
+                 "Win+Shift+S is reserved by Snipping Tool",
             font=ctk.CTkFont(size=11),
             text_color="#8B949E"
         ).pack(anchor="w", padx=16, pady=(0, 12))
@@ -1676,6 +1709,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     changed = True
             apply_switch("switch_update_check", "check_updates", True)
             apply_switch("switch_offline_only", "offline_only", False)
+            apply_switch("switch_hotkey_selection", "hotkey_reads_selection", True)
 
             # Debounce slider
             if hasattr(self, "buf_slider"):
@@ -1964,19 +1998,53 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.hotkey_entry.insert(0, raw)
         # Normalize separators
         raw = raw.replace("++", "+")
-        try:
-            from fluentvoice.tray import parse_hotkey
-            valid = parse_hotkey(raw) is not None
-        except Exception:
-            valid = True
-        if not valid:
-            self.autosave_lbl.configure(
-                text=f"⚠ Invalid hotkey '{raw}' — use e.g. ctrl+shift+space, ctrl+alt+r, f9",
-                text_color="#F85149")
+        problem = hotkeys.hotkey_problem(raw)
+        if problem:
+            self.autosave_lbl.configure(text=f"⚠ Hotkey '{raw}' not saved: {problem}", text_color="#F85149")
             return
         self.cfg["hotkey"] = raw
         self._persist_cfg()
         self._trigger_autosave_indicator()
+
+    def _on_stop_hotkey_commit(self):
+        if self._syncing_from_disk:
+            return
+        raw = (self.stop_hotkey_entry.get() or "").strip().lower().replace(" ", "").replace("++", "+")
+        problem = hotkeys.hotkey_problem(raw) if raw else ""
+        if problem:
+            self.autosave_lbl.configure(text=f"⚠ Stop hotkey '{raw}' not saved: {problem}", text_color="#F85149")
+            return
+        if raw == self.cfg.get("stop_hotkey", ""):
+            return
+        self.cfg["stop_hotkey"] = raw
+        self._persist_cfg()
+        self._trigger_autosave_indicator()
+
+    def _on_toggle_hotkey_selection(self):
+        if self._syncing_from_disk:
+            return
+        self.cfg["hotkey_reads_selection"] = self.switch_hotkey_selection.get() == 1
+        self._persist_cfg()
+        self._trigger_autosave_indicator()
+
+    def _refresh_hotkey_status(self):
+        """Show whether the tray could register the hotkeys (another app may own the chord)."""
+        if not hasattr(self, "hotkey_status_lbl"):
+            return
+        st = hotkeys.read_status() if getattr(self, "_tray_running_shown", False) else {}
+        lines, bad = [], False
+        for key, what in (("read", "Speak / Stop"), ("stop", "Stop")):
+            e = st.get(key) or {}
+            if not e.get("chord"):
+                continue
+            if e.get("ok"):
+                lines.append(f"✔ {what}: {e['chord']}")
+            else:
+                bad = True
+                lines.append(f"⚠ {what}: {e['chord']} — {e.get('error') or 'not registered'}; pick another")
+        text = "   ".join(lines)
+        if text != self.hotkey_status_lbl.cget("text"):
+            self.hotkey_status_lbl.configure(text=text, text_color="#F85149" if bad else "#3FB950")
 
     def _on_pref_voice(self, lang_key: str, voice_code: str):
         if self._syncing_from_disk or not voice_code:
@@ -2003,6 +2071,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                         text="○ Tray is not running — click Ensure Tray Running to start it",
                         text_color="#F85149"
                     )
+        except Exception:
+            pass
+        try:
+            self._refresh_hotkey_status()
         except Exception:
             pass
         self.after(2000, self._refresh_tray_status)

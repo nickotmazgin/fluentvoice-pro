@@ -33,6 +33,9 @@ DEFAULT_CONFIG = {
     # Win+Shift+S is reserved by Windows Snipping Tool — use Ctrl+Shift+Space by default.
     "hotkey_enabled": True,
     "hotkey": "ctrl+shift+space",
+    # The hotkey first copies the text selected in the active app (nothing selected: reads the clipboard).
+    "hotkey_reads_selection": True,
+    "stop_hotkey": "",  # optional hotkey that only stops, e.g. ctrl+shift+x ("" = none)
     "preferred_voices": DEFAULT_PREFERRED_VOICES.copy(),
     # Update checker (Settings → About & Developer → Updates)
     "check_updates": True,

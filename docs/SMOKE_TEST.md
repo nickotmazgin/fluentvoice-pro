@@ -28,7 +28,9 @@ Use after install or before cutting a release.
    - Volume slider changes playback level.
    - Spanish/French sample auto-routes when Smart Language Auto-Routing is on.
    - Preferred Hebrew voice Avri vs Hila applies on Hebrew text.
-   - Global hotkey (default `Ctrl+Shift+Space`) toggles speak/stop.
+   - Global hotkey (default `Ctrl+Shift+Space`) toggles speak/stop. Select a sentence in Notepad and press it: the selection is read (Auto-Read on doesn't read it twice); in Windows Terminal it copies with Ctrl+Insert, never Ctrl+C. A chord without a modifier (e.g. `space`) is refused in Settings; a chord another app owns shows "⚠ … already used by another app".
+   - Optional Stop hotkey (e.g. `ctrl+shift+x`) only stops.
+   - With the internet off (or the online service failing): the reading continues with an offline voice of the text's language after a retry, the next reading starts offline at once, and Hebrew / Thai text with no voice for that language shows what to install instead of staying silent.
    - Settings tabs (Voice / Automation) show content on first open (not blank).
    - Release assets: try source ZIP install **or** portable EXE ZIP; see `docs/WINDOWS_TRUST.md` if SmartScreen prompts.
 
