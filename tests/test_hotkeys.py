@@ -104,7 +104,7 @@ def test_hotkey_copies_the_selection_before_reading(monkeypatch):
     monkeypatch.setattr(core, "toggle_speak_or_stop", lambda *a, **k: order.append("read"))
     monkeypatch.setattr(tray, "load_config", lambda: dict(config.DEFAULT_CONFIG))
     app = tray.FluentVoiceTrayApp.__new__(tray.FluentVoiceTrayApp)
-    app.on_toggle_speech(from_hotkey=True)
+    app.on_hotkey()
     time.sleep(0.2)
     assert order == ["copy", "read"]
     app._last_toggle -= 1.0
@@ -127,6 +127,28 @@ def test_copy_selection_falls_back_to_ctrl_c_but_never_in_a_console(monkeypatch)
     console = _User32(copies_on={hotkeys.VK_C}, window_class="CASCADIA_HOSTING_WINDOW_CLASS")
     monkeypatch.setattr(ctypes, "windll", types.SimpleNamespace(user32=console), raising=False)
     assert hotkeys.copy_selection(copy_timeout=0.1) is False and hotkeys.VK_C not in console.keys
+
+
+def test_the_whole_tray_menu_builds(monkeypatch):
+    """pystray rejects actions with more than two parameters when the menu is built: the tray
+    then never starts. Build every item and submenu exactly as the tray does."""
+    from fluentvoice import localtts, tray
+    monkeypatch.setattr(core, "get_installed_sapi_voices", lambda: [("Windows Zira (English US)", "Zira")])
+    monkeypatch.setattr(localtts, "installed_voices", lambda: [localtts.info("piper:en_US-joe-medium")])
+    monkeypatch.setattr(localtts, "is_usable", lambda v: True)
+    app = tray.FluentVoiceTrayApp.__new__(tray.FluentVoiceTrayApp)
+    app.update_info = None
+    app._refresh_windows_voices()
+
+    def walk(menu):
+        n = 0
+        for entry in menu.items:
+            n += 1
+            if entry.submenu:
+                n += walk(entry.submenu)
+        return n
+
+    assert walk(app.build_menu()) > 40
 
 
 def test_windows_voices_menu_refreshes_when_a_voice_is_added(monkeypatch):
