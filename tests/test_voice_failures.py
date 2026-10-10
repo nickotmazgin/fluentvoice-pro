@@ -183,6 +183,12 @@ def test_preload_warms_the_offline_voice_once(monkeypatch):
     assert core.preload_offline_voice({"voice": "en-US-AvaMultilingualNeural"}) is None
 
 
-def test_offline_hd_voices_start_with_small_parts():
-    parts = core.split_for_streaming(LONG, first=core.LOCAL_FIRST_CHUNK_CHARS, second=core.LOCAL_SECOND_CHUNK_CHARS)
-    assert len(parts[1]) <= core.LOCAL_SECOND_CHUNK_CHARS + 60
+def test_offline_hd_parts_start_small_and_grow_gradually():
+    text = "Short first one. A second sentence that is a bit longer. " + LONG * 3
+    parts = core.split_for_streaming(text, first=core.LOCAL_FIRST_CHUNK_CHARS, second=core.LOCAL_SECOND_CHUNK_CHARS,
+                                     grow=core.LOCAL_CHUNK_GROWTH)
+    assert len(parts[1]) <= core.LOCAL_SECOND_CHUNK_CHARS
+    for prev, nxt in zip(parts, parts[1:]):  # each part is ready before the previous one has played
+        assert len(nxt) <= max(core.LOCAL_FIRST_CHUNK_CHARS, len(prev) * core.LOCAL_CHUNK_GROWTH)
+    assert max(len(p) for p in parts) > 400  # still grows to long parts (fewer boundaries)
+    assert core.split_for_streaming(text) == core.split_for_streaming(text, grow=None)  # online unchanged

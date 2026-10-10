@@ -58,6 +58,7 @@ PREFETCH_AHEAD = 4                # never prepare more than this many chunks ahe
 MAX_SPEAK_CHARS = 100_000         # ~1.5 h of speech; longer texts are read up to here (flood guard)
 LOCAL_FIRST_CHUNK_CHARS = 120     # offline HD voices compute on this PC: a shorter first chunk starts sooner
 LOCAL_SECOND_CHUNK_CHARS = 220    # …and the second must be ready before that short first chunk ends
+LOCAL_CHUNK_GROWTH = 2.5          # each chunk ≤ 2.5× the previous: it is ready before that one has played
 PLAYBACK_STALL_SEC = 8.0          # MCI "playing" but position frozen => treat as stalled
 CACHE_MAX_AGE_SEC = 15 * 60
 ONLINE_PAUSE_STEPS_SEC = (60, 300, 900)  # after the online service fails, offline voices are used this long
@@ -815,12 +816,14 @@ _SENTENCE_END = re.compile(r"[.!?…:;׃۔。！？।॥](?:[\"'”’)\]]*)\s"
 
 
 def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = CHUNK_CHARS,
-                        second: int = SECOND_CHUNK_CHARS) -> list:
+                        second: int = SECOND_CHUNK_CHARS, grow: float | None = None) -> list:
     """Split text into speakable chunks at sentence boundaries.
 
     Chunks grow (first → second → rest) so speech starts quickly, and every chunk is small
     enough to be synthesized while the ones before it play: one 1,800-character chunk used
     to take ~50 s to prepare and left a long silence after the first sentence or two.
+    grow: a chunk is at most this many times as long as the one before it (offline HD voices
+    prepare one chunk at a time, so a long chunk after two short sentences left a pause).
     """
     text = (text or "").strip()
     if not text:
@@ -847,6 +850,8 @@ def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = C
             chunks.append(piece)
         text = text[cut:].strip()
         limit = second if len(chunks) == 1 else rest
+        if grow and piece:
+            limit = min(limit, max(first, int(len(piece) * grow)))
     return chunks
 
 
@@ -1497,7 +1502,8 @@ def _speak_neural(text, plan, *, my_gen, start_ts=None, on_status=None, aborted,
          "service" (the online service failed), "playback" (the audio could not be played).
     """
     voice = plan["voice"]
-    chunks = (split_for_streaming(text, first=LOCAL_FIRST_CHUNK_CHARS, second=LOCAL_SECOND_CHUNK_CHARS)
+    chunks = (split_for_streaming(text, first=LOCAL_FIRST_CHUNK_CHARS, second=LOCAL_SECOND_CHUNK_CHARS,
+                                  grow=LOCAL_CHUNK_GROWTH)
               if local else split_for_streaming(text)) or [text]
     parts = len(chunks)
     _emit(on_status, "synthesizing", voice=voice, parts=parts,

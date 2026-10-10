@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 39 new tests.
 
 ### Changed
-- **Faster start with offline HD voices:** the selected Piper / Kokoro voice is loaded in the background when the tray starts or the voice changes, so the first words don't wait for the model to load (about 6 seconds). Their second part is shorter too, so the next part is ready sooner.
+- **Faster start with offline HD voices:** the selected Piper / Kokoro voice is loaded in the background when the tray starts or the voice changes, so the first words don't wait for the model to load (Kokoro: first words after 1.1 s instead of 3.8 s). Their parts now grow gradually (each at most 2.5× the one before), so each part is ready before the previous one ends: a long part right after two short sentences used to leave a 4–5 s pause.
 - A connection that opens but sends nothing now fails after 7 seconds instead of 15, so the offline voice takes over sooner.
 - Shorter pause between parts: playback checks more often near the end of each part.
 - The tray's **Offline HD Voices** menu lists only voices that can speak on this PC (a voice whose speech engine is missing is left out).
