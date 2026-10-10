@@ -288,12 +288,18 @@ class FluentVoiceTrayApp:
 
     TOGGLE_DEBOUNCE_SEC = 0.6
 
-    def on_toggle_speech(self, icon=None, item=None, from_hotkey=False):
-        """Left-click / hotkey: speak the clipboard, or stop if already speaking. The hotkey
-        first copies the text selected in the active app, so selecting and pressing it reads
-        the selection.
+    def on_toggle_speech(self, icon=None, item=None):
+        """Left-click / tray menu: speak the clipboard, or stop if already speaking.
+        (pystray accepts menu actions with at most two parameters.)"""
+        self._toggle_speech(from_hotkey=False)
 
-        A double-click delivers two clicks (and a held hotkey repeats), so presses closer
+    def on_hotkey(self):
+        """Hotkey: like a click, but first copies the text selected in the active app, so
+        selecting and pressing it reads the selection."""
+        self._toggle_speech(from_hotkey=True)
+
+    def _toggle_speech(self, from_hotkey: bool):
+        """A double-click delivers two clicks (and a held hotkey repeats), so presses closer
         than TOGGLE_DEBOUNCE_SEC count once instead of starting and instantly stopping."""
         now = time.monotonic()
         if now - getattr(self, "_last_toggle", -10.0) < self.TOGGLE_DEBOUNCE_SEC:
@@ -711,7 +717,7 @@ class FluentVoiceTrayApp:
                     if msg.wParam == self._stop_hotkey_id:
                         core.stop_all_playback()
                     else:
-                        self.on_toggle_speech(from_hotkey=True)
+                        self.on_hotkey()
                 else:
                     user32.TranslateMessage(ctypes.byref(msg))
                     user32.DispatchMessageW(ctypes.byref(msg))
@@ -814,10 +820,13 @@ class FluentVoiceTrayApp:
 
     def run(self):
         img = load_tray_image()
-
         self._refresh_windows_voices()
+        self.tray_icon = CrispTrayIcon("FluentVoice_Pro", img, TRAY_TOOLTIP, self.build_menu())
+        logger.info("Running pystray tray_icon event loop...")
+        self.tray_icon.run(setup=self._on_icon_ready)
 
-        menu = pystray.Menu(
+    def build_menu(self):
+        return pystray.Menu(
             item("🔊 FluentVoice (Toggle Speak / Stop)", self.on_toggle_speech, default=True),
             item("📋 Direct Text Reader...", self.on_open_reader),
             item("⚙️ Settings && Control Center...", self.on_open_settings),
@@ -847,10 +856,6 @@ class FluentVoiceTrayApp:
             pystray.Menu.SEPARATOR,
             item("❌ Exit FluentVoice Pro", self.on_exit)
         )
-
-        self.tray_icon = CrispTrayIcon("FluentVoice_Pro", img, TRAY_TOOLTIP, menu)
-        logger.info("Running pystray tray_icon event loop...")
-        self.tray_icon.run(setup=self._on_icon_ready)
 
 def enable_crisp_menus():
     """Make the tray DPI-aware (per monitor). A DPI-unaware process gets its right-click menu
