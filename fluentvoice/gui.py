@@ -380,15 +380,6 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         voice_bar = ctk.CTkFrame(card, fg_color="#101622", corner_radius=8)
         voice_bar.pack(fill="x", padx=14, pady=(0, 6))
 
-        self.reader_voice_lbl = ctk.CTkLabel(
-            voice_bar,
-            text=self._format_reader_voice_label(),
-            font=ctk.CTkFont(size=12),
-            text_color="#C9D1D9",
-            anchor="w"
-        )
-        self.reader_voice_lbl.pack(side="left", padx=(12, 8), pady=8, fill="x", expand=True)
-
         btn_change_voice = ctk.CTkButton(
             voice_bar,
             text="🎙 Change Voice →",
@@ -402,7 +393,25 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self._on_reader_goto_voice_tab
         )
+        # Packed before the label: a long voice line would otherwise push the button out of a
+        # normal-size window.
         btn_change_voice.pack(side="right", padx=10, pady=6)
+
+        self.reader_voice_lbl = ctk.CTkLabel(
+            voice_bar,
+            text=self._format_reader_voice_label(),
+            font=ctk.CTkFont(size=12),
+            text_color="#C9D1D9",
+            anchor="w",
+            justify="left",
+        )
+        self.reader_voice_lbl.pack(side="left", padx=(12, 8), pady=8, fill="x", expand=True)
+
+        def _wrap_voice_line(event):
+            width = event.width - btn_change_voice.winfo_width() - 50
+            if width > 100:  # wraplength is in unscaled units, event sizes in pixels
+                self.reader_voice_lbl.configure(wraplength=width / ctk.ScalingTracker.get_widget_scaling(self))
+        voice_bar.bind("<Configure>", _wrap_voice_line, add="+")
 
         # Multi-line text box
         self.reader_textbox = ctk.CTkTextbox(
@@ -1133,6 +1142,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ctk.CTkLabel(
             hk_row,
             text="Chord:",
+            width=72,
+            anchor="w",
             font=ctk.CTkFont(size=12),
             text_color="#8B949E"
         ).pack(side="left")
@@ -1159,7 +1170,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
 
         stop_row = ctk.CTkFrame(hk, fg_color="transparent")
         stop_row.pack(fill="x", padx=16, pady=(0, 4))
-        ctk.CTkLabel(stop_row, text="Stop only:", font=ctk.CTkFont(size=12), text_color="#8B949E").pack(side="left")
+        ctk.CTkLabel(stop_row, text="Stop only:", width=72, anchor="w", font=ctk.CTkFont(size=12),
+                     text_color="#8B949E").pack(side="left")
         self.stop_hotkey_entry = ctk.CTkEntry(
             stop_row, width=200, font=ctk.CTkFont(size=12), border_color="#30363D", fg_color="#0D131D",
             placeholder_text="optional, e.g. ctrl+shift+x")
