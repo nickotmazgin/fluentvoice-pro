@@ -6,8 +6,8 @@ Text for Partner Center (product **9N293MJ0MD9F**). Update it here first, then p
 
 **Each update submission:** upload the release's `FluentVoicePro-<ver>-x64.msix` (test it locally first, see AGENTS.md), keep Properties → Product declarations → "allows users to make purchases, but does not use the Microsoft Store commerce system" **ticked** (PayPal donate link, policy 10.8.2) and "record and broadcast clips" unticked (Games only), and fill "What's new".
 
-**Submission options → runFullTrust justification** (required each submission; the field keeps only 500 characters):
-FluentVoice Pro is an existing Win32 desktop app converted to MSIX; runFullTrust is required to run its desktop executable. As a system-tray text-to-speech utility it registers a global hotkey (RegisterHotKey), reads the text the user selects or copies (clipboard), shows a notification-area icon and plays audio. It needs no administrator rights, installs no drivers or services, and does not modify system settings. Source code: https://github.com/nickotmazgin/fluentvoice-pro
+**Submission options → runFullTrust justification** (required each submission; the field keeps only 500 characters; this is 493):
+FluentVoice Pro is a Win32 desktop app converted to MSIX; runFullTrust is required to run its desktop executable. As a system-tray text-to-speech utility it registers a global hotkey (RegisterHotKey), reads the text the user selects (by sending a Copy keystroke to the active window) or copies (clipboard), shows a tray icon and plays audio. It needs no admin rights, installs no drivers or services, and does not change system settings. Source: https://github.com/nickotmazgin/fluentvoice-pro
 
 ## Product name
 FluentVoice Pro
