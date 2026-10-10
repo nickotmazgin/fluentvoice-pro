@@ -9,7 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-10-10
+
+### Fixed
+- **No more silent "reading".** When the online voices failed, Hebrew, Thai, Japanese… text was handed to the English Windows voice (Zira), which says nothing for those scripts, while FluentVoice reported that it had read the text. Now the reading continues only with a voice that can read the text: an offline HD voice of that language, else a Windows voice of that language, else the English Windows voice for Latin-script text. When no voice on the PC can read it, FluentVoice stops and says exactly what to install (Settings → Voice Providers, or Windows Settings → Speech → Add voices).
+- **The hotkey reads the selected text, as the README says.** It now copies the selection first (Ctrl+Insert, which is safe in terminals, then Ctrl+C outside terminals); with nothing selected it reads what you copied. Auto-Read on Copy doesn't read that copy a second time. Settings → Global Hotkey has a switch to turn this off.
+- **Hotkeys without Ctrl / Alt / Shift / Win are refused** (a lone `space` or `r` stopped that key from working in every other app); F1–F24 may still be used alone. Settings says why a chord is refused and suggests one with a modifier.
+- **A hotkey taken by another app is reported** with a notification and in Settings (it used to fail silently, only in `tray.log`).
+- Notification and Settings messages name the voice that takes over and the reason (online service not responding, voice returned no audio, audio playback problem, offline HD voice failed).
+
+### Added
+- **When a voice fails, FluentVoice keeps reading and tells you why:**
+  - A part that fails online is tried once more before switching voice (a dropped request is common).
+  - When one online voice returns no audio while the service works, another online voice of the same language takes over.
+  - When the online service fails, it is paused for 1 minute (then 5, then 15 if it keeps failing), so the next readings start at once with the offline voice instead of waiting for a dead service.
+  - The reading switches back to the online voice by itself as soon as the service responds again ("🌐 Online voice is back").
+- **Stop hotkey (optional):** a second hotkey that only stops speech (Settings → Global Hotkey → Stop only).
+- More hotkey keys: Insert, Delete, Home, End, Page Up / Down, Pause, Backspace and F13–F24.
+- The tray's **Local Windows Voices** menu updates when you add a Windows voice (no tray restart needed) and has an **Add Windows voices…** item that opens Windows Settings → Speech.
+- 39 new tests.
+
 ### Changed
+- **Faster start with offline HD voices:** the selected Piper / Kokoro voice is loaded in the background when the tray starts or the voice changes, so the first words don't wait for the model to load (Kokoro: first words after 1.1 s instead of 3.8 s). Their parts now grow gradually (each at most 2.5× the one before), so each part is ready before the previous one ends: a long part right after two short sentences used to leave a 4–5 s pause.
+- A connection that opens but sends nothing now fails after 7 seconds instead of 15, so the offline voice takes over sooner.
+- Shorter pause between parts: playback checks more often near the end of each part.
+- The tray's **Offline HD Voices** menu lists only voices that can speak on this PC (a voice whose speech engine is missing is left out).
 - README and the GitHub release notes show the official **Get it from Microsoft** badge and a Microsoft Store link at the top.
 
 ## [1.6.1] - 2026-10-09

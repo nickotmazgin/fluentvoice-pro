@@ -26,7 +26,7 @@ import wave
 from pathlib import Path
 
 from . import local_catalog as cat
-from .config import APP_DIR
+from .config import APP_DIR, CACHE_DIR
 
 _log = logging.getLogger("fluentvoice.localtts")
 
@@ -464,6 +464,33 @@ def synthesize_to_wav(text: str, voice: str, out_file: str, *, rate_mult: float 
             os.remove(tmp)
         except OSError:
             pass
+
+
+_preloading: set = set()
+
+
+def preload(voice: str) -> bool:
+    """Load and warm up an offline HD voice in the background, so its first words start at once
+    instead of after the model load (~6 s). False when the voice can't be used here."""
+    if voice in _preloading or not is_usable(voice):
+        return False
+    _preloading.add(voice)
+
+    def run():
+        out = str(CACHE_DIR / f"speech_preload_{os.getpid()}_{int(time.time() * 1000)}.wav")
+        try:
+            ok, err = synthesize_to_wav("Ready.", voice, out)
+            if not ok:
+                _log.warning("preloading %s failed: %s", voice, err)
+        finally:
+            _preloading.discard(voice)
+            try:
+                os.remove(out)
+            except OSError:
+                pass
+
+    threading.Thread(target=run, name="fv-preload", daemon=True).start()
+    return True
 
 
 def describe_installed() -> str:

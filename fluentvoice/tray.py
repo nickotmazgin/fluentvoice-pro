@@ -19,7 +19,7 @@ import logging
 
 # Ensure package imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from fluentvoice import config, core, voices
+from fluentvoice import config, core, hotkeys, voices
 from fluentvoice.config import load_config
 
 LOG_DIR = Path.home() / ".fluentvoice"
@@ -246,48 +246,8 @@ def apply_win32_dark_menus():
         logger.debug(f"apply_win32_dark_menus error: {e}")
 
 
-# Virtual-key map for RegisterHotKey
-_VK_MAP = {
-    "space": 0x20,
-    "tab": 0x09,
-    "enter": 0x0D,
-    "return": 0x0D,
-    "esc": 0x1B,
-    "escape": 0x1B,
-    "up": 0x26,
-    "down": 0x28,
-    "left": 0x25,
-    "right": 0x27,
-    "f1": 0x70, "f2": 0x71, "f3": 0x72, "f4": 0x73,
-    "f5": 0x74, "f6": 0x75, "f7": 0x76, "f8": 0x77,
-    "f9": 0x78, "f10": 0x79, "f11": 0x7A, "f12": 0x7B,
-}
-for _i, _ch in enumerate("abcdefghijklmnopqrstuvwxyz"):
-    _VK_MAP[_ch] = 0x41 + _i
-for _i in range(10):
-    _VK_MAP[str(_i)] = 0x30 + _i
+parse_hotkey = hotkeys.parse_hotkey
 
-
-def parse_hotkey(chord: str):
-    """Parse 'ctrl+shift+space' into (modifiers, vk) for RegisterHotKey."""
-    MOD_ALT, MOD_CONTROL, MOD_SHIFT, MOD_WIN = 0x0001, 0x0002, 0x0004, 0x0008
-    parts = [p.strip().lower() for p in (chord or "").replace(" ", "").split("+") if p.strip()]
-    mods = 0
-    key = None
-    for p in parts:
-        if p in ("ctrl", "control"):
-            mods |= MOD_CONTROL
-        elif p in ("shift",):
-            mods |= MOD_SHIFT
-        elif p in ("alt",):
-            mods |= MOD_ALT
-        elif p in ("win", "windows", "super", "meta"):
-            mods |= MOD_WIN
-        else:
-            key = p
-    if not key or key not in _VK_MAP:
-        return None
-    return mods, _VK_MAP[key]
 
 class FluentVoiceTrayApp:
     def __init__(self):
@@ -303,8 +263,9 @@ class FluentVoiceTrayApp:
         self.last_clipboard_hash = None
         self._last_autoread_ts = 0.0
         self.tray_icon = None
-        self._hotkey_id = 1
-        self._hotkey_registered = None  # (mods, vk) currently registered
+        self._hotkey_id = 1  # read / stop
+        self._stop_hotkey_id = 2  # stop only (optional)
+        self._hotkey_registered = {}  # id → (mods, vk) currently registered
         self._dark_refresh_ticks = 0
         self.update_info = None  # set when a newer GitHub release is found
 
@@ -327,8 +288,10 @@ class FluentVoiceTrayApp:
 
     TOGGLE_DEBOUNCE_SEC = 0.6
 
-    def on_toggle_speech(self, icon=None, item=None):
-        """Left-click / hotkey: speak the clipboard, or stop if already speaking.
+    def on_toggle_speech(self, icon=None, item=None, from_hotkey=False):
+        """Left-click / hotkey: speak the clipboard, or stop if already speaking. The hotkey
+        first copies the text selected in the active app, so selecting and pressing it reads
+        the selection.
 
         A double-click delivers two clicks (and a held hotkey repeats), so presses closer
         than TOGGLE_DEBOUNCE_SEC count once instead of starting and instantly stopping."""
@@ -336,7 +299,15 @@ class FluentVoiceTrayApp:
         if now - getattr(self, "_last_toggle", -10.0) < self.TOGGLE_DEBOUNCE_SEC:
             return
         self._last_toggle = now
-        threading.Thread(target=core.toggle_speak_or_stop, daemon=True).start()
+
+        def run():
+            if from_hotkey and not core.is_any_speaking() and load_config().get("hotkey_reads_selection", True):
+                try:
+                    hotkeys.copy_selection()
+                except Exception as e:
+                    logger.warning("copying the selection failed: %s", e)
+            core.toggle_speak_or_stop()
+        threading.Thread(target=run, daemon=True, name="fv-toggle").start()
 
     def on_stop(self, icon=None, item=None):
         core.stop_all_playback()
@@ -501,12 +472,39 @@ class FluentVoiceTrayApp:
             for vid, label in voices.voices_for(family)
         ]
 
+    def _refresh_windows_voices(self) -> bool:
+        """Re-list the Windows voices; True when one was added or removed (Windows Settings → Speech)."""
+        try:
+            found = core.get_installed_sapi_voices()
+        except Exception as e:
+            logger.warning("Failed to enumerate Windows voices: %s", e)
+            return False
+        if found == getattr(self, "_sapi_voices", None):
+            return False
+        self._sapi_voices = found
+        return True
+
+    def _windows_voice_items(self):
+        for label, desc in getattr(self, "_sapi_voices", None) or []:
+            yield item(label, self.set_voice(desc, label), checked=self.is_voice_checked(desc))
+        yield pystray.Menu.SEPARATOR
+        yield item("Add Windows voices… (Windows Settings → Speech)", self.on_open_windows_speech)
+
+    def on_open_windows_speech(self, icon=None, item=None):
+        try:
+            os.startfile("ms-settings:speech")
+        except OSError as e:
+            logger.warning("could not open Windows speech settings: %s", e)
+
     def _local_hd_items(self):
-        """Downloaded offline HD voices (Piper / Kokoro), by language. Rebuilt when one is added."""
+        """Downloaded offline HD voices (Piper / Kokoro), by language. Rebuilt when one is added.
+        Voices whose speech engine is missing are left out: picking one would only fall back."""
         from . import localtts
-        installed = localtts.installed_voices()
+        downloaded = localtts.installed_voices()
+        installed = [v for v in downloaded if localtts.is_usable(v["id"])]
         if not installed:
-            yield item("Download offline HD voices… (Settings → Voice Providers)", self.on_open_providers)
+            yield item("Offline HD voice engine missing… (Settings → Voice Providers)" if downloaded else
+                       "Download offline HD voices… (Settings → Voice Providers)", self.on_open_providers)
             return
         for fam, name in voices.LANGUAGES.items():
             mine = [v for v in installed if v["family"] == fam]
@@ -563,6 +561,8 @@ class FluentVoiceTrayApp:
         cfg_cached = load_config()
         from . import localtts
         voices_sig = localtts.installed_signature()
+        last_windows_check = time.time()
+        preload_key = None
 
         while True:
             try:
@@ -582,14 +582,22 @@ class FluentVoiceTrayApp:
                     cfg_cached = load_config()
                     last_cfg_check = now
                     sig = localtts.installed_signature()
-                    if sig != voices_sig:  # an offline HD voice was downloaded or removed in Settings
-                        voices_sig = sig
-                        if self.tray_icon:
-                            self.tray_icon.update_menu()
+                    changed = sig != voices_sig  # an offline HD voice was downloaded or removed in Settings
+                    voices_sig = sig
+                    if now - last_windows_check >= 30.0:  # a Windows voice added in Windows Settings
+                        last_windows_check = now
+                        changed = self._refresh_windows_voices() or changed
+                    if changed and self.tray_icon:
+                        self.tray_icon.update_menu()
+                    key = (cfg_cached.get("voice"), cfg_cached.get("offline_only"), sig)
+                    if key != preload_key:  # load the offline HD voice now, not when the next reading starts
+                        preload_key = key
+                        core.preload_offline_voice(cfg_cached)
 
                 curr_seq = user32.GetClipboardSequenceNumber()
-                if not cfg_cached.get("auto_read_copy", False):
-                    # Keep tracking while disabled so re-enabling does not read stale clipboard.
+                if not cfg_cached.get("auto_read_copy", False) or (curr_seq != last_seq and hotkeys.recently_copied()):
+                    # Keep tracking while disabled so re-enabling does not read stale clipboard;
+                    # the hotkey's own copy of the selection is read by the hotkey, not twice.
                     last_seq = curr_seq
                 elif curr_seq != last_seq:
                     last_seq = curr_seq
@@ -641,43 +649,53 @@ class FluentVoiceTrayApp:
         self._last_autoread_ts = time.time()
         threading.Thread(target=core.speak_text, args=(text,), daemon=True, name="fv-autoread").start()
 
-    def sync_hotkey_from_config(self):
-        """Register or update the global Win32 hotkey from config."""
-        cfg = load_config()
+    def _register_hotkey(self, hk_id: int, chord: str, what: str) -> dict:
+        """Register one hotkey; returns its status for Settings and warns when it can't be used."""
         user32 = ctypes.windll.user32
-        if self._hotkey_registered is not None:
+        if self._hotkey_registered.pop(hk_id, None) is not None:
             try:
-                user32.UnregisterHotKey(None, self._hotkey_id)
+                user32.UnregisterHotKey(None, hk_id)
             except Exception:
                 pass
-            self._hotkey_registered = None
-
-        if not cfg.get("hotkey_enabled", True):
-            return
-        parsed = parse_hotkey(cfg.get("hotkey", "ctrl+shift+space"))
+        if not chord:
+            return {"chord": "", "ok": False, "error": ""}
+        parsed = parse_hotkey(chord)
         if not parsed:
-            return
-        mods, vk = parsed
-        if user32.RegisterHotKey(None, self._hotkey_id, mods, vk):
-            self._hotkey_registered = (mods, vk)
+            error = hotkeys.hotkey_problem(chord) or "not a valid hotkey"
+        elif user32.RegisterHotKey(None, hk_id, parsed[0] | hotkeys.MOD_NOREPEAT, parsed[1]):
+            self._hotkey_registered[hk_id] = parsed
+            return {"chord": chord, "ok": True, "error": ""}
         else:
-            logger.warning("Global hotkey %r could not be registered (in use by another app?)", cfg.get("hotkey"))
+            error = "already used by another app"
+        logger.warning("%s hotkey %r could not be registered: %s", what, chord, error)
+        self.notify_user(f"⌨ {what} hotkey unavailable",
+                         f"{chord}: {error}. Pick another in Settings → Automation & System → Global Hotkey.")
+        return {"chord": chord, "ok": False, "error": error}
+
+    def sync_hotkey_from_config(self):
+        """Register or update the global Win32 hotkeys (read / stop, and the optional stop-only one)."""
+        cfg = load_config()
+        read_chord = cfg.get("hotkey", "ctrl+shift+space") if cfg.get("hotkey_enabled", True) else ""
+        stop_chord = (cfg.get("stop_hotkey") or "") if cfg.get("hotkey_enabled", True) else ""
+        if stop_chord and parse_hotkey(stop_chord) == parse_hotkey(read_chord):
+            stop_chord = ""  # the same chord already toggles Speak / Stop
+        hotkeys.write_status(read=self._register_hotkey(self._hotkey_id, read_chord, "Speak / Stop"),
+                             stop=self._register_hotkey(self._stop_hotkey_id, stop_chord, "Stop"))
 
     def hotkey_message_loop(self):
         """Dedicated thread: GetMessage pump for WM_HOTKEY."""
-        self.sync_hotkey_from_config()
         user32 = ctypes.windll.user32
         msg = ctypes.wintypes.MSG()
         last_chord = None
         last_cfg_check = 0.0
         while True:
-            # Reload hotkey if Settings changed the chord (throttled: was reading config 20x/sec)
+            # Reload hotkeys if Settings changed them (throttled: was reading config 20x/sec)
             try:
                 if time.time() - last_cfg_check < 2.0:
                     raise StopIteration
                 last_cfg_check = time.time()
                 cfg = load_config()
-                chord = (cfg.get("hotkey"), cfg.get("hotkey_enabled", True))
+                chord = (cfg.get("hotkey"), cfg.get("stop_hotkey"), cfg.get("hotkey_enabled", True))
                 if chord != last_chord:
                     last_chord = chord
                     self.sync_hotkey_from_config()
@@ -690,7 +708,10 @@ class FluentVoiceTrayApp:
             has_msg = user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, 1)  # PM_REMOVE
             if has_msg:
                 if msg.message == 0x0312:  # WM_HOTKEY
-                    self.on_toggle_speech()
+                    if msg.wParam == self._stop_hotkey_id:
+                        core.stop_all_playback()
+                    else:
+                        self.on_toggle_speech(from_hotkey=True)
                 else:
                     user32.TranslateMessage(ctypes.byref(msg))
                     user32.DispatchMessageW(ctypes.byref(msg))
@@ -700,10 +721,11 @@ class FluentVoiceTrayApp:
     def on_exit(self, icon=None, item=None):
         logger.info("FluentVoice Pro shutting down...")
         core.stop_all_playback()
-        try:
-            ctypes.windll.user32.UnregisterHotKey(None, self._hotkey_id)
-        except Exception:
-            pass
+        for hk_id in list(getattr(self, "_hotkey_registered", {})):
+            try:
+                ctypes.windll.user32.UnregisterHotKey(None, hk_id)
+            except Exception:
+                pass
         if icon:
             try:
                 icon.stop()
@@ -793,15 +815,7 @@ class FluentVoiceTrayApp:
     def run(self):
         img = load_tray_image()
 
-        # Build dynamic offline SAPI menu items
-        offline_items = []
-        try:
-            for label, desc in core.get_installed_sapi_voices():
-                offline_items.append(
-                    item(label, self.set_voice(desc, label), checked=self.is_voice_checked(desc))
-                )
-        except Exception as e:
-            logger.warning(f"Failed to enumerate SAPI voices: {e}")
+        self._refresh_windows_voices()
 
         menu = pystray.Menu(
             item("🔊 FluentVoice (Toggle Speak / Stop)", self.on_toggle_speech, default=True),
@@ -823,7 +837,7 @@ class FluentVoiceTrayApp:
                 for fam, name in voices.LANGUAGES.items() if fam not in ("english", "hebrew")
             ])),
             item("🖥 Offline HD Voices (Piper / Kokoro)", pystray.Menu(lambda: tuple(self._local_hd_items()))),
-            item("💻 Local Windows Voices (Offline)", pystray.Menu(*offline_items)),
+            item("💻 Local Windows Voices (Offline)", pystray.Menu(lambda: tuple(self._windows_voice_items()))),
             pystray.Menu.SEPARATOR,
             item("ℹ️ About && Credits (Nick Otmazgin)...", self.on_open_about),
             item("💖 Donate && Support (PayPal)...", self.on_open_paypal),

@@ -8,6 +8,8 @@ import os
 import shutil
 import tempfile
 
+import pytest
+
 _TEST_HOME = tempfile.mkdtemp(prefix="fluentvoice-tests-")
 os.environ["HOME"] = _TEST_HOME
 os.environ["USERPROFILE"] = _TEST_HOME  # Path.home() on Windows
@@ -22,3 +24,12 @@ def _cleanup():
 
 
 atexit.register(_cleanup)
+
+
+@pytest.fixture(autouse=True)
+def _online_voices_healthy():
+    """Each test starts with the online voices available (a simulated outage pauses them)."""
+    from fluentvoice import core
+    core._online.update(down_until=0.0, strikes=0, reason="", notified=False)
+    yield
+    core._online.update(down_until=0.0, strikes=0, reason="", notified=False)
