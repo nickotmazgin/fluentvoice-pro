@@ -268,6 +268,7 @@ python -m fluentvoice.installer
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
 - **AlternativeTo:** https://alternativeto.net/software/fluentvoice-pro/about/ (reviews and alternatives)
+- **Write-up on DEV:** [Adding offline HD voices to a Windows text-to-speech app (Piper + Kokoro, verified downloads)](https://dev.to/nickotmazgin/adding-offline-hd-voices-to-a-windows-text-to-speech-app-piper-kokoro-verified-downloads-1k9j)
 - **Security:** [`SECURITY.md`](SECURITY.md) · [Report a vulnerability](https://github.com/nickotmazgin/fluentvoice-pro/security/advisories/new)
 - **Privacy:** [`PRIVACY.md`](PRIVACY.md)
 - **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
