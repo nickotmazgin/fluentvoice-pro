@@ -25,9 +25,13 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Demo video
 
-*A 5-minute tour of v1.6.1, now in the Microsoft Store (real app, real voices; turn the sound on): Direct Text Reader, eight Microsoft online voices (US & UK English, Hebrew, Arabic, Spanish, French, Japanese, Hindi), the Voice Providers tab with a live Piper download and Kokoro offline voices, Offline-only privacy mode, Preferred Voices, Automation & System, About & Updates, and the tray's Offline HD Voices menu.*
+*A 5-minute tour of v1.6.1, now in the Microsoft Store ([also on YouTube](https://youtu.be/jpwKR2xFVRA); real app, real voices; turn the sound on): Direct Text Reader, eight Microsoft online voices (US & UK English, Hebrew, Arabic, Spanish, French, Japanese, Hindi), the Voice Providers tab with a live Piper download and Kokoro offline voices, Offline-only privacy mode, Preferred Voices, Automation & System, About & Updates, and the tray's Offline HD Voices menu.*
 
 https://github.com/user-attachments/assets/69232ed1-b2f7-4aae-80f1-908521427841
+
+*What's new in v1.6.3, in 75 seconds ([also on YouTube](https://youtu.be/z2wI4P4XTtk)): the Microsoft online voices working again, Hebrew, Japanese and Chinese each read by their own voice, Dutch read by a Multilingual voice, the new health check (Test providers) and Verify / repair offline voices.*
+
+https://github.com/user-attachments/assets/840cf049-a54b-4769-a290-526df9736945
 
 ---
 
