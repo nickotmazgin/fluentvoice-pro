@@ -11,6 +11,7 @@ import asyncio
 import threading
 import ctypes
 import unicodedata
+import urllib.parse
 import uuid
 import logging
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
@@ -251,6 +252,9 @@ _SCRIPT_BLOCKS = (
 )
 
 
+CJK_CHAR_WEIGHT = 4
+
+
 def detect_script(text: str) -> str:
     """Script family from Unicode ranges: hebrew, arabic, cyrillic, cjk (Japanese), chinese,
     korean, hindi (Devanagari), bengali, gujarati, tamil, telugu, kannada, malayalam, thai,
@@ -282,6 +286,10 @@ def detect_script(text: str) -> str:
         elif (0x0041 <= code <= 0x005A) or (0x0061 <= code <= 0x007A) or (0x00C0 <= code <= 0x024F):
             counts["latin"] += 1
 
+    # One Chinese / Japanese / Korean character carries about as much as four Latin letters, so a
+    # brand name like "FluentVoice Pro" must not outweigh the Chinese sentence around it.
+    for fam in ("han", "kana", "korean"):
+        counts[fam] *= CJK_CHAR_WEIGHT
     # Kanji + kana is Japanese; Han characters without kana are Chinese.
     if counts["kana"]:
         counts["cjk"] = counts.pop("kana") + counts.pop("han")
@@ -318,11 +326,25 @@ def _heuristic_latin_language(text: str) -> str:
         return "english"
     return best
 
+_LANGDETECT_FAMILY = {
+    "en": "english", "es": "spanish", "fr": "french", "de": "german", "it": "italian",
+    "pt": "portuguese", "ru": "cyrillic", "he": "hebrew", "ar": "arabic", "ja": "cjk",
+    "zh-cn": "chinese", "zh-tw": "chinese", "ko": "korean",
+    "hi": "hindi", "mr": "marathi", "bn": "bengali", "ta": "tamil", "te": "telugu",
+    "gu": "gujarati", "kn": "kannada", "ml": "malayalam", "th": "thai",
+}
+
+# A language without its own voices here is only reported (and read by a Multilingual voice)
+# when the detector is this sure; below it the text counts as English, as before.
+MIN_OTHER_LANGUAGE_PROB = 0.80
+
+
 def detect_language(text: str) -> str:
     """Detect language for routing.
     Returns a voices.LANGUAGES key (english, hebrew, arabic, spanish, french, german, italian,
     portuguese, cyrillic = Russian, cjk = Japanese, chinese, korean, hindi, marathi, bengali,
-    tamil, telugu, gujarati, kannada, malayalam, thai, icelandic).
+    tamil, telugu, gujarati, kannada, malayalam, thai, icelandic), or "other:<code>" for a
+    language FluentVoice has no voices for (e.g. "other:nl" for Dutch; see voices.language_name).
     """
     script = detect_script(text)
     if script == "hindi":
@@ -345,29 +367,16 @@ def detect_language(text: str) -> str:
         return "icelandic"
 
     try:
-        from langdetect import detect, DetectorFactory
+        from langdetect import detect_langs, DetectorFactory
         DetectorFactory.seed = 0  # repeatable results for short texts
-        code = detect(sample)
-        mapping = {
-            "en": "english",
-            "es": "spanish",
-            "fr": "french",
-            "de": "german",
-            "it": "italian",
-            "pt": "portuguese",
-            "ru": "cyrillic",
-            "he": "hebrew",
-            "ar": "arabic",
-            "ja": "cjk",
-            "zh-cn": "chinese",
-            "zh-tw": "chinese",
-            "ko": "korean",
-            "hi": "hindi", "mr": "marathi", "bn": "bengali", "ta": "tamil", "te": "telugu",
-            "gu": "gujarati", "kn": "kannada", "ml": "malayalam", "th": "thai",
-        }
-        return mapping.get(code, "english")
+        best = detect_langs(sample)[0]
     except Exception:
         return _heuristic_latin_language(sample)
+    if best.lang in _LANGDETECT_FAMILY:
+        return _LANGDETECT_FAMILY[best.lang]
+    if best.lang in voices.OTHER_LANGUAGE_NAMES and best.prob >= MIN_OTHER_LANGUAGE_PROB:
+        return f"other:{best.lang}"
+    return "english"
 
 def resolve_route_voice(detected_lang: str, cfg: dict):
     """Return (voice_id, label) from preferred_voices for a detected language, or (None, '')."""
@@ -377,6 +386,19 @@ def resolve_route_voice(detected_lang: str, cfg: dict):
     )
     voice = prefs.get(key)
     return voice, (voices.short_name(voice) if voice else "")
+
+
+def _mostly_latin_letters(text: str) -> bool:
+    """detect_script also says "latin" for scripts it doesn't count (Greek, Armenian, …)."""
+    letters = [c for c in text or "" if c.isalpha()]
+    return bool(letters) and 2 * sum(c <= "\u024f" for c in letters) > len(letters)
+
+
+def multilingual_voice(cfg: dict) -> str:
+    """The voice for text in a language without voices of its own: the preferred English
+    voice when it is Multilingual, else the default Multilingual voice."""
+    english = (cfg.get("preferred_voices") or {}).get("english", "")
+    return english if voices.is_multilingual(english) else voices.DEFAULT_VOICE
 
 
 # Latin-script language guesses on a few words are unreliable ("Hola, OK" → Spanish?),
@@ -394,9 +416,15 @@ def choose_voice(detected_lang: str, voice: str, cfg: dict, text: str):
     """
     if voices.can_read(voice, detected_lang):
         return voice, False
-    if (detected_lang in voices.LATIN_FAMILIES and voices.family_of(voice) in voices.LATIN_FAMILIES
+    other = voices.is_other_language(detected_lang)
+    latin_text = detected_lang in voices.LATIN_FAMILIES or (other and _mostly_latin_letters(text))
+    if (latin_text and voices.family_of(voice) in voices.LATIN_FAMILIES
             and len((text or "").split()) < MIN_WORDS_TO_ROUTE_LATIN):
         return voice, False
+    if other:
+        # No voices of its own here: a Multilingual voice reads it far better than a single-language one.
+        route_voice = multilingual_voice(cfg)
+        return (route_voice, True) if route_voice != voice else (voice, False)
     route_voice, _ = resolve_route_voice(detected_lang, cfg)
     if not route_voice or route_voice == voice:
         return voice, False
@@ -875,7 +903,54 @@ async def _synthesize_edge(
     idle_timeout=None,
     abort_check=None,
 ) -> bool:
-    """Stream edge-tts audio into out_file (via a .part temp file). Raises on failure."""
+    """Stream edge-tts audio into out_file (via a .part temp file). Raises on failure.
+    When the classic voice server refuses the connection (HTTP 403), retries once on Microsoft's
+    newer server and keeps using it for the rest of the session."""
+    kwargs = dict(rate=rate, pitch=pitch, volume=volume, idle_timeout=idle_timeout, abort_check=abort_check)
+    server = _edge_url()
+    try:
+        return await _stream_edge(text, voice, out_file, **kwargs)
+    except Exception as e:
+        if getattr(e, "status", None) != 403 or server == _alt_edge_url():
+            raise
+    _use_alt_edge_server()
+    return await _stream_edge(text, voice, out_file, **kwargs)
+
+
+# Microsoft's newer address for the same Edge "Read aloud" voices. Used only after the classic
+# address answers HTTP 403 (as it did for many users in 2026, edge-tts issue #490).
+EDGE_ALT_WSS_URL = "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1?Ocp-Apim-Subscription-Key={token}"
+_edge_server_lock = threading.Lock()
+def _alt_edge_url() -> str:
+    from edge_tts.constants import TRUSTED_CLIENT_TOKEN
+    return EDGE_ALT_WSS_URL.format(token=TRUSTED_CLIENT_TOKEN)
+
+
+def _use_alt_edge_server():
+    """Point edge-tts at the newer server for the rest of this session."""
+    import edge_tts.communicate as comm
+    with _edge_server_lock:
+        if comm.WSS_URL == _alt_edge_url():
+            return
+        comm.WSS_URL = _alt_edge_url()
+    _log.warning("the classic online voice server refused the connection (HTTP 403); using %s",
+                 urllib.parse.urlsplit(comm.WSS_URL).hostname)
+
+
+def _edge_url() -> str:
+    try:
+        import edge_tts.communicate as comm
+        return comm.WSS_URL
+    except Exception:
+        return ""
+
+
+def edge_server_host() -> str:
+    """Host name of the online voice server edge-tts currently connects to."""
+    return urllib.parse.urlsplit(_edge_url()).hostname or ""
+
+
+async def _stream_edge(text, voice, out_file, *, rate, pitch, volume, idle_timeout, abort_check) -> bool:
     import edge_tts
     if idle_timeout is None:
         idle_timeout = SYNTH_IDLE_TIMEOUT_SEC
@@ -1290,7 +1365,7 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
     if plan["routed"]:
         trigger_notification(
             "🌐 Auto-route",
-            f"{voices.LANGUAGES.get(detected_lang, detected_lang.title())} text → {voices.short_name(plan['voice'])} "
+            f"{voices.language_name(detected_lang)} text → {voices.short_name(plan['voice'])} "
             f"(your voice: {voices.short_name(plan['chosen'])})",
         )
     elif auto_route_override is None and not plan["auto_route"]:
@@ -1298,11 +1373,10 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
         voice_lang = _voice_family(plan["voice"])
         script = detect_script(cleaned)
         if script != "latin" and not voices.can_read(plan["voice"], script):
-            names = voices.LANGUAGES
             trigger_notification(
                 "ℹ Voice notice",
-                f"ℹ️ {names.get(detected_lang, detected_lang)} text detected, but the active voice is "
-                f"{names.get(voice_lang, voice_lang)}. Turn on Smart Language Auto-Routing or switch voice.",
+                f"ℹ️ {voices.language_name(detected_lang)} text detected, but the active voice is "
+                f"{voices.language_name(voice_lang)}. Turn on Smart Language Auto-Routing or switch voice.",
                 important=True,
             )
 

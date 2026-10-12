@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The Microsoft online voices work again.** In 2026 Microsoft's classic voice server started refusing connections (HTTP 403) for many users, for every app built on edge-tts ([edge-tts #490](https://github.com/rany2/edge-tts/issues/490)), and FluentVoice fell back to offline voices. When the classic server refuses, FluentVoice now switches by itself to Microsoft's newer server for the same voices (`api.msedgeservices.com`) and keeps using it for the session. All 80 online voices were tested on it.
+- **Chinese, Japanese and Korean text with English names is detected correctly.** A product name like "FluentVoice Pro" in a Chinese sentence made it count as English, because one Chinese character was weighed like one Latin letter; each CJK character now counts like a short word. A test checks that every language's sample sentence is detected as that language.
+- **Languages FluentVoice has no voices of its own for** (Dutch, Polish, Turkish, Swedish, Vietnamese, Finnish, Greek and more) are read by a Multilingual voice instead of the selected single-language voice, and Settings (Lang: …) and notifications show the real language name instead of "English". Short snippets (under 6 words) keep the current voice, and text the detector isn't sure about is still treated as English.
+
+### Added
+- **Settings → About & Developer → Components & sources:**
+  - **Test providers:** a live check of the Microsoft online voices, offline HD voices, Windows voices, tray and hotkeys, audio output and the errors in the tray log from the last 24 hours. Each problem comes with a plain-language diagnosis, what to do, and the alternatives (e.g. no internet vs. a firewall blocking the voice server vs. an outage on Microsoft's side; a hotkey owned by another app; no offline voice for your language).
+  - **Verify / repair offline voices:** checks every downloaded Piper / Kokoro file against its pinned SHA-256 and offers to download damaged ones again, only from the official sources.
+  - **Components:** the version, licence and source of each component FluentVoice is built from, and **Open log folder**.
+
 ## [1.6.2] - 2026-10-10
 
 ### Fixed

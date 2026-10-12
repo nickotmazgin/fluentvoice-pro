@@ -39,6 +39,31 @@ LANGUAGES = {
     "icelandic": "Icelandic",
 }
 
+# Languages the detector (langdetect) knows but FluentVoice has no voices of their own for:
+# core.detect_language reports them as "other:<code>" and a Multilingual voice reads them.
+OTHER_LANGUAGE_NAMES = {
+    "af": "Afrikaans", "bg": "Bulgarian", "ca": "Catalan", "cs": "Czech", "cy": "Welsh",
+    "da": "Danish", "el": "Greek", "et": "Estonian", "fa": "Persian", "fi": "Finnish",
+    "hr": "Croatian", "hu": "Hungarian", "id": "Indonesian", "lt": "Lithuanian", "lv": "Latvian",
+    "mk": "Macedonian", "ne": "Nepali", "nl": "Dutch", "no": "Norwegian", "pa": "Punjabi",
+    "pl": "Polish", "ro": "Romanian", "sk": "Slovak", "sl": "Slovenian", "so": "Somali",
+    "sq": "Albanian", "sv": "Swedish", "sw": "Swahili", "tl": "Tagalog", "tr": "Turkish",
+    "uk": "Ukrainian", "ur": "Urdu", "vi": "Vietnamese",
+}
+
+
+def is_other_language(language: str) -> bool:
+    """True for "other:<code>": a detected language without voices of its own here."""
+    return (language or "").startswith("other:")
+
+
+def language_name(language: str) -> str:
+    """Display name of a detected language: 'Hebrew', 'Dutch' (for "other:nl"), …"""
+    if is_other_language(language):
+        return OTHER_LANGUAGE_NAMES.get(language.split(":", 1)[1], "another language")
+    return LANGUAGES.get(language, "English")
+
+
 # Languages written in Latin script: "Multilingual" voices read these natively,
 # so auto-routing leaves them alone.
 LATIN_FAMILIES = {"english", "spanish", "french", "german", "italian", "portuguese"}
@@ -296,6 +321,8 @@ def is_multilingual(voice: str) -> bool:
 
 def can_read(voice: str, language: str) -> bool:
     """True when this voice reads `language` natively, so auto-routing should keep it."""
+    if is_other_language(language):
+        return is_multilingual(voice)
     fam = family_of(voice)
     if fam == language or SAME_SCRIPT.get(fam) == language:
         return True
