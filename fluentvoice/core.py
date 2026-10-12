@@ -934,7 +934,7 @@ def _use_alt_edge_server():
             return
         comm.WSS_URL = _alt_edge_url()
     _log.warning("the classic online voice server refused the connection (HTTP 403); using %s",
-                 urllib.parse.urlsplit(comm.WSS_URL).hostname)
+                 urllib.parse.urlsplit(EDGE_ALT_WSS_URL).hostname)
 
 
 def _edge_url() -> str:

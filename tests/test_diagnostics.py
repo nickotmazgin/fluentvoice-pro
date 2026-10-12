@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import re
 import shutil
 import time
 from datetime import datetime
@@ -36,7 +37,9 @@ def test_no_internet_is_told_apart_from_a_blocked_server():
     assert "not connected to the internet" in offline.summary
     blocked = d.classify_online_error("ClientConnectorError: Cannot connect to host", internet=True,
                                       host="api.msedgeservices.com")
-    assert "firewall" in blocked.summary and "api.msedgeservices.com" in " ".join(blocked.fixes)
+    assert "firewall" in blocked.summary
+    assert blocked.fixes[0] == ("Allow api.msedgeservices.com in the firewall or proxy, or try another network "
+                                "(or turn the VPN off / on).")
 
 
 def test_certificate_and_no_audio_errors():
@@ -48,7 +51,8 @@ def test_certificate_and_no_audio_errors():
 def test_online_check_reports_the_server_that_answered():
     f = d.check_online({"voice": "en-US-AriaNeural"}, synth=lambda *a, **k: (True, ""),
                        internet=lambda: True, host=lambda: "api.msedgeservices.com")
-    assert f.level == "ok" and "Aria" in f.summary and "api.msedgeservices.com" in f.summary
+    assert f.level == "ok"
+    assert re.fullmatch(r"Working: Aria\b.* answered in \d+\.\d s \(server: api\.msedgeservices\.com\)\.", f.summary)
 
 
 def test_online_check_never_sends_text_in_privacy_mode():
