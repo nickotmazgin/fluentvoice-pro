@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-10-12
+
 ### Fixed
 - **The Microsoft online voices work again.** In 2026 Microsoft's classic voice server started refusing connections (HTTP 403) for many users, for every app built on edge-tts ([edge-tts #490](https://github.com/rany2/edge-tts/issues/490)), and FluentVoice fell back to offline voices. When the classic server refuses, FluentVoice now switches by itself to Microsoft's newer server for the same voices (`api.msedgeservices.com`) and keeps using it for the session. All 80 online voices were tested on it.
 - **Chinese, Japanese and Korean text with English names is detected correctly.** A product name like "FluentVoice Pro" in a Chinese sentence made it count as English, because one Chinese character was weighed like one Latin letter; each CJK character now counts like a short word. A test checks that every language's sample sentence is detected as that language.

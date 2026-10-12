@@ -1,7 +1,7 @@
 """Build the README collage + social images from screenshots/v<version>/.
 
 Usage:  python scripts/build_collage.py            (version read from fluentvoice/__init__.py)
-Writes: screenshots/v<ver>/collage-v<ver>.jpg          3840 wide  README hero (3 across, 01–12)
+Writes: screenshots/v<ver>/collage-v<ver>.jpg          3840 wide  README hero (3 across, the PANELS below)
         screenshots/v<ver>/social-collage-1080.jpg     1080x1080  social posts
         screenshots/v<ver>/social-preview-1280x640.jpg 1280x640   GitHub OG preview (the full collage, 4 across)
         + copies to screenshots/collage.jpg, screenshots/social-preview.jpg, .github/social-preview.{jpg,png}
@@ -28,9 +28,9 @@ PANELS = [  # (file, number, label) in reading order
     ("02-settings-voice.png", "02", "Voice & Speech"),
     ("03-settings-voice-providers.png", "03", "Voice Providers · privacy & rights"),
     ("04-settings-automation.png", "04", "Automation · read-selection & Stop hotkeys"),
-    ("05-settings-about-updates.png", "05", "About · Updates & Factory Reset"),
+    ("05-settings-about-updates.png", "05", "About · Updates & Components"),
     ("06-tray-menu.png", "06", "Tray menu · online, offline HD & privacy"),
-    ("07-tray-icon-closeup.png", "07", "Tray icon · HD + live"),
+    ("13-settings-health-check.png", "13", "Health check · diagnosis & fixes"),
     ("08-settings-automation-preferred.png", "08", "Preferred Voices · one compact row"),
     ("09-tray-offline-voices.png", "09", "Tray · offline HD voices in two clicks"),
     ("10-settings-voice-providers-mid.png", "10", "Voice Providers · Piper voices & licences"),
@@ -180,7 +180,7 @@ def main() -> None:
     q = gradient_bg(S, S)
     accent_bar(q, 8)
     top = header(q, 0.62, 40, 30, compact=True)
-    picks = [PANELS[2], PANELS[0], PANELS[5], PANELS[7]]  # 03 Voice Providers, 01 Reader, 06 tray, 08 Preferred
+    picks = [PANELS[2], PANELS[6], PANELS[5], PANELS[0]]  # 03 Voice Providers, 13 health check, 06 tray, 01 Reader
     m, gap = 36, 24
     pw, ph = (S - 2 * m - gap) // 2, (S - top - m - gap) // 2
     for i, (f, n, label) in enumerate(picks):
