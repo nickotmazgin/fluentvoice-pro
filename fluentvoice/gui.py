@@ -527,7 +527,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         words = len(txt.split()) if txt else 0
         chars = len(txt)
         detected = core.detect_language(txt)
-        lang_str = voices.LANGUAGES.get(detected, "English/Latin")
+        lang_str = voices.language_name(detected)
+        if voices.is_other_language(detected):
+            lang_str += " (Multilingual voice)"
         # Hebrew / Arabic text reads right-aligned (the text box itself has no RTL layout).
         tb = self.reader_textbox
         tb.tag_config("rtl", justify="right")
@@ -653,7 +655,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                 ui["voice_id"] = info.get("voice", "")
                 ui["parts"] = info.get("parts", 1)
                 if info.get("routed_from"):
-                    lang = voices.LANGUAGES.get(info.get("lang", ""), "other-language")
+                    lang = voices.language_name(info.get("lang", ""))
                     ui["routed"] = f" • auto-routed for {lang} text (your voice: {voices.short_name(info['routed_from'])})"
             elif phase == "speaking":
                 ui["voice"] = self._voice_short_label(info.get("voice", "")) or ui["voice"]
@@ -1533,6 +1535,48 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         else:
             self.switch_update_check.pack(anchor="w", padx=12, pady=(0, 10))
 
+        # Components & sources / health check ------------------------------------------
+        comp = ctk.CTkFrame(card, fg_color="#121824", corner_radius=8, border_width=1, border_color="#1F4E79")
+        comp.pack(fill="x", padx=16, pady=(16, 0))
+        ctk.CTkLabel(
+            comp,
+            text="Components & sources  •  Health check",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#E6EDF3",
+        ).pack(anchor="w", padx=12, pady=(10, 2))
+        ctk.CTkLabel(
+            comp,
+            text="Test providers checks the online, offline HD and Windows voices, the hotkeys, audio output and "
+                 "recent errors, and says what to do about anything that's wrong. Verify / repair re-checks the "
+                 "downloaded offline voice files against their pinned fingerprints.",
+            font=ctk.CTkFont(size=11),
+            text_color="#8B949E",
+            wraplength=560,
+            justify="left",
+        ).pack(anchor="w", padx=12, pady=(0, 6))
+        diag_row = ctk.CTkFrame(comp, fg_color="transparent")
+        diag_row.pack(fill="x", padx=12, pady=(0, 6))
+
+        def diag_button(text, command, accent="#30363D"):
+            b = ctk.CTkButton(diag_row, text=text, height=30, fg_color="#1F2E45", hover_color="#2A3B58",
+                              border_width=1, border_color=accent, font=ctk.CTkFont(size=12, weight="bold"),
+                              command=command)
+            b.pack(side="left", padx=(0, 6))
+            return b
+
+        self.btn_test_providers = diag_button("🩺 Test providers", self._on_test_providers, "#00D2FF")
+        self.btn_verify_voices = diag_button("🛡 Verify / repair offline voices", self._on_verify_offline_voices,
+                                             "#3FB950")
+        diag_button("📦 Components", self._show_components)
+        diag_button("📂 Open log folder", lambda: os.startfile(str(config.APP_DIR)))
+        self.diag_box = ctk.CTkTextbox(comp, height=230, wrap="word", font=ctk.CTkFont(size=12),
+                                       fg_color="#0D1117", text_color="#C9D1D9")
+        self.diag_box.pack(fill="x", padx=12, pady=(0, 12))
+        for tag, color in (("ok", "#3FB950"), ("info", "#58A6FF"), ("warn", "#D29922"), ("error", "#F85149"),
+                           ("fix", "#C9D1D9")):
+            self.diag_box.tag_config(tag, foreground=color)
+        self._show_components()
+
         # Advanced / factory reset (Settings only — not in tray)
         adv = ctk.CTkFrame(card, fg_color="#121824", corner_radius=8, border_width=1, border_color="#30363D")
         adv.pack(fill="x", padx=16, pady=(16, 8))
@@ -1962,6 +2006,126 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._persist_cfg()
         self._trigger_autosave_indicator()
         self.test_status_lbl.configure(text="Speed, pitch & volume reset (1.0x, +0Hz, 100%)", text_color="#8B949E")
+
+    # ---- Components & sources / health check ------------------------------------------------
+    def _diag_write(self, lines):
+        """lines: [(text, level)] with level ok / info / warn / error / fix."""
+        box = self.diag_box
+        box.configure(state="normal")
+        box.delete("1.0", "end")
+        for text, level in lines:
+            box.insert("end", text + "\n", level)
+        box.configure(state="disabled")
+
+    def _show_components(self):
+        from fluentvoice import diagnostics
+        self._diag_write([(line, "fix") for line in diagnostics.components_text().splitlines()])
+
+    def _run_diag_job(self, work, on_done):
+        """Run work(progress) in a thread (checks touch the network and hash large files), show its
+        progress messages, then call on_done(result or exception) on the Tk thread."""
+        import queue as _queue
+        q = _queue.Queue()
+        buttons = (self.btn_test_providers, self.btn_verify_voices)
+        for b in buttons:
+            b.configure(state="disabled")
+
+        def runner():
+            try:
+                res = work(lambda msg: q.put(("progress", msg)))
+            except Exception as e:
+                res = e
+            q.put(("done", res))
+
+        threading.Thread(target=runner, name="fv-diagnostics", daemon=True).start()
+
+        def poll():
+            last = None
+            while True:
+                try:
+                    kind, val = q.get_nowait()
+                except _queue.Empty:
+                    break
+                if kind == "done":
+                    for b in buttons:
+                        b.configure(state="normal")
+                    on_done(val)
+                    return
+                last = val
+            if last is not None:
+                self._diag_write([(last, "info")])
+            self.after(150, poll)
+
+        self.after(150, poll)
+
+    def _on_test_providers(self):
+        from fluentvoice import diagnostics
+        self._diag_write([("⏳ Testing… (unless Offline only is on, the online test sends the word \"Test.\" "
+                           "to Microsoft's voice server)", "info")])
+
+        def done(res):
+            if isinstance(res, Exception):
+                self._diag_write([(f"✖ The test itself failed: {type(res).__name__}: {res}", "error")])
+            else:
+                self._diag_write(diagnostics.report_lines(res))
+
+        self._run_diag_job(lambda progress: diagnostics.run_checks(progress=lambda m: progress("⏳ " + m)), done)
+
+    def _on_verify_offline_voices(self):
+        from fluentvoice import diagnostics
+        self._diag_write([("⏳ Verifying the offline voice files…", "info")])
+
+        def work(progress):
+            return diagnostics.verify_offline_voices(
+                lambda d, t: progress(f"⏳ Verifying the offline voice files… {d * 100 // t}%"))
+
+        def done(res):
+            if isinstance(res, Exception):
+                self._diag_write([(f"✖ Verification failed: {type(res).__name__}: {res}", "error")])
+                return
+            if not res:
+                self._diag_write([("ℹ No offline HD voice is downloaded, so there is nothing to verify.", "info"),
+                                  ("     → Download Piper or Kokoro voices in the Voice Providers tab.", "fix")])
+                return
+            bad = [r for r in res if not r["ok"]]
+            lines = [("✔ Every downloaded offline voice file matches its pinned SHA-256." if not bad else
+                      f"✖ {len(bad)} offline voice{'s' if len(bad) != 1 else ''} failed verification "
+                      "(FluentVoice never loads a file that fails).", "error" if bad else "ok"), ("", "fix")]
+            for r in res:
+                lines.append((f"{'✔' if r['ok'] else '✖'} {r['name']}: "
+                              f"{'verified' if r['ok'] else r['problem']}", "ok" if r["ok"] else "error"))
+            self._diag_write(lines)
+            if not bad:
+                return
+            from tkinter import messagebox
+            mb = sum(r["size"] for r in bad) / 1e6
+            if messagebox.askyesno(
+                "Repair offline voices",
+                f"Download the {len(bad)} damaged voice{'s' if len(bad) != 1 else ''} again (about {mb:.0f} MB)?\n\n"
+                "Only from the official source (Hugging Face / GitHub), and every file is checked against "
+                "its pinned SHA-256 again.",
+                parent=self,
+            ):
+                self._repair_offline_voices(bad)
+
+        self._run_diag_job(work, done)
+
+    def _repair_offline_voices(self, bad):
+        from fluentvoice import diagnostics
+
+        def work(progress):
+            return diagnostics.repair_offline_voices(
+                bad, progress=lambda d, t: progress(f"⏳ Downloading again from the official source… "
+                                                    f"{d * 100 // max(t, 1)}%"))
+
+        def done(res):
+            if isinstance(res, Exception):
+                self._diag_write([(f"✖ Repair failed: {type(res).__name__}: {res}", "error")])
+                return
+            self._diag_write([(f"{'✔' if ok else '✖'} {name}: {msg}", "ok" if ok else "error")
+                              for name, ok, msg in res])
+
+        self._run_diag_job(work, done)
 
     def _on_factory_reset(self):
         """Confirm, restore DEFAULT_CONFIG, then reopen Settings so every control reloads."""
