@@ -286,7 +286,7 @@ python -m fluentvoice.installer
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
 - **AlternativeTo:** https://alternativeto.net/software/fluentvoice-pro/about/ (reviews and alternatives)
-- **Write-up on DEV:** [FluentVoice Pro 1.6.1 is now in the Microsoft Store: free, open-source text-to-speech for Windows](https://dev.to/nickotmazgin/fluentvoice-pro-161-is-now-in-the-microsoft-store-free-open-source-text-to-speech-for-windows-5hjm)
+- **Write-up on DEV:** [FluentVoice Pro 1.6.3: the Microsoft online voices work again, plus a health check that says what to fix](https://dev.to/nickotmazgin/fluentvoice-pro-163-the-microsoft-online-voices-work-again-plus-a-health-check-that-says-what-2bfh)
 - **Security:** [`SECURITY.md`](SECURITY.md) · [Report a vulnerability](https://github.com/nickotmazgin/fluentvoice-pro/security/advisories/new)
 - **Privacy:** [`PRIVACY.md`](PRIVACY.md)
 - **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
