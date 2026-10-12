@@ -1250,7 +1250,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ctk.CTkLabel(
             pref,
             text="Tip: a voice reads its own language as-is. Multilingual voices also keep English, "
-                 "Spanish, French, German, Italian and Portuguese. Very short snippets keep your "
+                 "Spanish, French, German, Italian and Portuguese. Languages without voices of their own "
+                 "(Dutch, Polish, Greek…) are read by a Multilingual voice. Very short snippets keep your "
                  "active voice. The Voice & Speech test always uses the voice you selected.",
             font=ctk.CTkFont(size=11),
             text_color="#8B949E",
