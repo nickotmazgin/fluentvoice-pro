@@ -115,6 +115,11 @@ def classify_online_error(error: str, internet: bool, host: str = "") -> Finding
                         "Set time automatically): the connection key depends on the time.",
                         "Check for Updates (Updates section above): a fixed version follows when the service changes.",
                         *_OFFLINE_FIXES])
+    if re.search(r"\b429\b", e) or "too many requests" in low:
+        return Finding(area, "warn",
+                       "Microsoft is limiting requests for a moment (HTTP 429: too many in a short time). "
+                       "Nothing is wrong on this PC.",
+                       ["Wait a minute, then press Test providers again.", *_OFFLINE_FIXES])
     if not internet:
         return Finding(area, "error", "This PC is not connected to the internet, so the online voices can't be reached.",
                        ["Connect to Wi-Fi or a network, then press Test providers again.", *_OFFLINE_FIXES])

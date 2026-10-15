@@ -32,6 +32,22 @@ def test_403_is_explained_as_a_microsoft_side_change_with_fixes():
     assert "clock" in text and "Check for Updates" in text and "Piper" in text
 
 
+@pytest.mark.parametrize("error", [
+    "WSServerHandshakeError: 429, message='Invalid response status'",
+    "429 Too Many Requests: cannot connect right now",  # mentions "connect", still a rate limit
+    "too many requests",
+])
+def test_429_is_explained_as_a_short_rate_limit(error):
+    f = d.classify_online_error(error, internet=True)
+    assert f.level == "warn" and "HTTP 429" in f.summary and "firewall" not in f.summary
+    assert f.fixes[0] == "Wait a minute, then press Test providers again." and "Piper" in " ".join(f.fixes)
+
+
+def test_429_inside_a_longer_number_is_not_a_rate_limit():
+    f = d.classify_online_error("Cannot connect to host 10.4291.0.1", internet=True)
+    assert "HTTP 429" not in f.summary and "firewall" in f.summary
+
+
 def test_no_internet_is_told_apart_from_a_blocked_server():
     offline = d.classify_online_error("ClientConnectorError: Cannot connect to host", internet=False)
     assert "not connected to the internet" in offline.summary

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-10-15
+
+### Fixed
+- **Online voices back on Microsoft's original server (edge-tts 7.3.1).** edge-tts 7.3.0 fixed the 2026 "403" outage on Microsoft's classic voice server ([edge-tts #490](https://github.com/rany2/edge-tts/issues/490), closed), so FluentVoice now requires edge-tts 7.3.1 or newer and reads from the classic server again. The 1.6.3 switch to Microsoft's newer server stays as a safety net: it only kicks in if the classic server refuses again.
+
+### Changed
+- **Clear message when Microsoft limits requests (HTTP 429).** If Microsoft briefly limits requests after many readings in a few seconds, Test providers now says so in plain language ("Nothing is wrong on this PC; wait a minute, then test again") and lists the offline alternatives, instead of a generic "The online voices failed" error.
+
 ## [1.6.3] - 2026-10-12
 
 ### Fixed
