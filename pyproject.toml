@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluentvoice-pro"
-version = "1.6.3"
+version = "1.6.4"
 authors = [
   { name="Nick Otmazgin", email="nickotmazgin.dev@gmail.com" },
 ]
@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Adaptive Technologies",
 ]
 dependencies = [
-    "edge-tts>=7.0.0",
+    "edge-tts>=7.3.1",
     "pystray>=0.19.5",
     "Pillow>=10.0.0",
     "pywin32>=306",
