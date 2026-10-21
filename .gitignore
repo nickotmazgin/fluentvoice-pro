@@ -60,7 +60,6 @@ temp/
 *.swp
 *.swo
 *~
-.cursor/
 
 # Packaging / capture noise
 *.spec
