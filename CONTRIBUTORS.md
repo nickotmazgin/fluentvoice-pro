@@ -19,17 +19,6 @@ FluentVoice Pro is an open-source project created and maintained by **Nick Otmaz
         <sub>💻 🎨 📦 🚀 📖</sub>
       </td>
       <td align="center" valign="top" width="25%">
-        <a href="https://github.com/cursoragent">
-          <img src="https://avatars.githubusercontent.com/u/199161495?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Cursor Agent"/>
-          <br />
-          <sub><b>Cursor Agent</b></sub>
-        </a>
-        <br />
-        <sub>AI Pair-Programming Co-Pilot</sub>
-        <br />
-        <sub>💻 ⚙️ 🎧 📝</sub>
-      </td>
-      <td align="center" valign="top" width="25%">
         <a href="https://github.com/google-antigravity">
           <img src="https://avatars.githubusercontent.com/u/242056456?v=4" width="80px" height="80px" style="border-radius: 50%;" alt="Google Antigravity"/>
           <br />
@@ -64,7 +53,7 @@ FluentVoice Pro is an open-source project created and maintained by **Nick Otmaz
 
 In keeping with transparent open-source engineering standards, recent components were authored with direction and review using AI pair-programming agents:
 
-- **Cursor Agent** ([@cursoragent](https://github.com/cursoragent) • [Anysphere](https://cursor.com)) — Concurrency locking model, single-stream device playback architecture, cross-thread debounce, and documentation.
+- **Cursor Agent** (Anysphere) — Concurrency locking model, single-stream device playback architecture, cross-thread debounce, and documentation.
 - **Google Antigravity** ([@google-antigravity](https://github.com/google-antigravity)) — Local autonomous execution, integration testing, social media synchronization, and model cascade verification.
 - **Claude** ([@claude](https://github.com/claude) • [Anthropic](https://www.anthropic.com) • via [Claude Code](https://claude.com/claude-code)) — Streaming Direct Text Reader + live status, cross-process Stop and update checker (v1.4.17); right-to-left Hebrew / Arabic, more languages and voices, notifications and never reading clipboard secrets (v1.4.18–v1.4.28); offline HD voices (Piper & Kokoro), the Voice Providers tab and Offline-only mode (v1.5); the Microsoft Store (MSIX) package (v1.6.0–v1.6.1); the edge-tts 7.3.1 update and the HTTP 429 message (v1.6.4); release pipeline hardening and SHA-pinned CI actions; screenshots, collages and demo videos.
 
