@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-10-30
+
 ### Fixed
 - **Kokoro voices download again** ([#78](https://github.com/nickotmazgin/fluentvoice-pro/issues/78)). On 26 October 2026 sherpa-onnx re-uploaded the Kokoro pack (rebuilt with [sherpa-onnx #4087](https://github.com/k2-fsa/sherpa-onnx/pull/4087)), so its size and SHA-256 changed and FluentVoice refused it ("unexpected size 349886476"). All 377 files inside are byte-for-byte the same as before, including the model, voices and tokens, so FluentVoice now pins the new archive. Kokoro packs you already downloaded keep working.
 
