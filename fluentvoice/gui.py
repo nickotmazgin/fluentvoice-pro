@@ -63,6 +63,8 @@ GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
 VOICE_LICENSES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/docs/VOICE_LICENSES.md"
 THIRD_PARTY_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/THIRD_PARTY_NOTICES.md"
 
+ACTION_BUTTON_WIDTH = 220  # Read Aloud / Speak Test Text: fixed, so they don't stretch with the window
+
 # Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
 BASE_VOICE_MAP = {label: vid for vid, label, _ in voices.CATALOG}
 
@@ -458,6 +460,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         btn_clear.pack(side="left", padx=(0, 8))
 
+        # Read Aloud and Stop sit together on the right at a fixed width: a button that fills the
+        # row stretched to ~1,400 px when the window was maximized.
         self.btn_reader_speak = ctk.CTkButton(
             btn_bar,
             text="▶  Read Aloud",
@@ -465,9 +469,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#33DCFF",
             text_color="#080C14",
             font=ctk.CTkFont(weight="bold"),
+            width=ACTION_BUTTON_WIDTH,
             command=self._on_reader_speak
         )
-        self.btn_reader_speak.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
         self.btn_reader_stop = ctk.CTkButton(
             btn_bar,
@@ -481,6 +485,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_reader_stop
         )
         self.btn_reader_stop.pack(side="right")
+        self.btn_reader_speak.pack(side="right", padx=(0, 8))
 
         # Live status
         self.reader_status_lbl = ctk.CTkLabel(
@@ -989,9 +994,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#33DCFF",
             text_color="#080C14",
             font=ctk.CTkFont(size=13, weight="bold"),
+            width=ACTION_BUTTON_WIDTH,
             command=self._on_test_speak
         )
-        self.btn_speak.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.btn_speak.pack(side="left", padx=(0, 8))
 
         self.btn_stop = ctk.CTkButton(
             btn_row,
@@ -999,9 +1005,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             fg_color="#21262D",
             hover_color="#30363D",
             font=ctk.CTkFont(size=13),
+            width=140,
             command=self._on_test_stop
         )
-        self.btn_stop.pack(side="right", fill="x", expand=True, padx=(6, 0))
+        self.btn_stop.pack(side="left")
 
         self.test_status_lbl = ctk.CTkLabel(
             test_card,
@@ -1510,7 +1517,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=12, weight="bold"),
             command=lambda: self._check_updates_async(force=True),
         )
-        self.btn_check_updates.pack(side="right")
+        self.btn_check_updates.pack(side="left", padx=(16, 0))  # next to its title, not at the far edge
         self.update_status_lbl = ctk.CTkLabel(
             upd,
             text="Official releases are GitHub Artifact Attested and SHA-256 verified before install.",

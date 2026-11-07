@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Buttons keep their size when the Settings window is maximized.** Read Aloud and Speak Test Text no longer stretch across the whole window (up to ~1,400 px): Read Aloud now sits next to Stop at a fixed width, Speak Test Text and Stop Speech sit side by side, and Check for Updates sits next to its "Updates" title instead of at the far edge. At the normal window size the layout looks almost the same.
+
 ## [1.6.6] - 2026-11-07
 
 ### Fixed
