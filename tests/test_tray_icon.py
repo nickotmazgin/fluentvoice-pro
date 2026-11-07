@@ -73,6 +73,49 @@ def test_tray_becomes_dpi_aware_before_anything_else(monkeypatch):
     assert calls == ["dpi", "identity", "app", "run"]
 
 
+def _icon(on_close=None):
+    return tray.CrispTrayIcon("t", tray.load_tray_image(16), "t", on_close=on_close)
+
+
+def test_windows_may_end_the_session():
+    """v1.6.6: pystray answered WM_QUERYENDSESSION with 0 ("don't end the session"), so
+    sign-out, shutdown and Store updates had to kill the tray (Store Health: HANG_QUIESCE)."""
+    icon = _icon()
+    assert icon._message_handlers[tray.WM_QUERYENDSESSION](0, 0) == 1
+    assert icon._message_handlers[tray.WM_QUERYENDSESSION](0, 1) == 1  # ENDSESSION_CLOSEAPP (app update)
+
+
+def test_tray_closes_when_the_session_ends_or_the_window_is_closed():
+    closed = []
+    icon = _icon(on_close=lambda: closed.append(True))
+    icon._message_handlers[tray.WM_ENDSESSION](0, 0)  # shutdown cancelled: keep running
+    assert closed == []
+    icon._message_handlers[tray.WM_ENDSESSION](1, 0)
+    icon._message_handlers[tray.WM_CLOSE](0, 0)
+    assert closed == [True, True]
+
+
+def test_query_end_session_reaches_a_real_tray_window():
+    """The handlers must answer through pystray's real window procedure, not only in the dict."""
+    win32gui = pytest.importorskip("win32gui")
+    import threading
+    import time
+    closed = threading.Event()
+    icon = _icon(on_close=lambda: (closed.set(), icon.stop()))
+    t = threading.Thread(target=icon.run, daemon=True)
+    t.start()
+    for _ in range(100):
+        if icon._hwnd:
+            break
+        time.sleep(0.05)
+    assert icon._hwnd
+    assert win32gui.SendMessage(icon._hwnd, tray.WM_QUERYENDSESSION, 0, 0) == 1
+    win32gui.SendMessage(icon._hwnd, tray.WM_ENDSESSION, 1, 0)
+    assert closed.wait(5)
+    t.join(5)
+    assert not t.is_alive()
+
+
 def test_tray_start_waits_long_enough_and_returns_early(monkeypatch):
     """v1.5.2: a tray that needed ~5 s to start (e.g. after an Explorer restart) was reported as failed."""
     from fluentvoice import lifecycle

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **FluentVoice no longer blocks sign-out, shutdown and Store updates.** The tray answered Windows' "may I close you?" question (`WM_QUERYENDSESSION`) with "no", so Windows had to wait and then force it closed. The Microsoft Store counted this as the app hanging (`HANG_QUIESCE`, about 13% of sessions). FluentVoice now says yes, stops speaking and exits cleanly within a fraction of a second when Windows ends the session, closes the app for an update, or asks its window to close.
+
 ## [1.6.5] - 2026-10-30
 
 ### Fixed
