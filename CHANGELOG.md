@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Buttons keep their size when the Settings window is maximized.** Read Aloud and Speak Test Text no longer stretch across the whole window (up to ~1,400 px): Read Aloud now sits next to Stop at a fixed width, Speak Test Text and Stop Speech sit side by side, and Check for Updates sits next to its "Updates" title instead of at the far edge. At the normal window size the layout looks almost the same.
+- **The Settings window no longer stretches when maximized.** On a wide screen, the header, all five tabs and the footer now stay at a comfortable width (about 1,100 points), centred, instead of spreading the voice picker, sliders, voice rows, Download buttons and settings from one screen edge to the other. Read Aloud and Speak Test Text keep a fixed width (Read Aloud sits next to Stop; Speak Test Text next to Stop Speech), and Check for Updates sits next to its "Updates" title, as plain text without the symbol that was drawn small and out of line. At the normal window size the layout is unchanged.
 
 ## [1.6.6] - 2026-11-07
 
