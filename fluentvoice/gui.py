@@ -66,6 +66,7 @@ THIRD_PARTY_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/THI
 ACTION_BUTTON_WIDTH = 220  # Read Aloud / Speak Test Text: fixed, so they don't stretch with the window
 CONTENT_MAX_WIDTH = 1100  # beyond this (maximized window) the content stays centred instead of stretching
 CONTENT_SIDE_PAD = 16
+SLIDER_WIDTH = 560  # title, value and bar of each slider stay together instead of spanning the card
 
 # Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
 BASE_VOICE_MAP = {label: vid for vid, label, _ in voices.CATALOG}
@@ -371,6 +372,13 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                       getattr(self, "_footer_frame", None)):
             if frame is not None:
                 frame.pack_configure(padx=round(pad * scale))  # pack_configure takes real pixels
+
+    def _slider_title_row(self, parent, padx, pady):
+        """The title (left) and value (right) row above a slider, exactly as wide as the slider."""
+        row = ctk.CTkFrame(parent, fg_color="transparent", width=SLIDER_WIDTH, height=28)
+        row.pack(anchor="w", padx=padx, pady=pady)
+        row.pack_propagate(False)
+        return row
 
     def _populate_reader_tab(self):
         tab = self.tab_reader
@@ -863,8 +871,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(anchor="w", padx=14, pady=(10, 2))
 
         # Rate slider
-        rate_box = ctk.CTkFrame(mod_card, fg_color="transparent")
-        rate_box.pack(fill="x", padx=14, pady=(8, 2))
+        rate_box = self._slider_title_row(mod_card, padx=14, pady=(8, 2))
 
         ctk.CTkLabel(
             rate_box,
@@ -890,14 +897,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_rate_slider,
             progress_color="#00D2FF",
             button_color="#00D2FF",
-            button_hover_color="#33DCFF"
+            button_hover_color="#33DCFF",
+            width=SLIDER_WIDTH
         )
         self.rate_slider.set(curr_rate)
-        self.rate_slider.pack(fill="x", padx=14, pady=(2, 8))
+        self.rate_slider.pack(anchor="w", padx=14, pady=(2, 8))
 
         # Pitch slider
-        pitch_box = ctk.CTkFrame(mod_card, fg_color="transparent")
-        pitch_box.pack(fill="x", padx=14, pady=(4, 2))
+        pitch_box = self._slider_title_row(mod_card, padx=14, pady=(4, 2))
 
         ctk.CTkLabel(
             pitch_box,
@@ -924,14 +931,14 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_pitch_slider,
             progress_color="#00D2FF",
             button_color="#00D2FF",
-            button_hover_color="#33DCFF"
+            button_hover_color="#33DCFF",
+            width=SLIDER_WIDTH
         )
         self.pitch_slider.set(curr_pitch)
-        self.pitch_slider.pack(fill="x", padx=14, pady=(2, 6))
+        self.pitch_slider.pack(anchor="w", padx=14, pady=(2, 6))
 
         # Volume slider
-        vol_box = ctk.CTkFrame(mod_card, fg_color="transparent")
-        vol_box.pack(fill="x", padx=14, pady=(4, 2))
+        vol_box = self._slider_title_row(mod_card, padx=14, pady=(4, 2))
 
         ctk.CTkLabel(
             vol_box,
@@ -957,10 +964,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_volume_slider,
             progress_color="#00D2FF",
             button_color="#00D2FF",
-            button_hover_color="#33DCFF"
+            button_hover_color="#33DCFF",
+            width=SLIDER_WIDTH
         )
         self.vol_slider.set(curr_vol)
-        self.vol_slider.pack(fill="x", padx=14, pady=(2, 6))
+        self.vol_slider.pack(anchor="w", padx=14, pady=(2, 6))
 
         # Reset button
         btn_reset = ctk.CTkButton(
@@ -1097,8 +1105,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             self.switch_autoread.select()
         self.switch_autoread.pack(anchor="w", padx=16, pady=(4, 6))
 
-        buffer_frame = ctk.CTkFrame(clip, fg_color="transparent")
-        buffer_frame.pack(fill="x", padx=16, pady=(0, 2))
+        buffer_frame = self._slider_title_row(clip, padx=16, pady=(0, 2))
         ctk.CTkLabel(
             buffer_frame,
             text="Stability buffer (pause after copy):",
@@ -1121,10 +1128,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_buffer_slider,
             progress_color="#00D2FF",
             button_color="#00D2FF",
-            button_hover_color="#33DCFF"
+            button_hover_color="#33DCFF",
+            width=SLIDER_WIDTH
         )
         self.buf_slider.set(curr_buf)
-        self.buf_slider.pack(fill="x", padx=16, pady=(0, 12))
+        self.buf_slider.pack(anchor="w", padx=16, pady=(0, 12))
 
         # --- Language & cleaning ---
         lang = self._section_card(scroll, "Language & Text Cleaning")
