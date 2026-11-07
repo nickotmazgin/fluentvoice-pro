@@ -117,11 +117,41 @@ def load_tray_image(size: int | None = None):
             (size, size), Image.LANCZOS)
 
 
+WM_CLOSE = 0x0010
+WM_QUERYENDSESSION = 0x0011
+WM_ENDSESSION = 0x0016
+
+
 class CrispTrayIcon(pystray.Icon):
-    """pystray icon that keeps the image at its own size.
+    """pystray icon that keeps the image at its own size, and closes when Windows asks.
 
     pystray saves the image as an .ico with Pillow's default size list and loads it at the
-    *large* icon size (32 px), so Windows scales it twice. Load it at its exact size."""
+    *large* icon size (32 px), so Windows scales it twice. Load it at its exact size.
+
+    pystray answers every window message it doesn't handle with 0. For WM_QUERYENDSESSION that
+    means "don't end the session", so sign-out, shutdown and Store updates had to kill the tray
+    (the Store reported it as HANG_QUIESCE). `on_close` is called when Windows ends the session
+    or closes the window."""
+
+    def __init__(self, *args, on_close=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._on_close = on_close
+        handlers = getattr(self, "_message_handlers", None)
+        if handlers is not None:  # Windows backend only
+            handlers[WM_QUERYENDSESSION] = lambda wparam, lparam: 1  # yes, Windows may close us
+            handlers[WM_ENDSESSION] = self._on_end_session
+            handlers[WM_CLOSE] = lambda wparam, lparam: self._close("WM_CLOSE")
+
+    def _on_end_session(self, wparam, lparam):
+        if wparam:  # FALSE means the shutdown was cancelled: keep running
+            self._close("WM_ENDSESSION")
+        return 0
+
+    def _close(self, why):
+        logger.info("Windows asked FluentVoice to close (%s)", why)
+        if self._on_close:
+            self._on_close()
+        return 0
 
     def _assert_icon_handle(self):
         if self._icon_handle or not sys.platform.startswith("win"):
@@ -821,7 +851,8 @@ class FluentVoiceTrayApp:
     def run(self):
         img = load_tray_image()
         self._refresh_windows_voices()
-        self.tray_icon = CrispTrayIcon("FluentVoice_Pro", img, TRAY_TOOLTIP, self.build_menu())
+        self.tray_icon = CrispTrayIcon("FluentVoice_Pro", img, TRAY_TOOLTIP, self.build_menu(),
+                                       on_close=lambda: self.on_exit(self.tray_icon))
         logger.info("Running pystray tray_icon event loop...")
         self.tray_icon.run(setup=self._on_icon_ready)
 
