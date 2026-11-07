@@ -63,6 +63,10 @@ GITHUB_PROFILE_URL = "https://github.com/nickotmazgin"
 VOICE_LICENSES_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/docs/VOICE_LICENSES.md"
 THIRD_PARTY_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/THIRD_PARTY_NOTICES.md"
 
+ACTION_BUTTON_WIDTH = 220  # Read Aloud / Speak Test Text: fixed, so they don't stretch with the window
+CONTENT_MAX_WIDTH = 1100  # beyond this (maximized window) the content stays centred instead of stretching
+CONTENT_SIDE_PAD = 16
+
 # Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
 BASE_VOICE_MAP = {label: vid for vid, label, _ in voices.CATALOG}
 
@@ -190,6 +194,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _build_header(self):
         header_frame = ctk.CTkFrame(self, fg_color="#101622", corner_radius=12, border_width=1, border_color="#00D2FF")
         header_frame.pack(fill="x", padx=16, pady=(14, 6))
+        self._header_frame = header_frame
 
         title_lbl = ctk.CTkLabel(
             header_frame,
@@ -347,10 +352,25 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if event is not None and event.widget is not self:
             return
         try:
+            self._fit_content_width()
             self.update_idletasks()
             self._refresh_scroll_regions()
         except Exception:
             pass
+
+    def _fit_content_width(self):
+        """Keep the header, tabs and footer at most CONTENT_MAX_WIDTH wide, centred, so a maximized
+        window doesn't stretch sliders, pickers, rows and buttons from one screen edge to the other."""
+        scale = ctk.ScalingTracker.get_widget_scaling(self)
+        width = self.winfo_width() / scale
+        pad = max(CONTENT_SIDE_PAD, int((width - CONTENT_MAX_WIDTH) / 2))
+        if pad == getattr(self, "_content_pad", None):
+            return
+        self._content_pad = pad
+        for frame in (getattr(self, "_header_frame", None), getattr(self, "tabview", None),
+                      getattr(self, "_footer_frame", None)):
+            if frame is not None:
+                frame.pack_configure(padx=round(pad * scale))  # pack_configure takes real pixels
 
     def _populate_reader_tab(self):
         tab = self.tab_reader
@@ -458,6 +478,8 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         )
         btn_clear.pack(side="left", padx=(0, 8))
 
+        # Read Aloud and Stop sit together on the right at a fixed width: a button that fills the
+        # row stretched to ~1,400 px when the window was maximized.
         self.btn_reader_speak = ctk.CTkButton(
             btn_bar,
             text="▶  Read Aloud",
@@ -465,9 +487,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#33DCFF",
             text_color="#080C14",
             font=ctk.CTkFont(weight="bold"),
+            width=ACTION_BUTTON_WIDTH,
             command=self._on_reader_speak
         )
-        self.btn_reader_speak.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
         self.btn_reader_stop = ctk.CTkButton(
             btn_bar,
@@ -481,6 +503,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             command=self._on_reader_stop
         )
         self.btn_reader_stop.pack(side="right")
+        self.btn_reader_speak.pack(side="right", padx=(0, 8))
 
         # Live status
         self.reader_status_lbl = ctk.CTkLabel(
@@ -989,9 +1012,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             hover_color="#33DCFF",
             text_color="#080C14",
             font=ctk.CTkFont(size=13, weight="bold"),
+            width=ACTION_BUTTON_WIDTH,
             command=self._on_test_speak
         )
-        self.btn_speak.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.btn_speak.pack(side="left", padx=(0, 8))
 
         self.btn_stop = ctk.CTkButton(
             btn_row,
@@ -999,9 +1023,10 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             fg_color="#21262D",
             hover_color="#30363D",
             font=ctk.CTkFont(size=13),
+            width=140,
             command=self._on_test_stop
         )
-        self.btn_stop.pack(side="right", fill="x", expand=True, padx=(6, 0))
+        self.btn_stop.pack(side="left")
 
         self.test_status_lbl = ctk.CTkLabel(
             test_card,
@@ -1350,7 +1375,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         upd_row.pack(fill="x", padx=16, pady=(0, 4))
         ctk.CTkButton(
             upd_row,
-            text="🔄 Check for Updates",
+            text="Check for Updates",
             width=170,
             height=30,
             fg_color="#1F2E45",
@@ -1499,7 +1524,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         ).pack(side="left")
         self.btn_check_updates = ctk.CTkButton(
             upd_top,
-            text="🔄 Check for Updates",
+            text="Check for Updates",
             width=170,
             height=30,
             fg_color="#1F2E45",
@@ -1510,7 +1535,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             font=ctk.CTkFont(size=12, weight="bold"),
             command=lambda: self._check_updates_async(force=True),
         )
-        self.btn_check_updates.pack(side="right")
+        self.btn_check_updates.pack(side="left", padx=(16, 0))  # next to its title, not at the far edge
         self.update_status_lbl = ctk.CTkLabel(
             upd,
             text="Official releases are GitHub Artifact Attested and SHA-256 verified before install.",
@@ -1620,6 +1645,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
     def _build_footer(self):
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(fill="x", padx=16, pady=(4, 14))
+        self._footer_frame = footer
 
         # Row 1: action buttons alone on the right
         actions = ctk.CTkFrame(footer, fg_color="transparent")
