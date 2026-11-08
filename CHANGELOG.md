@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Optional: see Auto-Read's text in the Direct Text Reader.** A new switch under Auto-Read on Copy (off by default) shows the copied text in the Reader while the Settings window is open. It only replaces an empty box, the starter text or its own earlier text, so it never overwrites what you typed; private and password-like copies never appear, and the text is not written to disk.
+- **Free-space check before downloading an offline voice.** If the drive is too full, FluentVoice says how much is needed and how much is free, and downloads nothing.
+
 ### Changed
+- **Online voices are protected from request bursts.** All online requests now share one limit (10 every 10 seconds), so copying many texts in a row with Auto-Read on can't trigger Microsoft's "too many requests" (HTTP 429) answer. Normal reading never reaches it; offline voices don't need it.
+- **Auto-Read on Copy reads at most 10,000 characters** (about 9 minutes), so an accidental Ctrl+A, Ctrl+C on a long document doesn't start a very long reading. The Reader, tray and hotkey keep the 100,000-character limit.
+- **Very large text is handled quickly.** Text far beyond the limit is dropped before cleaning, and the Reader's language label looks at the start of the text, so a 5 MB paste no longer freezes the window for seconds (2.1 s → 0.07 s). The Reader says when it will read only the first 100,000 characters.
 - **The Settings window no longer stretches when maximized.** On a wide screen, the header, all five tabs and the footer now stay at a comfortable width (about 1,100 points), centred, instead of spreading the voice picker, sliders, voice rows, Download buttons and settings from one screen edge to the other. Read Aloud and Speak Test Text keep a fixed width (Read Aloud sits next to Stop; Speak Test Text next to Stop Speech), and Check for Updates sits next to its "Updates" title, as plain text without the symbol that was drawn small and out of line. The Speed, Pitch, Volume and Stability buffer sliders keep a fixed width (about 560 points) with their title and value right above the ends, instead of running across the whole card. At the normal window size the layout is unchanged.
 
 ## [1.6.6] - 2026-11-07

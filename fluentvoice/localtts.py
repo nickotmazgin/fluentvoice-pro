@@ -38,6 +38,8 @@ KOKORO_DIR = VOICES_DIR / "kokoro"
 ALLOWED_HOSTS = ("huggingface.co", ".hf.co", "github.com", ".githubusercontent.com")
 DOWNLOAD_TIMEOUT_SEC = 30
 IDLE_UNLOAD_SEC = 300  # free the models' memory after 5 minutes without speech
+KOKORO_UNPACKED_BYTES = 380_000_000  # the pack is kept next to its unpacked copy until it is verified
+DISK_MARGIN_BYTES = 50_000_000
 
 PROVIDER_NAMES = {"piper": "Piper", "kokoro": "Kokoro"}
 
@@ -220,6 +222,21 @@ def _download(url: str, sha256: str, size: int, dst: Path, progress=None, cancel
             pass
 
 
+def disk_space_needed(voice: str) -> int:
+    """Free bytes needed to download and install `voice`."""
+    extra = KOKORO_UNPACKED_BYTES if _BY_ID[voice]["provider"] == "kokoro" else 0
+    return download_size(voice) + extra + DISK_MARGIN_BYTES
+
+
+def _check_disk_space(voice: str):
+    needed = disk_space_needed(voice)
+    VOICES_DIR.mkdir(parents=True, exist_ok=True)
+    free = shutil.disk_usage(VOICES_DIR).free
+    if free < needed:
+        raise DownloadError(f"Not enough disk space: this voice needs about {needed // 1_000_000:,} MB free, "
+                            f"and the drive has {free // 1_000_000:,} MB. Nothing was downloaded.")
+
+
 def _safe_extract(archive: Path, dest: Path, top: str, cancel=None):
     """Unpack a .tar.bz2 into dest/top, refusing anything that is not a plain file or folder
     inside `top` (path traversal, absolute paths, links, devices)."""
@@ -256,6 +273,7 @@ def install(voice: str, progress=None, cancel=None):
         raise DownloadError(f"unknown voice {voice}")
     if is_installed(voice):
         return
+    _check_disk_space(voice)
     if v["provider"] == "piper":
         files = _piper_files(v["model"])
         total = sum(size for _, _, size, _ in files)

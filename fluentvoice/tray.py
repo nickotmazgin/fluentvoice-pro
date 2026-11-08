@@ -668,9 +668,7 @@ class FluentVoiceTrayApp:
         - While that same text is still being read, copying it again does not restart it.
         - Duplicate clipboard updates within AUTOREAD_DUPLICATE_SEC are ignored.
         """
-        if len((text or "").strip()) < 2 or not any(ch.isalnum() for ch in text):
-            return False
-        if core.looks_like_secret(text) or core.clipboard_is_private():
+        if not core.autoread_text_ok(text):
             return False
         h = hash(text)
         if h == self.last_clipboard_hash:
@@ -683,7 +681,8 @@ class FluentVoiceTrayApp:
     def autoread_start(self, text: str):
         self.last_clipboard_hash = hash(text)
         self._last_autoread_ts = time.time()
-        threading.Thread(target=core.speak_text, args=(text,), daemon=True, name="fv-autoread").start()
+        threading.Thread(target=core.speak_text, args=(text,), kwargs={"max_chars": core.AUTOREAD_MAX_CHARS},
+                         daemon=True, name="fv-autoread").start()
 
     def _register_hotkey(self, hk_id: int, chord: str, what: str) -> dict:
         """Register one hotkey; returns its status for Settings and warns when it can't be used."""
