@@ -17,7 +17,7 @@
 
 Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global single-stream playback locking (zero voice collisions), multi-engine neural voice synthesis, and automatic zero-latency offline fallback.
 
-> **Latest: v1.6.6** — FluentVoice **no longer blocks sign-out, shutdown and Store updates**: it now closes cleanly as soon as Windows asks. v1.6.5: **Kokoro voices download again** after the upstream pack was re-uploaded with identical files ([#78](https://github.com/nickotmazgin/fluentvoice-pro/issues/78)). v1.6.4: online voices are **back on Microsoft's original server** (edge-tts 7.3.1 fixed the 2026 "403" outage), with the v1.6.3 switch to Microsoft's newer server kept as a safety net, and a plain-language message when Microsoft briefly limits requests (HTTP 429). v1.6.3 brought the online voices back during the outage. A new **health check** (About & Developer → Components & sources) tests every voice provider, the hotkeys and audio, and says what to do about anything wrong; **Verify / repair** re-checks downloaded offline voices against their SHA-256. Chinese / Japanese / Korean text with English names is detected correctly, and languages without voices of their own (Dutch, Polish, Greek…) are read by a Multilingual voice and shown by name. v1.6.2 added the read-selection hotkey, an optional Stop hotkey and voice fallback that returns to online. FluentVoice Pro is in the **[Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** (free; updates and Start with Windows are handled by the Store and Windows). Still included since v1.5: **offline HD voices** (Piper & Kokoro, 57 voices in 16 languages, SHA-256 verified), the **Voice Providers** tab, **Offline only** privacy mode. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
+> **Latest: v1.6.7** — safety limits for very long or rapid text: Auto-Read on Copy reads at most 10,000 characters, online requests are protected from bursts, huge pastes no longer freeze the window, and offline downloads check free disk space first. New option: **see Auto-Read's text in the Direct Text Reader**. The Settings window stays tidy when maximized. v1.6.6: FluentVoice **no longer blocks sign-out, shutdown and Store updates**: it now closes cleanly as soon as Windows asks. v1.6.5: **Kokoro voices download again** after the upstream pack was re-uploaded with identical files ([#78](https://github.com/nickotmazgin/fluentvoice-pro/issues/78)). v1.6.4: online voices are **back on Microsoft's original server** (edge-tts 7.3.1 fixed the 2026 "403" outage), with the v1.6.3 switch to Microsoft's newer server kept as a safety net, and a plain-language message when Microsoft briefly limits requests (HTTP 429). v1.6.3 brought the online voices back during the outage. A new **health check** (About & Developer → Components & sources) tests every voice provider, the hotkeys and audio, and says what to do about anything wrong; **Verify / repair** re-checks downloaded offline voices against their SHA-256. Chinese / Japanese / Korean text with English names is detected correctly, and languages without voices of their own (Dutch, Polish, Greek…) are read by a Multilingual voice and shown by name. v1.6.2 added the read-selection hotkey, an optional Stop hotkey and voice fallback that returns to online. FluentVoice Pro is in the **[Microsoft Store](https://apps.microsoft.com/detail/9N293MJ0MD9F)** (free; updates and Start with Windows are handled by the Store and Windows). Still included since v1.5: **offline HD voices** (Piper & Kokoro, 57 voices in 16 languages, SHA-256 verified), the **Voice Providers** tab, **Offline only** privacy mode. Attested ZIPs + `SHA256SUMS.txt` on [Releases](https://github.com/nickotmazgin/fluentvoice-pro/releases); history in [CHANGELOG.md](CHANGELOG.md).
 
 > **Keywords:** Windows 11 Desktop App · System Tray Suite · Text to Speech · Read Aloud · Natural Voice Reader · Fluent Design · CustomTkinter · Edge TTS · SAPI OneCore · Clipboard Reader · Scratchpad · Multi-Language · Accessibility · Open Source
 
@@ -25,9 +25,9 @@ Equipped with a **Windows 11 Fluent UI Settings & Control Center**, global singl
 
 ## Demo video
 
-*A quick tour in 78 seconds ([also on YouTube](https://youtu.be/BHun6yWG7-0); real app, real voices; turn the sound on): the Direct Text Reader, English, Hebrew and Japanese each read by their own voice, Voice & Speech, offline HD voices (Piper & Kokoro), Automation & System, the health check and the tray menu.*
+*A quick tour in 2 minutes ([also on YouTube](https://youtu.be/7Z4Ffgz6XLY); real app, real voices; turn the sound on): the Direct Text Reader; English, Hebrew, Japanese, Spanish and Hindi each read by their own voice; Voice & Speech; offline HD voices (Piper & Kokoro); Auto-Read on Copy with the new Reader option; the health check; and the tray icon and menus.*
 
-https://github.com/user-attachments/assets/755a5a8c-8625-41d1-84b2-bdd56776c1ab
+https://github.com/user-attachments/assets/cbb86c6c-89d9-4f65-930a-50c1fb9709cd
 
 Longer and earlier videos: [the full 5-minute tour of v1.6.1](https://youtu.be/jpwKR2xFVRA) (a live Piper download, eight online voices, Preferred Voices, Offline-only mode) and [what's new in v1.6.3](https://youtu.be/z2wI4P4XTtk).
 
@@ -35,84 +35,84 @@ Longer and earlier videos: [the full 5-minute tour of v1.6.1](https://youtu.be/j
 
 ## Screenshots
 
-*FluentVoice Pro **v1.6.3** — click any image to view it full size.*
+*FluentVoice Pro **v1.6.7** — click any image to view it full size.*
 
-[![FluentVoice Pro v1.6.3 collage](screenshots/v1.6.3/collage-v1.6.3.jpg)](screenshots/v1.6.3/collage-v1.6.3.jpg)
+[![FluentVoice Pro v1.6.7 collage](screenshots/v1.6.7/collage-v1.6.7.jpg)](screenshots/v1.6.7/collage-v1.6.7.jpg)
 
 <table>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.3/01-settings-reader.png"><img src="screenshots/v1.6.3/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
+      <a href="screenshots/v1.6.7/01-settings-reader.png"><img src="screenshots/v1.6.7/01-settings-reader.png" width="260" alt="Direct Text Reader"></a><br>
       <b>01</b> — Direct Text Reader
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/02-settings-voice.png"><img src="screenshots/v1.6.3/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
+      <a href="screenshots/v1.6.7/02-settings-voice.png"><img src="screenshots/v1.6.7/02-settings-voice.png" width="260" alt="Voice &amp; Speech"></a><br>
       <b>02</b> — Voice &amp; Speech
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/03-settings-voice-providers.png"><img src="screenshots/v1.6.3/03-settings-voice-providers.png" width="260" alt="Voice Providers: privacy, rights &amp; offline HD voices"></a><br>
+      <a href="screenshots/v1.6.7/03-settings-voice-providers.png"><img src="screenshots/v1.6.7/03-settings-voice-providers.png" width="260" alt="Voice Providers: privacy, rights &amp; offline HD voices"></a><br>
       <b>03</b> — Voice Providers · privacy &amp; rights
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.3/04-settings-automation.png"><img src="screenshots/v1.6.3/04-settings-automation.png" width="260" alt="Automation &amp; System: Global Hotkey reads the selection, optional Stop hotkey"></a><br>
+      <a href="screenshots/v1.6.7/04-settings-automation.png"><img src="screenshots/v1.6.7/04-settings-automation.png" width="260" alt="Automation &amp; System: Global Hotkey reads the selection, optional Stop hotkey"></a><br>
       <b>04</b> — Automation · read-selection &amp; Stop hotkeys
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/05-settings-about-updates.png"><img src="screenshots/v1.6.3/05-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
+      <a href="screenshots/v1.6.7/05-settings-about-updates.png"><img src="screenshots/v1.6.7/05-settings-about-updates.png" width="260" alt="About, Updates &amp; Factory Reset"></a><br>
       <b>05</b> — About · Updates &amp; Components
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/06-tray-menu.png"><img src="screenshots/v1.6.3/06-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
+      <a href="screenshots/v1.6.7/06-tray-menu.png"><img src="screenshots/v1.6.7/06-tray-menu.png" width="260" alt="Tray right-click menu"></a><br>
       <b>06</b> — Tray menu · online, offline HD &amp; privacy
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.3/07-tray-icon-closeup.png"><img src="screenshots/v1.6.3/07-tray-icon-closeup.png" width="260" alt="Tray icon: HD and live in the taskbar"></a><br>
-      <b>07</b> — Tray icon · HD + live
+      <a href="screenshots/v1.6.7/07-tray-icon-closeup.png"><img src="screenshots/v1.6.7/07-tray-icon-closeup.png" width="260" alt="Desktop icon and the live tray icon"></a><br>
+      <b>07</b> — Desktop &amp; tray icons
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/08-settings-automation-preferred.png"><img src="screenshots/v1.6.3/08-settings-automation-preferred.png" width="260" alt="Preferred Voices: one compact row"></a><br>
+      <a href="screenshots/v1.6.7/08-settings-automation-preferred.png"><img src="screenshots/v1.6.7/08-settings-automation-preferred.png" width="260" alt="Preferred Voices: one compact row"></a><br>
       <b>08</b> — Preferred Voices · one compact row
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/09-tray-offline-voices.png"><img src="screenshots/v1.6.3/09-tray-offline-voices.png" width="260" alt="Tray: downloaded offline HD voices by language"></a><br>
+      <a href="screenshots/v1.6.7/09-tray-offline-voices.png"><img src="screenshots/v1.6.7/09-tray-offline-voices.png" width="260" alt="Tray: downloaded offline HD voices by language"></a><br>
       <b>09</b> — Tray · offline HD voices (Piper &amp; Kokoro) in two clicks
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.3/10-settings-voice-providers-mid.png"><img src="screenshots/v1.6.3/10-settings-voice-providers-mid.png" width="260" alt="Voice Providers: Piper voices, each with its licence"></a><br>
+      <a href="screenshots/v1.6.7/10-settings-voice-providers-mid.png"><img src="screenshots/v1.6.7/10-settings-voice-providers-mid.png" width="260" alt="Voice Providers: Piper voices, each with its licence"></a><br>
       <b>10</b> — Voice Providers · Piper voices &amp; licences
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/11-settings-voice-providers-bottom.png"><img src="screenshots/v1.6.3/11-settings-voice-providers-bottom.png" width="260" alt="Voice Providers: Kokoro pack, Windows voices, licences and rights"></a><br>
+      <a href="screenshots/v1.6.7/11-settings-voice-providers-bottom.png"><img src="screenshots/v1.6.7/11-settings-voice-providers-bottom.png" width="260" alt="Voice Providers: Kokoro pack, Windows voices, licences and rights"></a><br>
       <b>11</b> — Voice Providers · Kokoro, Windows &amp; rights
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/12-settings-automation-bottom.png"><img src="screenshots/v1.6.3/12-settings-automation-bottom.png" width="260" alt="Automation &amp; System: tray, startup, updates and how to trigger FluentVoice"></a><br>
+      <a href="screenshots/v1.6.7/12-settings-automation-bottom.png"><img src="screenshots/v1.6.7/12-settings-automation-bottom.png" width="260" alt="Automation &amp; System: tray, startup, updates and how to trigger FluentVoice"></a><br>
       <b>12</b> — Automation · tray, startup, updates &amp; triggers
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="screenshots/v1.6.3/13-settings-health-check.png"><img src="screenshots/v1.6.3/13-settings-health-check.png" width="260" alt="Health check: Test providers with diagnosis and fixes"></a><br>
+      <a href="screenshots/v1.6.7/13-settings-health-check.png"><img src="screenshots/v1.6.7/13-settings-health-check.png" width="260" alt="Health check: Test providers with diagnosis and fixes"></a><br>
       <b>13</b> — Health check · diagnosis &amp; fixes
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/14-reader-other-language.png"><img src="screenshots/v1.6.3/14-reader-other-language.png" width="260" alt="Direct Text Reader: Dutch text read by a Multilingual voice"></a><br>
+      <a href="screenshots/v1.6.7/14-reader-other-language.png"><img src="screenshots/v1.6.7/14-reader-other-language.png" width="260" alt="Direct Text Reader: Dutch text read by a Multilingual voice"></a><br>
       <b>14</b> — Any language · Dutch read by a Multilingual voice
     </td>
     <td align="center">
-      <a href="screenshots/v1.6.3/15-settings-about-bottom.png"><img src="screenshots/v1.6.3/15-settings-about-bottom.png" width="260" alt="About &amp; Developer, bottom: components with versions, licences and sources, factory reset"></a><br>
+      <a href="screenshots/v1.6.7/15-settings-about-bottom.png"><img src="screenshots/v1.6.7/15-settings-about-bottom.png" width="260" alt="About &amp; Developer, bottom: components with versions, licences and sources, factory reset"></a><br>
       <b>15</b> — About · components, licences &amp; sources
     </td>
   </tr>
 </table>
 
-Full combined image (download): [collage-v1.6.3.jpg](screenshots/v1.6.3/collage-v1.6.3.jpg)
+Full combined image (download): [collage-v1.6.7.jpg](screenshots/v1.6.7/collage-v1.6.7.jpg)
 
 ---
 

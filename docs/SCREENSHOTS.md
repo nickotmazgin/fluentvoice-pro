@@ -1,32 +1,31 @@
-# Screenshots (v1.6.3)
+# Screenshots (v1.6.7)
 
-HD captures for the README, the GitHub social preview, and social posts. In v1.6.3 every Settings
-screen was recaptured (the header shows the version; 08's tip mentions Multilingual reading of other
-languages) and 13–15 are new: the health check, a Dutch text in the Reader, and the bottom of About
-& Developer. The tray captures 06, 07 and 09 are unchanged from v1.6.1.
+HD captures for the README, the GitHub social preview, and social posts. In v1.6.7 every Settings
+screen was recaptured with the tidier layout, and the tray captures 06, 07 and 09 were retaken
+from a live tray.
 
 ## Repo paths
 
 | File | Purpose |
 |------|---------|
-| `screenshots/v1.6.3/collage-v1.6.3.jpg` | README hero collage (3840 wide, 3 across: 01–06, 13, 08–12) |
-| `screenshots/v1.6.3/social-preview-1280x640.jpg` | GitHub OG / link preview: the full collage, 4 across (also `.github/social-preview.{jpg,png}`) |
-| `screenshots/v1.6.3/social-collage-1080.jpg` | Square social post (03, 13, 06, 01) |
-| `screenshots/v1.6.3/01-settings-reader.png` | 01 Direct Text Reader |
-| `screenshots/v1.6.3/02-settings-voice.png` | 02 Voice & Speech |
-| `screenshots/v1.6.3/03-settings-voice-providers.png` | 03 Voice Providers: privacy, rights, Piper / Kokoro downloads |
-| `screenshots/v1.6.3/04-settings-automation.png` | 04 Automation & System (Auto-Read, language, Global Hotkey with Stop-only chord and read-selection switch, notifications) |
-| `screenshots/v1.6.3/05-settings-about-updates.png` | 05 About · Updates and the start of Components & sources |
-| `screenshots/v1.6.3/06-tray-menu.png` | 06 Tray right-click menu (Offline HD Voices submenu open, languages of the downloaded voices) |
-| `screenshots/v1.6.3/07-tray-icon-closeup.png` | 07 Tray icon: HD (drawn by the tray code) + live 20 px capture from the taskbar (README only) |
-| `screenshots/v1.6.3/08-settings-automation-preferred.png` | 08 Automation scrolled to Preferred Voices (one Language ▸ Voice row), tray, startup |
-| `screenshots/v1.6.3/09-tray-offline-voices.png` | 09 Tray → Offline HD Voices → English: the downloaded Piper / Kokoro voices |
-| `screenshots/v1.6.3/10-settings-voice-providers-mid.png` | 10 Voice Providers, middle: Piper voices, each with its licence |
-| `screenshots/v1.6.3/11-settings-voice-providers-bottom.png` | 11 Voice Providers, bottom: Kokoro pack, Windows voices, licences & rights |
-| `screenshots/v1.6.3/12-settings-automation-bottom.png` | 12 Automation & System, bottom: tray, startup & shortcuts, updates, how to trigger FluentVoice |
-| `screenshots/v1.6.3/13-settings-health-check.png` | 13 About → Components & sources after **Test providers**: diagnosis and fixes |
-| `screenshots/v1.6.3/14-reader-other-language.png` | 14 Reader with Dutch text: "Lang: Dutch (Multilingual voice)" (README only) |
-| `screenshots/v1.6.3/15-settings-about-bottom.png` | 15 About, bottom: component versions, licences and sources, Advanced (factory reset) (README only) |
+| `screenshots/v1.6.7/collage-v1.6.7.jpg` | README hero collage (3840 wide, 3 across: 01–06, 13, 08–12) |
+| `screenshots/v1.6.7/social-preview-1280x640.jpg` | GitHub OG / link preview: the full collage, 4 across (also `.github/social-preview.{jpg,png}`) |
+| `screenshots/v1.6.7/social-collage-1080.jpg` | Square social post (03, 13, 06, 01) |
+| `screenshots/v1.6.7/01-settings-reader.png` | 01 Direct Text Reader |
+| `screenshots/v1.6.7/02-settings-voice.png` | 02 Voice & Speech |
+| `screenshots/v1.6.7/03-settings-voice-providers.png` | 03 Voice Providers: privacy, rights, Piper / Kokoro downloads |
+| `screenshots/v1.6.7/04-settings-automation.png` | 04 Automation & System (Auto-Read, language, Global Hotkey with Stop-only chord and read-selection switch, notifications) |
+| `screenshots/v1.6.7/05-settings-about-updates.png` | 05 About · Updates and the start of Components & sources |
+| `screenshots/v1.6.7/06-tray-menu.png` | 06 Tray right-click menu (Offline HD Voices submenu open, languages of the downloaded voices) |
+| `screenshots/v1.6.7/07-tray-icon-closeup.png` | 07 Desktop icon and the live tray icon, enlarged pixel for pixel (README only) |
+| `screenshots/v1.6.7/08-settings-automation-preferred.png` | 08 Automation scrolled to Preferred Voices (one Language ▸ Voice row), tray, startup |
+| `screenshots/v1.6.7/09-tray-offline-voices.png` | 09 Tray → Offline HD Voices → English: the downloaded Piper / Kokoro voices |
+| `screenshots/v1.6.7/10-settings-voice-providers-mid.png` | 10 Voice Providers, middle: Piper voices, each with its licence |
+| `screenshots/v1.6.7/11-settings-voice-providers-bottom.png` | 11 Voice Providers, bottom: Kokoro pack, Windows voices, licences & rights |
+| `screenshots/v1.6.7/12-settings-automation-bottom.png` | 12 Automation & System, bottom: tray, startup & shortcuts, updates, how to trigger FluentVoice |
+| `screenshots/v1.6.7/13-settings-health-check.png` | 13 About → Components & sources after **Test providers**: diagnosis and fixes |
+| `screenshots/v1.6.7/14-reader-other-language.png` | 14 Reader with Dutch text: "Lang: Dutch (Multilingual voice)" (README only) |
+| `screenshots/v1.6.7/15-settings-about-bottom.png` | 15 About, bottom: component versions, licences and sources, Advanced (factory reset) (README only) |
 
 ## Recapture + rebuild
 

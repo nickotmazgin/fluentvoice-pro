@@ -101,7 +101,8 @@ class FakeTextbox:
 
 
 def _reader(text):
-    win = types.SimpleNamespace(reader_textbox=FakeTextbox(text), _update_reader_meta=lambda: None)
+    win = types.SimpleNamespace(reader_textbox=FakeTextbox(text), _update_reader_meta=lambda: None,
+                                reader_status_lbl=types.SimpleNamespace(configure=lambda **k: None))
     win._reader_accepts_autofill = lambda: gui.FluentVoiceSettingsWindow._reader_accepts_autofill(win)
     return win, gui.FluentVoiceSettingsWindow._fill_reader_from_autoread
 
