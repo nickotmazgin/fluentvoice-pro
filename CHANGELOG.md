@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-11-08
+
+### Fixed
+- **"Speaking…" is readable.** While reading, the Read Aloud and Speak Test Text buttons showed grey text on bright cyan.
+
 ### Added
 - **Optional: see Auto-Read's text in the Direct Text Reader.** A new switch under Auto-Read on Copy (off by default) shows the copied text in the Reader while the Settings window is open. It only replaces an empty box, the starter text or its own earlier text, so it never overwrites what you typed; private and password-like copies never appear, and the text is not written to disk.
 - **Free-space check before downloading an offline voice.** If the drive is too full, FluentVoice says how much is needed and how much is free, and downloads nothing.

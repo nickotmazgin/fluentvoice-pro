@@ -501,6 +501,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             fg_color="#00D2FF",
             hover_color="#33DCFF",
             text_color="#080C14",
+            text_color_disabled="#080C14",  # "Speaking…" stays readable on the cyan button
             font=ctk.CTkFont(weight="bold"),
             width=ACTION_BUTTON_WIDTH,
             command=self._on_reader_speak
@@ -1030,6 +1031,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             fg_color="#00D2FF",
             hover_color="#33DCFF",
             text_color="#080C14",
+            text_color_disabled="#080C14",
             font=ctk.CTkFont(size=13, weight="bold"),
             width=ACTION_BUTTON_WIDTH,
             command=self._on_test_speak
@@ -2453,6 +2455,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self.reader_textbox.insert("1.0", shown)
         self._reader_autofilled = bidi_strip(shown).strip()
         self._update_reader_meta()
+        self.reader_status_lbl.configure(text="Shown from Auto-Read on Copy", text_color="#8B949E")
         return True
 
     def _poll_autoread_to_reader(self):
