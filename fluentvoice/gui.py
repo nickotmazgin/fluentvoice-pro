@@ -8,6 +8,7 @@ import ctypes
 import webbrowser
 import threading
 import subprocess
+import time
 from pathlib import Path
 import copy
 
@@ -66,6 +67,10 @@ THIRD_PARTY_URL = "https://github.com/nickotmazgin/fluentvoice-pro/blob/main/THI
 ACTION_BUTTON_WIDTH = 220  # Read Aloud / Speak Test Text: fixed, so they don't stretch with the window
 CONTENT_MAX_WIDTH = 1100  # beyond this (maximized window) the content stays centred instead of stretching
 CONTENT_SIDE_PAD = 16
+READER_SAMPLE_CHARS = 5_000  # language detection for the Reader's label looks at this much text
+READER_SAMPLE_TEXT = ("Paste articles, documents, notes, or OCR text directly into this scratchpad window to read "
+                      "them aloud with natural HD voice synthesis.")
+AUTOFILL_POLL_MS = 300
 SLIDER_WIDTH = 560  # title, value and bar of each slider stay together instead of spanning the card
 
 # Neural voices come from fluentvoice/voices.py (shared with the tray + auto-route).
@@ -167,6 +172,9 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._build_tabs(initial_tab)
         self._build_footer()
         self.after(400, self._poll_external_updates)
+        self._autofill_seq = ctypes.windll.user32.GetClipboardSequenceNumber()  # earlier copies are not shown
+        self._autofill_changed_at, self._autofill_due = 0.0, False
+        self.after(AUTOFILL_POLL_MS, self._poll_autoread_to_reader)
         self.after(1500, lambda: self._check_updates_async(force=False))
 
     def _set_window_icon(self):
@@ -458,8 +466,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         # word order on that line; park the cursor at the end when the Reader loses focus.
         self.reader_textbox.bind("<FocusOut>", self._on_reader_focus_out, add="+")
 
-        sample_starter = "Paste articles, documents, notes, or OCR text directly into this scratchpad window to read them aloud with natural HD voice synthesis."
-        self.reader_textbox.insert("1.0", sample_starter)
+        self.reader_textbox.insert("1.0", READER_SAMPLE_TEXT)
         self._update_reader_meta()
 
         # Action Buttons
@@ -557,7 +564,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         txt = bidi_strip(self.reader_textbox.get("1.0", "end-1c")).strip()
         words = len(txt.split()) if txt else 0
         chars = len(txt)
-        detected = core.detect_language(txt)
+        detected = core.detect_language(txt[:READER_SAMPLE_CHARS])  # runs on the window's thread: keep it quick
         lang_str = voices.language_name(detected)
         if voices.is_other_language(detected):
             lang_str += " (Multilingual voice)"
@@ -570,7 +577,11 @@ class FluentVoiceSettingsWindow(ctk.CTk):
             tb.tag_add("rtl", "1.0", "end")
         else:
             tb.tag_remove("rtl", "1.0", "end")
-        self.reader_meta_lbl.configure(text=f"{words:,} words • {chars:,} chars • Lang: {lang_str}")
+        if chars > core.MAX_SPEAK_CHARS:  # short enough for this line at the normal window size
+            meta = f"{chars:,} chars • {lang_str} • reads first {core.MAX_SPEAK_CHARS:,}"
+        else:
+            meta = f"{words:,} words • {chars:,} chars • Lang: {lang_str}"
+        self.reader_meta_lbl.configure(text=meta)
         self._refresh_reader_voice_label()
 
     def _on_reader_focus_out(self, _event=None):
@@ -1104,6 +1115,15 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         if self.cfg.get("auto_read_copy", False):
             self.switch_autoread.select()
         self.switch_autoread.pack(anchor="w", padx=16, pady=(4, 6))
+        self.switch_autoread_reader = ctk.CTkSwitch(
+            clip,
+            text="Also show the text in the Direct Text Reader (while this window is open)",
+            progress_color="#00D2FF",
+            command=self._on_toggle_autoread_reader
+        )
+        if self.cfg.get("autoread_show_in_reader", False):
+            self.switch_autoread_reader.select()
+        self.switch_autoread_reader.pack(anchor="w", padx=16, pady=(0, 6))
 
         buffer_frame = self._slider_title_row(clip, padx=16, pady=(0, 2))
         ctk.CTkLabel(
@@ -1787,6 +1807,7 @@ class FluentVoiceSettingsWindow(ctk.CTk):
                     changed = True
 
             apply_switch("switch_autoread", "auto_read_copy", False)
+            apply_switch("switch_autoread_reader", "autoread_show_in_reader", False)
             apply_switch("switch_autoroute", "auto_route_language", True)
             apply_switch("switch_markdown", "clean_markdown", True)
             if hasattr(self, "seg_notify"):
@@ -2411,6 +2432,46 @@ class FluentVoiceSettingsWindow(ctk.CTk):
         self._trigger_autosave_indicator()
         state_str = "Enabled" if enabled else "Disabled"
         core.trigger_notification("FluentVoice Pro", f"⚡ Auto-Read on Copy: {state_str}")
+
+    def _on_toggle_autoread_reader(self):
+        if self._syncing_from_disk:
+            return
+        self.cfg["autoread_show_in_reader"] = self.switch_autoread_reader.get() == 1
+        self._persist_cfg()
+        self._trigger_autosave_indicator()
+
+    def _reader_accepts_autofill(self) -> bool:
+        """Only an empty box, the starter sample or the previous auto-filled text: never what the user typed."""
+        current = bidi_strip(self.reader_textbox.get("1.0", "end-1c")).strip()
+        return current in ("", READER_SAMPLE_TEXT, getattr(self, "_reader_autofilled", None))
+
+    def _fill_reader_from_autoread(self, text: str) -> bool:
+        if not core.autoread_text_ok(text) or not self._reader_accepts_autofill():
+            return False
+        shown = core.limit_text(text.strip(), core.AUTOREAD_MAX_CHARS)
+        self.reader_textbox.delete("1.0", "end")
+        self.reader_textbox.insert("1.0", shown)
+        self._reader_autofilled = bidi_strip(shown).strip()
+        self._update_reader_meta()
+        return True
+
+    def _poll_autoread_to_reader(self):
+        """Settings is a separate process from the tray, so it watches the clipboard itself: the
+        copied text never has to pass through a file. Waits for the same stability buffer as Auto-Read."""
+        try:
+            seq = ctypes.windll.user32.GetClipboardSequenceNumber()
+            if seq != self._autofill_seq:
+                self._autofill_seq, self._autofill_changed_at = seq, time.monotonic()
+                self._autofill_due = True
+            cfg = self.cfg
+            if not (cfg.get("auto_read_copy", False) and cfg.get("autoread_show_in_reader", False)):
+                self._autofill_due = False
+            elif self._autofill_due and time.monotonic() - self._autofill_changed_at >= cfg.get("debounce_sec", 0.6):
+                self._autofill_due = False
+                self._fill_reader_from_autoread(core.get_clipboard_text())
+        except Exception:
+            pass
+        self.after(AUTOFILL_POLL_MS, self._poll_autoread_to_reader)
 
     def _on_buffer_slider(self, val):
         if self._syncing_from_disk:

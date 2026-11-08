@@ -20,6 +20,7 @@ DEFAULT_CONFIG = {
     "offline_only": False,
     "voice": "en-US-AndrewMultilingualNeural",
     "auto_read_copy": False,
+    "autoread_show_in_reader": False,  # also show what Auto-Read reads in the Direct Text Reader
     "clean_markdown": True,
     "show_notifications": True,  # legacy on/off, kept in sync with notification_level
     # "all" = every read, "important" = voice/setting changes, updates, errors, "off"

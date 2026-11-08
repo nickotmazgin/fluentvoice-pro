@@ -14,6 +14,7 @@ import unicodedata
 import urllib.parse
 import uuid
 import logging
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -57,6 +58,10 @@ CHUNK_CHARS = 700                 # later chunks; several are prepared in parall
 PREFETCH_WORKERS = 3              # chunks synthesized at the same time
 PREFETCH_AHEAD = 4                # never prepare more than this many chunks ahead of the one playing
 MAX_SPEAK_CHARS = 100_000         # ~1.5 h of speech; longer texts are read up to here (flood guard)
+AUTOREAD_MAX_CHARS = 10_000       # Auto-Read on Copy: an accidental Ctrl+A, Ctrl+C is not a 1.5 h reading
+RAW_TEXT_FACTOR = 3               # raw text beyond limit x this is dropped before the (costly) cleaning
+ONLINE_REQUESTS_PER_WINDOW = 10   # online requests allowed per window, across all readings (HTTP 429 guard)
+ONLINE_REQUEST_WINDOW_SEC = 10.0
 LOCAL_FIRST_CHUNK_CHARS = 120     # offline HD voices compute on this PC: a shorter first chunk starts sooner
 LOCAL_SECOND_CHUNK_CHARS = 220    # …and the second must be ready before that short first chunk ends
 LOCAL_CHUNK_GROWTH = 2.5          # each chunk ≤ 2.5× the previous: it is ready before that one has played
@@ -592,6 +597,14 @@ PRIVATE_SKIP_MESSAGE = ("The clipboard looks like a password or key, so it was n
                         "voice service. To read it anyway, paste it into the Direct Text Reader.")
 
 
+def autoread_text_ok(text: str) -> bool:
+    """May Auto-Read on Copy use this clipboard text? Not private or password-like copies (they are
+    never read aloud nor sent to the voice service), copies under 2 characters, or no letters / digits."""
+    if len((text or "").strip()) < 2 or not any(ch.isalnum() for ch in text):
+        return False
+    return not (looks_like_secret(text) or clipboard_is_private())
+
+
 def clipboard_text_or_private():
     """(text, private): the clipboard text, and whether it must not be read (marked private by a
     password manager, or looks like a password / key)."""
@@ -883,6 +896,17 @@ def split_for_streaming(text: str, first: int = FIRST_CHUNK_CHARS, rest: int = C
     return chunks
 
 
+def limit_text(text: str, limit: int) -> str:
+    """text, cut at a sentence start so that it is at most `limit` characters long."""
+    if len(text) <= limit:
+        return text
+    return text[:sentence_start_before(text, limit) or limit]
+
+
+def _reading_time(chars: int) -> str:
+    return "about 1.5 hours" if chars >= MAX_SPEAK_CHARS else f"about {max(1, round(chars / 1100))} minutes"
+
+
 def sentence_start_before(text: str, offset: int) -> int:
     """Index where the sentence containing `offset` begins (0 if none): used to resume after
     a voice change from the sentence that was being spoken, not from the chunk start."""
@@ -986,8 +1010,31 @@ async def _stream_edge(text, voice, out_file, *, rate, pitch, volume, idle_timeo
                 pass
 
 
+_online_request_times = deque()
+_online_request_lock = threading.Lock()
+
+
+def _wait_for_online_slot(abort_check=None) -> bool:
+    """Hold a request back while too many were sent recently: rapid copies with Auto-Read on start
+    several requests each, and bursts make Microsoft answer HTTP 429. False = aborted while waiting."""
+    while True:
+        with _online_request_lock:
+            now = time.monotonic()
+            while _online_request_times and now - _online_request_times[0] >= ONLINE_REQUEST_WINDOW_SEC:
+                _online_request_times.popleft()
+            if len(_online_request_times) < ONLINE_REQUESTS_PER_WINDOW:
+                _online_request_times.append(now)
+                return True
+            wait = ONLINE_REQUEST_WINDOW_SEC - (now - _online_request_times[0])
+        if abort_check and abort_check():
+            return False
+        time.sleep(min(wait, 0.1))
+
+
 def _synthesize_to_file(text, voice, out_file, *, rate, pitch, volume, abort_check=None):
     """Blocking wrapper. Returns (ok, error_message)."""
+    if not _wait_for_online_slot(abort_check):
+        return False, "aborted"
     try:
         asyncio.run(_synthesize_edge(
             text, voice, out_file, rate=rate, pitch=pitch, volume=volume, abort_check=abort_check
@@ -1206,17 +1253,18 @@ def _emit(on_status, phase: str, **info):
         pass
 
 
-def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None, voice: str | None = None) -> dict:
+def speak_text(raw_text: str, on_status=None, auto_route: bool | None = None, voice: str | None = None,
+               max_chars: int | None = None) -> dict:
     """Main thread-safe speech dispatcher. Returns status dictionary (see _speak_text_impl).
 
     auto_route=None follows the Settings switch; False plays exactly the chosen voice
-    (the Voice & Speech "Speak Test Text" button).
+    (the Voice & Speech "Speak Test Text" button). max_chars: read at most this much.
     """
     global _active_requests
     with _requests_lock:
         _active_requests += 1
     try:
-        return _speak_text_impl(raw_text, on_status, auto_route, voice)
+        return _speak_text_impl(raw_text, on_status, auto_route, voice, max_chars)
     except Exception as e:
         _log.exception("speak_text crashed")
         _emit(on_status, "error", message=f"{type(e).__name__}: {e}")
@@ -1311,7 +1359,7 @@ def _no_voice_result(family: str, on_status, reason: str = "") -> dict:
 
 
 def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | None = None,
-                     voice_override: str | None = None) -> dict:
+                     voice_override: str | None = None, max_chars: int | None = None) -> dict:
     """Speech pipeline.
 
     on_status(phase, info) is called (from this worker thread) as speech progresses:
@@ -1335,17 +1383,22 @@ def _speak_text_impl(raw_text: str, on_status=None, auto_route_override: bool | 
     cfg = load_config()
     if voice_override:  # Settings → Voice Providers "Try": exactly this voice (privacy mode still applies)
         cfg, auto_route_override = dict(cfg, voice=voice_override), False
+    max_chars = max_chars or MAX_SPEAK_CHARS
+    raw_text = raw_text or ""
+    raw_was_cut = len(raw_text) > max_chars * RAW_TEXT_FACTOR
+    if raw_was_cut:  # don't spend seconds cleaning megabytes that will never be read
+        raw_text = raw_text[:max_chars * RAW_TEXT_FACTOR]
     if cfg.get("clean_markdown", True):
         cleaned = clean_text_for_speech(raw_text)
     else:
-        cleaned = (raw_text or "").strip()
+        cleaned = raw_text.strip()
     if not cleaned:
         cleaned = "Nothing to read. Copy text or click to speak."
-    if len(cleaned) > MAX_SPEAK_CHARS:
-        cut = sentence_start_before(cleaned, MAX_SPEAK_CHARS) or MAX_SPEAK_CHARS
-        _log.warning("text of %d chars trimmed to the first %d", len(cleaned), cut)
-        cleaned = cleaned[:cut]
-        trigger_notification("📄 Long text", f"Reading the first {MAX_SPEAK_CHARS:,} characters (about 1.5 hours).",
+    if raw_was_cut or len(cleaned) > max_chars:
+        length = len(cleaned)
+        cleaned = limit_text(cleaned, max_chars)
+        _log.warning("text of %d chars trimmed to the first %d", length, len(cleaned))
+        trigger_notification("📄 Long text", f"Reading the first {max_chars:,} characters ({_reading_time(max_chars)}).",
                              force=True, important=True)
 
     detected_lang = detect_language(cleaned)
