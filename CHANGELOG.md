@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **FluentVoice Pro is in winget.** `winget install NickOtmazgin.FluentVoicePro` installs the portable EXE ZIP (accepted into the Windows Package Manager on 25 November 2026, version 1.6.7). README: new Option D.
+
 ## [1.6.7] - 2026-11-08
 
 ### Fixed

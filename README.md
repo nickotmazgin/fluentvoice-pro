@@ -205,6 +205,14 @@ scoop install nickotmazgin/fluentvoicepro
 
 Installs the same portable EXE ZIP from Releases (SHA-256 checked) with a Start Menu shortcut and the `fluentvoicepro` command. Update with `scoop update fluentvoicepro`. Bucket: [nickotmazgin/scoop-bucket](https://github.com/nickotmazgin/scoop-bucket).
 
+### Option D — winget
+
+```powershell
+winget install NickOtmazgin.FluentVoicePro
+```
+
+Installs the same portable EXE ZIP from Releases through the Windows Package Manager (SHA-256 checked) and adds the `fluentvoicepro` command. Update with `winget upgrade NickOtmazgin.FluentVoicePro`. For the signed Microsoft Store version instead, use `winget install 9N293MJ0MD9F --source msstore`.
+
 ### From Source / Git
 
 ```powershell
@@ -281,6 +289,7 @@ python -m fluentvoice.installer
 - **Microsoft Store:** https://apps.microsoft.com/detail/9N293MJ0MD9F (free; `winget install 9N293MJ0MD9F --source msstore`)
 - **Releases:** https://github.com/nickotmazgin/fluentvoice-pro/releases
 - **Scoop:** https://github.com/nickotmazgin/scoop-bucket
+- **winget:** `winget install NickOtmazgin.FluentVoicePro` ([manifest](https://github.com/microsoft/winget-pkgs/tree/master/manifests/n/NickOtmazgin/FluentVoicePro))
 - **Issues:** https://github.com/nickotmazgin/fluentvoice-pro/issues
 - **Discussions:** https://github.com/nickotmazgin/fluentvoice-pro/discussions
 - **AlternativeTo:** https://alternativeto.net/software/fluentvoice-pro/about/ (reviews and alternatives)
